@@ -89,16 +89,12 @@ exports.create = (req, res) => {
     mobile_number,
     custom_address,
     date_agreement,
-    client_spoc_id,
+    client_spoc,
     client_standard,
     custom_template,
-    scopeOfServices,
-    billing_spoc_id,
+    clientData,
     additional_login,
     agreement_period,
-    authorized_detail_id,
-    billing_escalation_id,
-    escalation_manager_id,
     send_mail,
   } = req.body;
 
@@ -117,16 +113,12 @@ exports.create = (req, res) => {
     company_name,
     mobile_number,
     date_agreement,
-    client_spoc_id,
-    scopeOfServices,
+    client_spoc,
+    clientData,
     client_standard,
     custom_template,
-    billing_spoc_id,
     additional_login,
     agreement_period,
-    authorized_detail_id,
-    billing_escalation_id,
-    escalation_manager_id,
   };
 
   let additional_login_int = 0;
@@ -244,7 +236,7 @@ exports.create = (req, res) => {
                 profile_picture: null,
                 emails_json: JSON.stringify(emails),
                 mobile_number,
-                services: JSON.stringify(scopeOfServices),
+                services: JSON.stringify(clientData),
                 additional_login: additional_login_int,
                 username:
                   additional_login && additional_login.toLowerCase() === "yes"
@@ -276,11 +268,7 @@ exports.create = (req, res) => {
                   {
                     customer_id: customerId,
                     address,
-                    client_spoc_id,
-                    escalation_manager_id,
-                    billing_spoc_id,
-                    billing_escalation_id,
-                    authorized_detail_id,
+                    client_spoc,
                     gst_number: gstin,
                     tat_days: tat,
                     agreement_date: date_agreement,
@@ -1017,16 +1005,12 @@ exports.update = (req, res) => {
     gst_number,
     custom_address,
     agreement_date,
-    client_spoc_id,
+    client_spoc,
     client_standard,
     custom_template,
-    billing_spoc_id,
     additional_login,
     client_unique_id,
     agreement_duration,
-    authorized_detail_id,
-    escalation_manager_id,
-    billing_escalation_id,
   } = req.body;
 
   // Define required fields
@@ -1044,16 +1028,12 @@ exports.update = (req, res) => {
     state_code,
     gst_number,
     client_unique_id,
-    client_spoc_id,
+    client_spoc,
     agreement_date,
-    billing_spoc_id,
     custom_template,
     client_standard,
     additional_login,
     agreement_duration,
-    authorized_detail_id,
-    escalation_manager_id,
-    billing_escalation_id,
   };
 
   let additional_login_int = 0;
@@ -1154,20 +1134,7 @@ exports.update = (req, res) => {
 
             if (currentCustomerMeta) {
               compareAndAddChanges("address", address);
-              compareAndAddChanges("client_spoc_id", client_spoc_id);
-              compareAndAddChanges(
-                "escalation_manager_id",
-                escalation_manager_id
-              );
-              compareAndAddChanges("billing_spoc_id", billing_spoc_id);
-              compareAndAddChanges(
-                "billing_escalation_id",
-                billing_escalation_id
-              );
-              compareAndAddChanges(
-                "authorized_detail_id",
-                authorized_detail_id
-              );
+              compareAndAddChanges("client_spoc", client_spoc);
               compareAndAddChanges("gst_number", gst_number);
               compareAndAddChanges("tat_days", tat_days);
               compareAndAddChanges("agreement_date", agreement_date);
@@ -1286,11 +1253,7 @@ exports.update = (req, res) => {
                       customer_id,
                       {
                         address,
-                        client_spoc_id,
-                        escalation_manager_id,
-                        billing_spoc_id,
-                        billing_escalation_id,
-                        authorized_detail_id,
+                        client_spoc,
                         gst_number,
                         tat_days,
                         agreement_date,

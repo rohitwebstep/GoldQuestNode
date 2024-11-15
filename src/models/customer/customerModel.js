@@ -258,23 +258,18 @@ const Customer = {
     const sqlCustomerMetas = `
       INSERT INTO \`customer_metas\` (
         \`customer_id\`, \`address\`,
-        \`client_spoc_id\`, \`escalation_manager_id\`,
-        \`billing_spoc_id\`, \`billing_escalation_id\`,
+        \`client_spoc\`,
         \`gst_number\`, \`tat_days\`, 
         \`agreement_date\`, \`agreement_duration\`, \`custom_template\`,
         \`custom_address\`, \`state\`, \`state_code\`, 
         \`client_standard\`
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     const valuesCustomerMetas = [
       metaData.customer_id,
       metaData.address,
-      metaData.client_spoc_id,
-      metaData.escalation_manager_id,
-      metaData.billing_spoc_id,
-      metaData.billing_escalation_id,
-      metaData.authorized_detail_id,
+      metaData.client_spoc,
       metaData.gst_number,
       metaData.tat_days,
       metaData.agreement_date,
@@ -320,11 +315,7 @@ const Customer = {
       UPDATE \`customer_metas\` 
       SET 
         \`address\` = ?, 
-        \`client_spoc_id\` = ?,
-        \`escalation_manager_id\` = ?,
-        \`billing_spoc_id\` = ?,
-        \`billing_escalation_id\` = ?,
-        \`authorized_detail_id\` = ?,
+        \`client_spoc\` = ?,
         \`gst_number\` = ?, 
         \`tat_days\` = ?, 
         \`agreement_date\` = ?, 
@@ -339,11 +330,7 @@ const Customer = {
 
     const valuesUpdateCustomerMetas = [
       metaData.address,
-      metaData.client_spoc_id,
-      metaData.escalation_manager_id,
-      metaData.billing_spoc_id,
-      metaData.billing_escalation_id,
-      metaData.authorized_detail_id,
+      metaData.client_spoc,
       metaData.gst_number,
       metaData.tat_days,
       metaData.agreement_date,
@@ -490,7 +477,7 @@ const Customer = {
         customers.emails, 
         customers.mobile, 
         customers.services, 
-        customer_metas.client_spoc_id,
+        customer_metas.client_spoc,
         customers.id, 
         customer_metas.address,
         customer_metas.gst_number,
