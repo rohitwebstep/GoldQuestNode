@@ -219,23 +219,18 @@ const Customer = {
 
       // Base SQL query with JOINs to fetch client_spoc_name and cmt_applications data if it exists
       let sql = `
-        SELECT 
-          ca.*, 
-          ca.id AS main_id, 
-          cs.name AS client_spoc_name,
-          cmt.*
-        FROM 
-          \`client_applications\` ca
-        LEFT JOIN 
-          \`client_spocs\` cs 
-        ON 
-          ca.client_spoc_id = cs.id
-        LEFT JOIN 
-          \`cmt_applications\` cmt 
-        ON 
-          ca.id = cmt.client_application_id
-        WHERE 
-          ca.\`branch_id\` = ?`;
+          SELECT 
+            ca.*, 
+            ca.id AS main_id, 
+            cmt.*
+          FROM 
+            \`client_applications\` ca
+          LEFT JOIN 
+            \`cmt_applications\` cmt 
+          ON 
+            ca.id = cmt.client_application_id
+          WHERE 
+            ca.\`branch_id\` = ?`;
 
       const params = [branch_id]; // Start with branch_id
 

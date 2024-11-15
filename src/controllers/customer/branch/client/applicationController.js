@@ -22,7 +22,7 @@ exports.create = (req, res) => {
     customer_id,
     name,
     employee_id,
-    client_spoc_id,
+    client_spoc,
     location,
     services,
     package,
@@ -36,7 +36,7 @@ exports.create = (req, res) => {
     customer_id,
     name,
     employee_id,
-    client_spoc_id,
+    client_spoc,
     location,
   };
 
@@ -98,7 +98,7 @@ exports.create = (req, res) => {
           {
             name,
             employee_id,
-            client_spoc_id,
+            client_spoc,
             location,
             branch_id,
             services,
@@ -370,7 +370,7 @@ exports.update = (req, res) => {
     client_application_id,
     name,
     employee_id,
-    client_spoc_id,
+    client_spoc,
     location,
     services,
     package,
@@ -383,7 +383,7 @@ exports.update = (req, res) => {
     client_application_id,
     name,
     employee_id,
-    client_spoc_id,
+    client_spoc,
     location,
   };
 
@@ -454,10 +454,10 @@ exports.update = (req, res) => {
               new: employee_id,
             };
           }
-          if (currentClientApplication.client_spoc_id !== client_spoc_id) {
-            changes.client_spoc_id = {
-              old: currentClientApplication.client_spoc_id,
-              new: client_spoc_id,
+          if (currentClientApplication.client_spoc !== client_spoc) {
+            changes.client_spoc = {
+              old: currentClientApplication.client_spoc,
+              new: client_spoc,
             };
           }
           if (currentClientApplication.location !== location) {
@@ -509,7 +509,7 @@ exports.update = (req, res) => {
                 {
                   name,
                   employee_id,
-                  client_spoc_id,
+                  client_spoc,
                   location,
                   services,
                   packages: package,

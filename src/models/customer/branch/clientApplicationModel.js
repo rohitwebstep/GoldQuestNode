@@ -115,7 +115,7 @@ const clientApplication = {
     const {
       name,
       employee_id,
-      client_spoc_id,
+      client_spoc,
       location,
       branch_id,
       services,
@@ -164,7 +164,7 @@ const clientApplication = {
             \`application_id\`,
             \`name\`,
             \`employee_id\`,
-            \`client_spoc_id\`,
+            \`client_spoc\`,
             \`location\`,
             \`branch_id\`,
             \`services\`,
@@ -177,7 +177,7 @@ const clientApplication = {
             new_application_id,
             name,
             employee_id,
-            client_spoc_id,
+            client_spoc,
             location,
             branch_id,
             serviceIds,
@@ -209,18 +209,14 @@ const clientApplication = {
       }
       const sqlClient = `
       SELECT 
-        ca.*, 
-        cs.name AS client_spoc_name
+        *
       FROM 
-        \`client_applications\` ca
-      LEFT JOIN 
-        \`client_spocs\` cs 
-      ON 
-        ca.client_spoc_id = cs.id
+        \`client_applications\`
       WHERE 
-        ca.branch_id = ?
+        branch_id = ?
       ORDER BY 
-        ca.created_at DESC`;
+        created_at DESC;
+    `;
 
       connection.query(sqlClient, [branch_id], (err, clientResults) => {
         if (err) {
@@ -417,21 +413,15 @@ const clientApplication = {
           null
         );
       }
-      const {
-        name,
-        employee_id,
-        client_spoc_id,
-        location,
-        services,
-        packages,
-      } = data;
+      const { name, employee_id, client_spoc, location, services, packages } =
+        data;
 
       const sql = `
       UPDATE \`client_applications\`
       SET
         \`name\` = ?,
         \`employee_id\` = ?,
-        \`client_spoc_id\` = ?,
+        \`client_spoc\` = ?,
         \`location\` = ?,
         \`services\` = ?,
         \`package\` = ?
@@ -462,7 +452,7 @@ const clientApplication = {
       const values = [
         name,
         employee_id,
-        client_spoc_id,
+        client_spoc,
         location,
         serviceIds,
         packageIds,
