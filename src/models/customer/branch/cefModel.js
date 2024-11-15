@@ -56,9 +56,9 @@ const cef = {
           if (tableResults[0].count === 0) {
             const createTableSql = `
             CREATE TABLE \`${db_table}\` (
-              \`id\` bigint(20) NOT NULL AUTO_INCREMENT,
-              \`cef_id\` bigint(20) NOT NULL,
-              \`candidate_application_id\` bigint(20) NOT NULL,
+              \`id\` int NOT NULL AUTO_INCREMENT,
+              \`cef_id\` int NOT NULL,
+              \`candidate_application_id\` int NOT NULL,
               \`branch_id\` int(11) NOT NULL,
               \`customer_id\` int(11) NOT NULL,
               \`status\` VARCHAR(100) NOT NULL,
@@ -68,7 +68,7 @@ const cef = {
               KEY \`candidate_application_id\` (\`candidate_application_id\`),
               KEY \`cef_application_customer_id\` (\`customer_id\`),
               KEY \`cef_application_cef_id\` (\`cef_id\`),
-              CONSTRAINT \`fk_${db_table}_candidate_application_id\` FOREIGN KEY (\`candidate_application_id\`) REFERENCES \`client_applications\` (\`id\`) ON DELETE CASCADE,
+              CONSTRAINT \`fk_${db_table}_candidate_application_id\` FOREIGN KEY (\`candidate_application_id\`) REFERENCES \`candidate_applications\` (\`id\`) ON DELETE CASCADE,
               CONSTRAINT \`fk_${db_table}_customer_id\` FOREIGN KEY (\`customer_id\`) REFERENCES \`customers\` (\`id\`) ON DELETE CASCADE,
               CONSTRAINT \`fk_${db_table}_cef_id\` FOREIGN KEY (\`cef_id\`) REFERENCES \`cef_applications\` (\`id\`) ON DELETE CASCADE
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`;
@@ -106,7 +106,12 @@ const cef = {
     });
   },
 
-  getCEFApplicationById: (candidate_application_id, callback) => {
+  getCEFApplicationById: (
+    candidate_application_id,
+    branch_id,
+    customer_id,
+    callback
+  ) => {
     startConnection((err, connection) => {
       if (err) {
         return callback(
@@ -115,15 +120,19 @@ const cef = {
         );
       }
       const sql =
-        "SELECT * FROM `cef_applications` WHERE `candidate_application_id` = ?";
-      connection.query(sql, [candidate_application_id], (queryErr, results) => {
-        connectionRelease(connection);
-        if (queryErr) {
-          console.error("Database query error: 108", queryErr);
-          return callback(queryErr, null);
+        "SELECT * FROM `cef_applications` WHERE `candidate_application_id` = ? AND `branch_id` = ? AND `customer_id` = ?";
+      connection.query(
+        sql,
+        [candidate_application_id, branch_id, customer_id],
+        (queryErr, results) => {
+          connectionRelease(connection);
+          if (queryErr) {
+            console.error("Database query error: 108", queryErr);
+            return callback(queryErr, null);
+          }
+          callback(null, results[0]);
         }
-        callback(null, results[0]);
-      });
+      );
     });
   },
 
@@ -315,9 +324,9 @@ const cef = {
           if (tableResults[0].count === 0) {
             const createTableSql = `
                     CREATE TABLE \`${db_table}\` (
-                        \`id\` bigint(20) NOT NULL AUTO_INCREMENT,
-                        \`cef_id\` bigint(20) NOT NULL,
-                        \`candidate_application_id\` bigint(20) NOT NULL,
+                        \`id\` int NOT NULL AUTO_INCREMENT,
+                        \`cef_id\` int NOT NULL,
+                        \`candidate_application_id\` int NOT NULL,
                         \`branch_id\` int(11) NOT NULL,
                         \`customer_id\` int(11) NOT NULL,
                         \`status\` VARCHAR(100) NOT NULL,

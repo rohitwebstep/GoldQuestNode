@@ -47,7 +47,7 @@ exports.create = (req, res) => {
     });
   }
 
-  Candidate.isEmailUsedBefore(email, (err, emailUsed) => {
+  Candidate.isEmailUsedBefore(email, branch_id, (err, emailUsed) => {
     if (err) {
       return res.status(500).json({
         status: false,
@@ -55,7 +55,7 @@ exports.create = (req, res) => {
         error: err,
       });
     }
-    
+
     if (emailUsed) {
       return res.status(409).json({
         status: false,
@@ -108,8 +108,8 @@ exports.create = (req, res) => {
               employee_id,
               mobile_number,
               email,
-              services,
-              package,
+              services: services || "",
+              package: package || "",
               customer_id,
             },
             (err, result) => {
@@ -159,22 +159,35 @@ exports.create = (req, res) => {
                   const { branch, customer } = emailData;
 
                   // Prepare recipient and CC lists
-                  const toArr = [{ name: branch.name, email: branch.email }];
-                  const ccArr = JSON.parse(customer.emails).map((email) => ({
+
+                  const toArr = [{ name, email }];
+                  let ccArr = [];
+
+                  /*
+                  const toArr = [
+                    { name: branch.name, email: branch.email },
+                    { name, email },
+                  ];
+                  ccArr = JSON.parse(customer.emails).map((email) => ({
                     name: customer.name,
                     email: email.trim(),
                   }));
+                  */
 
                   const serviceIds = services
-                    .split(",")
-                    .map((id) => parseInt(id.trim(), 10));
+                    ? services
+                        .split(",")
+                        .map((id) => parseInt(id.trim(), 10))
+                        .filter(Number.isInteger)
+                    : [];
+
                   const serviceNames = [];
 
                   // Function to fetch service names recursively
                   const fetchServiceNames = (index = 0) => {
                     if (index >= serviceIds.length) {
                       // Once all service names are fetched, get app info
-                      AppModel.appInfo('frontend', (err, appInfo) => {
+                      AppModel.appInfo("frontend", (err, appInfo) => {
                         if (err) {
                           console.error("Database error:", err);
                           return res.status(500).json({
@@ -185,11 +198,12 @@ exports.create = (req, res) => {
                         }
 
                         if (appInfo) {
-                          const appHost = appInfo.host || 'www.goldquestglobal.com';
+                          const appHost =
+                            appInfo.host || "www.goldquestglobal.com";
                           const base64_app_id = btoa(result.insertId);
                           const base64_branch_id = btoa(branch_id);
                           const base64_customer_id = btoa(customer_id);
-                          const base64_link_with_ids = `YXBwX2lk=${base64_app_id}&YnJhbmNoX2lk=${base64_branch_id}&Y3VzdG9tZXJfaWQ==${base64_customer_id};`;
+                          const base64_link_with_ids = `YXBwX2lk=${base64_app_id}&YnJhbmNoX2lk=${base64_branch_id}&Y3VzdG9tZXJfaWQ==${base64_customer_id}`;
 
                           const dav_href = `${appHost}/digital-form?${base64_link_with_ids}`;
                           const bgv_href = `${appHost}/background-form?${base64_link_with_ids}`;
@@ -242,8 +256,8 @@ exports.create = (req, res) => {
                             result.insertId,
                             bgv_href,
                             serviceNames,
-                            toArr,
-                            ccArr
+                            toArr || [],
+                            ccArr || []
                           )
                             .then(() => {
                               return res.status(201).json({
@@ -255,8 +269,8 @@ exports.create = (req, res) => {
                                   package,
                                 },
                                 token: newToken,
-                                toArr,
-                                ccArr,
+                                toArr: toArr || [],
+                                ccArr: ccArr || [],
                               });
                             })
                             .catch((emailError) => {
@@ -530,8 +544,8 @@ exports.update = (req, res) => {
                   employee_id,
                   mobile_number,
                   email,
-                  services,
-                  package,
+                  services: services || "",
+                  package: package || "",
                 },
                 candidate_application_id,
                 (err, result) => {

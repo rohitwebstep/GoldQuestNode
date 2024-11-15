@@ -87,7 +87,7 @@ const Branch = {
             application_id: app.application_id,
             created_at: app.created_at,
             cmtApplicationId: app.cmt_id,
-            cmtOtherFields: app.other_fields,  // Adjust based on actual field names from cmt
+            cmtOtherFields: app.other_fields, // Adjust based on actual field names from cmt
           });
 
           grouped[app.status].applicationCount += 1;
@@ -116,7 +116,7 @@ const Branch = {
           \`customer_id\`, \`name\`, \`email\`, \`is_head\`, \`password\`, \`permissions\`, \`mobile_number\`
         ) VALUES (?, ?, ?, ?, MD5(?), ?, ?)
       `;
-      const permissions = `{"index": {"view": true},"client_application": {"create": true,"update": true,"view": true,"delete": true},"candidate_application": {"create": true,"update": true,"view": true,"delete": true}}`;
+      const permissions = `{"index": { "view": true },"client_application": {"create": true,"update": true,"view": true,"delete": true},"candidate_application": {"create": true,"update": true,"view": true,"delete": true},"customer_info": {"view": true}}`;
       const valuesBranch = [
         BranchData.customer_id,
         BranchData.name,

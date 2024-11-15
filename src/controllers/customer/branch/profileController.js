@@ -37,51 +37,55 @@ exports.index = (req, res) => {
     }
 
     // Step 2: Verify the branch token
-    BranchCommon.isBranchTokenValid(_token, branch_id, (tokenErr, tokenResult) => {
-      if (tokenErr) {
-        console.error("Error checking token validity:", tokenErr);
-        return res.status(500).json({
-          status: false,
-          message: tokenErr,
-        });
-      }
-
-      if (!tokenResult.status) {
-        return res.status(401).json({
-          status: false,
-          message: tokenResult.message,
-        });
-      }
-
-      const newToken = tokenResult.newToken;
-
-      // Step 3: Fetch client applications from database
-      Branch.index(branch_id, (dbErr, clientApplications) => {
-        if (dbErr) {
-          console.error("Database error:", dbErr);
+    BranchCommon.isBranchTokenValid(
+      _token,
+      branch_id,
+      (tokenErr, tokenResult) => {
+        if (tokenErr) {
+          console.error("Error checking token validity:", tokenErr);
           return res.status(500).json({
             status: false,
-            message: "An error occurred while fetching client applications.",
-            token: newToken,
+            message: tokenErr,
           });
         }
 
-        // Calculate total application count
-        const totalApplicationCount = clientApplications
-          ? Object.values(clientApplications).reduce((total, statusGroup) => {
-            return total + statusGroup.applicationCount;
-          }, 0)
-          : 0;
+        if (!tokenResult.status) {
+          return res.status(401).json({
+            status: false,
+            message: tokenResult.message,
+          });
+        }
 
-        return res.status(200).json({
-          status: true,
-          message: "Client applications fetched successfully.",
-          clientApplications,
-          totalApplicationCount,
-          token: newToken,
+        const newToken = tokenResult.newToken;
+
+        // Step 3: Fetch client applications from database
+        Branch.index(branch_id, (dbErr, clientApplications) => {
+          if (dbErr) {
+            console.error("Database error:", dbErr);
+            return res.status(500).json({
+              status: false,
+              message: "An error occurred while fetching client applications.",
+              token: newToken,
+            });
+          }
+
+          // Calculate total application count
+          const totalApplicationCount = clientApplications
+            ? Object.values(clientApplications).reduce((total, statusGroup) => {
+                return total + statusGroup.applicationCount;
+              }, 0)
+            : 0;
+
+          return res.status(200).json({
+            status: true,
+            message: "Client applications fetched successfully.",
+            clientApplications,
+            totalApplicationCount,
+            token: newToken,
+          });
         });
-      });
-    });
+      }
+    );
   });
 };
 
@@ -551,7 +555,7 @@ exports.update = (req, res) => {
                 "0",
                 JSON.stringify({ id, ...changes }),
                 err,
-                () => { }
+                () => {}
               );
               return res.status(500).json({
                 status: false,
@@ -567,7 +571,7 @@ exports.update = (req, res) => {
               "1",
               JSON.stringify({ id, ...changes }),
               null,
-              () => { }
+              () => {}
             );
 
             res.status(200).json({
@@ -677,7 +681,7 @@ exports.active = (req, res) => {
                 "0",
                 JSON.stringify({ branch_id, ...changes }),
                 err,
-                () => { }
+                () => {}
               );
               return res.status(500).json({
                 status: false,
@@ -693,7 +697,7 @@ exports.active = (req, res) => {
               "1",
               JSON.stringify({ branch_id, ...changes }),
               null,
-              () => { }
+              () => {}
             );
 
             res.status(200).json({
@@ -803,7 +807,7 @@ exports.inactive = (req, res) => {
                 "0",
                 JSON.stringify({ branch_id, ...changes }),
                 err,
-                () => { }
+                () => {}
               );
               return res.status(500).json({
                 status: false,
@@ -819,7 +823,7 @@ exports.inactive = (req, res) => {
               "1",
               JSON.stringify({ branch_id, ...changes }),
               null,
-              () => { }
+              () => {}
             );
 
             res.status(200).json({
@@ -923,7 +927,7 @@ exports.delete = (req, res) => {
                 "0",
                 JSON.stringify({ id }),
                 err,
-                () => { }
+                () => {}
               );
               return res.status(500).json({
                 status: false,
@@ -939,7 +943,7 @@ exports.delete = (req, res) => {
               "1",
               JSON.stringify({ id }),
               null,
-              () => { }
+              () => {}
             );
 
             res.status(200).json({

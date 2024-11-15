@@ -60,6 +60,7 @@ const Customer = {
             SELECT 
                 customers.client_unique_id,
                 customers.name,
+                customer_metas.tat_days,
                 customer_metas.single_point_of_contact,
                 customers.id AS main_id,
                 COALESCE(branch_counts.branch_count, 0) AS branch_count,
@@ -119,6 +120,7 @@ const Customer = {
           SELECT 
               customers.client_unique_id,
               customers.name,
+              customer_metas.tat_days,
               customer_metas.single_point_of_contact,
               customers.id AS main_id,
               COALESCE(branch_counts.branch_count, 0) AS branch_count,
@@ -215,23 +217,41 @@ const Customer = {
         return callback(err, null);
       }
 
-      // Base SQL query with mandatory condition for closed status
-      let sql = `SELECT * FROM \`client_applications\` WHERE \`branch_id\` = ?`;
+      // Base SQL query with JOINs to fetch client_spoc_name and cmt_applications data if it exists
+      let sql = `
+        SELECT 
+          ca.*, 
+          ca.id AS main_id, 
+          cs.name AS client_spoc_name,
+          cmt.*
+        FROM 
+          \`client_applications\` ca
+        LEFT JOIN 
+          \`client_spocs\` cs 
+        ON 
+          ca.client_spoc_id = cs.id
+        LEFT JOIN 
+          \`cmt_applications\` cmt 
+        ON 
+          ca.id = cmt.client_application_id
+        WHERE 
+          ca.\`branch_id\` = ?`;
+
       const params = [branch_id]; // Start with branch_id
 
       // Check if filter_status is provided
-      if (filter_status && filter_status !== null && filter_status !== "") {
-        sql += ` AND \`status\` = ?`; // Add filter for filter_status
+      if (filter_status && filter_status.trim() !== "") {
+        sql += ` AND ca.\`status\` = ?`; // Add filter for filter_status
         params.push(filter_status);
       }
 
       // Check if status is provided and add the corresponding condition
       if (typeof status === "string" && status.trim() !== "") {
-        sql += ` AND \`status\` = ?`; // Add filter for status
+        sql += ` AND ca.\`status\` = ?`; // Add filter for status
         params.push(status);
       }
 
-      sql += ` ORDER BY \`created_at\` DESC;`;
+      sql += ` ORDER BY ca.\`created_at\` DESC;`;
 
       // Execute the query using the connection
       connection.query(sql, params, (err, results) => {
@@ -925,14 +945,14 @@ const Customer = {
             }
 
             const existingColumns = results.map((row) => row.COLUMN_NAME);
-            const expectedColumns = [db_column]; // Add more expected columns as needed
+            const expectedColumns = [db_column];
             const missingColumns = expectedColumns.filter(
               (column) => !existingColumns.includes(column)
             );
 
             const addColumnPromises = missingColumns.map((column) => {
               return new Promise((resolve, reject) => {
-                const alterTableSql = `ALTER TABLE \`${db_table}\` ADD COLUMN \`${column}\` VARCHAR(255)`;
+                const alterTableSql = `ALTER TABLE \`${db_table}\` ADD COLUMN \`${column}\` LONGTEXT`;
                 connection.query(alterTableSql, (alterErr) => {
                   if (alterErr) {
                     reject(alterErr);
@@ -946,40 +966,27 @@ const Customer = {
             Promise.all(addColumnPromises)
               .then(() => {
                 const insertSql = `UPDATE \`${db_table}\` SET \`${db_column}\` = ? WHERE \`client_application_id\` = ?`;
-                const promises = savedImagePaths.map((imagePath) => {
-                  return new Promise((resolve, reject) => {
-                    connection.query(
-                      insertSql,
-                      [imagePath, client_application_id],
-                      (insertErr) => {
-                        if (insertErr) {
-                          reject(insertErr);
-                        } else {
-                          resolve();
-                        }
-                      }
-                    );
-                  });
-                });
+                const joinedPaths = savedImagePaths.join(", ");
+                console.log(insertSql, [joinedPaths, client_application_id]);
+                connection.query(
+                  insertSql,
+                  [joinedPaths, client_application_id],
+                  (queryErr, results) => {
+                    connectionRelease(connection);
 
-                Promise.all(promises)
-                  .then(() => {
-                    connectionRelease(connection); // Release connection after all operations are done
-                    callback(true, {
-                      message: "Images uploaded successfully.",
-                    });
-                  })
-                  .catch((insertErr) => {
-                    connectionRelease(connection); // Ensure connection is released on error
-                    console.error("Error inserting images:", insertErr);
-                    callback(false, {
-                      error: "Error inserting images.",
-                      details: insertErr,
-                    });
-                  });
+                    if (queryErr) {
+                      console.error("Error updating records:", queryErr);
+                      return callback(false, {
+                        error: "Error updating records.",
+                        details: queryErr,
+                      });
+                    }
+                    callback(true, results);
+                  }
+                );
               })
               .catch((columnErr) => {
-                connectionRelease(connection); // Ensure connection is released on error
+                connectionRelease(connection);
                 console.error("Error adding columns:", columnErr);
                 callback(false, {
                   error: "Error adding columns.",

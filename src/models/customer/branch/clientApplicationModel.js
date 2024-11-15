@@ -115,24 +115,32 @@ const clientApplication = {
     const {
       name,
       employee_id,
-      spoc,
+      client_spoc_id,
       location,
-      batch_number,
-      sub_client,
       branch_id,
       services,
-      package,
+      packages,
       customer_id,
     } = data;
 
     const serviceIds =
-      Array.isArray(services) && services.length > 0
+      typeof services === "string" && services.trim() !== ""
+        ? services
+            .split(",")
+            .map((id) => id.trim())
+            .join(",")
+        : Array.isArray(services) && services.length > 0
         ? services.map((id) => id.trim()).join(",")
         : "";
 
     const packageIds =
-      Array.isArray(package) && package.length > 0
-        ? package.map((id) => id.trim()).join(",")
+      typeof packages === "string" && packages.trim() !== ""
+        ? packages
+            .split(",")
+            .map((id) => id.trim())
+            .join(",")
+        : Array.isArray(packages) && packages.length > 0
+        ? packages.map((id) => id.trim()).join(",")
         : "";
 
     // Generate a new application ID
@@ -156,25 +164,21 @@ const clientApplication = {
             \`application_id\`,
             \`name\`,
             \`employee_id\`,
-            \`spoc\`,
+            \`client_spoc_id\`,
             \`location\`,
-            \`batch_number\`,
-            \`sub_client\`,
             \`branch_id\`,
             \`services\`,
             \`package\`,
             \`customer_id\`
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
 
           const values = [
             new_application_id,
             name,
             employee_id,
-            spoc,
+            client_spoc_id,
             location,
-            batch_number,
-            sub_client,
             branch_id,
             serviceIds,
             packageIds,
@@ -203,8 +207,20 @@ const clientApplication = {
           null
         );
       }
-      const sqlClient =
-        "SELECT * FROM client_applications WHERE branch_id = ? ORDER BY created_at DESC";
+      const sqlClient = `
+      SELECT 
+        ca.*, 
+        cs.name AS client_spoc_name
+      FROM 
+        \`client_applications\` ca
+      LEFT JOIN 
+        \`client_spocs\` cs 
+      ON 
+        ca.client_spoc_id = cs.id
+      WHERE 
+        ca.branch_id = ?
+      ORDER BY 
+        ca.created_at DESC`;
 
       connection.query(sqlClient, [branch_id], (err, clientResults) => {
         if (err) {
@@ -360,9 +376,9 @@ const clientApplication = {
       SET ${db_column} = ?
       WHERE id = ?
     `;
-
+      const joinedPaths = savedImagePaths.join(", ");
       // Prepare the parameters for the query
-      const queryParams = [savedImagePaths, client_application_id];
+      const queryParams = [joinedPaths, client_application_id];
 
       connection.query(sqlUpdateCustomer, queryParams, (err, results) => {
         connectionRelease(connection); // Ensure the connection is released
@@ -404,12 +420,10 @@ const clientApplication = {
       const {
         name,
         employee_id,
-        spoc,
+        client_spoc_id,
         location,
-        batch_number,
-        sub_client,
         services,
-        package,
+        packages,
       } = data;
 
       const sql = `
@@ -417,25 +431,41 @@ const clientApplication = {
       SET
         \`name\` = ?,
         \`employee_id\` = ?,
-        \`spoc\` = ?,
+        \`client_spoc_id\` = ?,
         \`location\` = ?,
-        \`batch_number\` = ?,
-        \`sub_client\` = ?,
         \`services\` = ?,
         \`package\` = ?
       WHERE
         \`id\` = ?
     `;
 
+      const serviceIds =
+        typeof services === "string" && services.trim() !== ""
+          ? services
+              .split(",")
+              .map((id) => id.trim())
+              .join(",")
+          : Array.isArray(services) && services.length > 0
+          ? services.map((id) => id.trim()).join(",")
+          : "";
+
+      const packageIds =
+        typeof packages === "string" && packages.trim() !== ""
+          ? packages
+              .split(",")
+              .map((id) => id.trim())
+              .join(",")
+          : Array.isArray(packages) && packages.length > 0
+          ? packages.map((id) => id.trim()).join(",")
+          : "";
+
       const values = [
         name,
         employee_id,
-        spoc,
+        client_spoc_id,
         location,
-        batch_number,
-        sub_client,
-        services,
-        package,
+        serviceIds,
+        packageIds,
         client_application_id,
       ];
 

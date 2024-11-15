@@ -1742,6 +1742,7 @@ exports.upload = async (req, res) => {
       dbColumn,
     };
 
+    const cleanDBColumn = dbColumn.replace("[", "").replace("]", "");
     // Check for missing fields
     const missingFields = Object.keys(requiredFields)
       .filter(
@@ -1816,7 +1817,7 @@ exports.upload = async (req, res) => {
         ClientMasterTrackerModel.upload(
           appId,
           dbTable,
-          dbColumn,
+          cleanDBColumn,
           savedImagePaths,
           (success, result) => {
             if (!success) {

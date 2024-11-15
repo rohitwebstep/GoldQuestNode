@@ -3,13 +3,24 @@ const Common = require("../../models/admin/commonModel");
 
 // Controller to create a new service
 exports.create = (req, res) => {
-  const { title, description, admin_id, _token } = req.body;
+  const {
+    title,
+    description,
+    group_id,
+    short_code,
+    sac_code,
+    admin_id,
+    _token,
+  } = req.body;
 
   let missingFields = [];
-  if (!title || title === '') missingFields.push("Title");
-  if (!description || description === '') missingFields.push("Description");
-  if (!admin_id || description === '') missingFields.push("Admin ID");
-  if (!_token || _token === '') missingFields.push("Token");
+  if (!title || title === "") missingFields.push("Title");
+  if (!description || description === "") missingFields.push("Description");
+  if (!group_id || group_id === "") missingFields.push("Group ID");
+  if (!short_code || short_code === "") missingFields.push("Short Code");
+  if (!sac_code || sac_code === "") missingFields.push("SAC Code");
+  if (!admin_id || description === "") missingFields.push("Admin ID");
+  if (!_token || _token === "") missingFields.push("Token");
 
   if (missingFields.length > 0) {
     return res.status(400).json({
@@ -40,40 +51,48 @@ exports.create = (req, res) => {
 
       const newToken = result.newToken;
 
-      Service.create(title, description, admin_id, (err, result) => {
-        if (err) {
-          console.error("Database error:", err);
+      Service.create(
+        title,
+        description,
+        group_id,
+        short_code,
+        sac_code,
+        admin_id,
+        (err, result) => {
+          if (err) {
+            console.error("Database error:", err);
+            Common.adminActivityLog(
+              admin_id,
+              "Service",
+              "Create",
+              "0",
+              null,
+              err,
+              () => {}
+            );
+            return res
+              .status(500)
+              .json({ status: false, message: err.message, token: newToken });
+          }
+
           Common.adminActivityLog(
             admin_id,
             "Service",
             "Create",
-            "0",
+            "1",
+            `{id: ${result.insertId}}`,
             null,
-            err,
             () => {}
           );
-          return res
-            .status(500)
-            .json({ status: false, message: err.message, token: newToken });
+
+          res.json({
+            status: true,
+            message: "Service created successfully",
+            service: result,
+            token: newToken,
+          });
         }
-
-        Common.adminActivityLog(
-          admin_id,
-          "Service",
-          "Create",
-          "1",
-          `{id: ${result.insertId}}`,
-          null,
-          () => {}
-        );
-
-        res.json({
-          status: true,
-          message: "Service created successfully",
-          service: result,
-          token: newToken,
-        });
-      });
+      );
     });
   });
 };
@@ -83,8 +102,8 @@ exports.list = (req, res) => {
   const { admin_id, _token } = req.query;
 
   let missingFields = [];
-  if (!admin_id || admin_id === '') missingFields.push("Admin ID");
-  if (!_token || _token === '') missingFields.push("Token");
+  if (!admin_id || admin_id === "") missingFields.push("Admin ID");
+  if (!_token || _token === "") missingFields.push("Token");
 
   if (missingFields.length > 0) {
     return res.status(400).json({
@@ -135,9 +154,9 @@ exports.list = (req, res) => {
 exports.getServiceById = (req, res) => {
   const { id, admin_id, _token } = req.query;
   let missingFields = [];
-  if (!id || id === '') missingFields.push("Service ID");
-  if (!admin_id || admin_id === '') missingFields.push("Admin ID");
-  if (!_token || _token === '') missingFields.push("Token");
+  if (!id || id === "") missingFields.push("Service ID");
+  if (!admin_id || admin_id === "") missingFields.push("Admin ID");
+  if (!_token || _token === "") missingFields.push("Token");
 
   if (missingFields.length > 0) {
     return res.status(400).json({
@@ -196,14 +215,26 @@ exports.getServiceById = (req, res) => {
 
 // Controller to update a service
 exports.update = (req, res) => {
-  const { id, title, description, admin_id, _token } = req.body;
+  const {
+    id,
+    title,
+    description,
+    group_id,
+    short_code,
+    sac_code,
+    admin_id,
+    _token,
+  } = req.body;
 
   let missingFields = [];
-  if (!id || id === '') missingFields.push("Service ID");
-  if (!title || title === '') missingFields.push("Title");
-  if (!description || description === '') missingFields.push("Description");
-  if (!admin_id || admin_id === '') missingFields.push("Admin ID");
-  if (!_token || _token === '') missingFields.push("Token");
+  if (!id || id === "") missingFields.push("Service ID");
+  if (!title || title === "") missingFields.push("Title");
+  if (!description || description === "") missingFields.push("Description");
+  if (!group_id || group_id === "") missingFields.push("Group ID");
+  if (!short_code || short_code === "") missingFields.push("Short Code");
+  if (!sac_code || sac_code === "") missingFields.push("SAC Code");
+  if (!admin_id || admin_id === "") missingFields.push("Admin ID");
+  if (!_token || _token === "") missingFields.push("Token");
 
   if (missingFields.length > 0) {
     return res.status(400).json({
@@ -256,40 +287,48 @@ exports.update = (req, res) => {
           };
         }
 
-        Service.update(id, title, description, (err, result) => {
-          if (err) {
-            console.error("Database error:", err);
+        Service.update(
+          id,
+          title,
+          description,
+          group_id,
+          short_code,
+          sac_code,
+          (err, result) => {
+            if (err) {
+              console.error("Database error:", err);
+              Common.adminActivityLog(
+                admin_id,
+                "Service",
+                "Update",
+                "0",
+                JSON.stringify({ id, ...changes }),
+                err,
+                () => {}
+              );
+              return res
+                .status(500)
+                .json({ status: false, message: err.message, token: newToken });
+            }
+
             Common.adminActivityLog(
               admin_id,
               "Service",
               "Update",
-              "0",
+              "1",
               JSON.stringify({ id, ...changes }),
-              err,
+              null,
               () => {}
             );
-            return res
-              .status(500)
-              .json({ status: false, message: err.message, token: newToken });
+
+            res.json({
+              status: true,
+              message: "Service updated successfully",
+              service: result,
+              token: newToken,
+            });
           }
-
-          Common.adminActivityLog(
-            admin_id,
-            "Service",
-            "Update",
-            "1",
-            JSON.stringify({ id, ...changes }),
-            null,
-            () => {}
-          );
-
-          res.json({
-            status: true,
-            message: "Service updated successfully",
-            service: result,
-            token: newToken,
-          });
-        });
+        );
       });
     });
   });
@@ -300,9 +339,9 @@ exports.delete = (req, res) => {
   const { id, admin_id, _token } = req.query;
 
   let missingFields = [];
-  if (!id || id === '') missingFields.push("Service ID");
-  if (!admin_id || admin_id === '') missingFields.push("Admin ID");
-  if (!_token || _token === '') missingFields.push("Token");
+  if (!id || id === "") missingFields.push("Service ID");
+  if (!admin_id || admin_id === "") missingFields.push("Admin ID");
+  if (!_token || _token === "") missingFields.push("Token");
 
   if (missingFields.length > 0) {
     return res.status(400).json({

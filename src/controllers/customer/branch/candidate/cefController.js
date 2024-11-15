@@ -37,14 +37,14 @@ exports.formJson = (req, res) => {
 };
 
 exports.isApplicationExist = (req, res) => {
-  const { app_id, branch_id, customer_id } = req.query;
+  const { candidate_application_id, branch_id, customer_id } = req.query;
 
   let missingFields = [];
   if (
-    !app_id ||
-    app_id === "" ||
-    app_id === undefined ||
-    app_id === "undefined"
+    !candidate_application_id ||
+    candidate_application_id === "" ||
+    candidate_application_id === undefined ||
+    candidate_application_id === "undefined"
   ) {
     missingFields.push("Application ID");
   }
@@ -75,10 +75,10 @@ exports.isApplicationExist = (req, res) => {
   }
 
   Candidate.isApplicationExist(
-    app_id,
+    candidate_application_id,
     branch_id,
     customer_id,
-    (err, exists) => {
+    (err, currentCandidateApplication) => {
       if (err) {
         console.error("Database error:", err);
         return res.status(500).json({
@@ -87,34 +87,41 @@ exports.isApplicationExist = (req, res) => {
         });
       }
 
-      if (exists) {
-        CEF.getCEFApplicationById(app_id, (err, currentCEFApplication) => {
-          if (err) {
-            console.error(
-              "Database error during CEF application retrieval:",
-              err
-            );
-            return res.status(500).json({
-              status: false,
-              message: "Failed to retrieve CEF Application. Please try again.",
+      if (currentCandidateApplication) {
+        CEF.getCEFApplicationById(
+          candidate_application_id,
+          branch_id,
+          customer_id,
+          (err, currentCEFApplication) => {
+            if (err) {
+              console.error(
+                "Database error during CEF application retrieval:",
+                err
+              );
+              return res.status(500).json({
+                status: false,
+                message:
+                  "Failed to retrieve CEF Application. Please try again.",
+              });
+            }
+
+            if (
+              currentCEFApplication &&
+              Object.keys(currentCEFApplication).length > 0
+            ) {
+              return res.status(400).json({
+                status: false,
+                message: "An application has already been submitted.",
+              });
+            }
+
+            return res.status(200).json({
+              status: true,
+              data: currentCandidateApplication,
+              message: "Application exists.",
             });
           }
-
-          if (
-            currentCEFApplication &&
-            Object.keys(currentCEFApplication).length > 0
-          ) {
-            return res.status(400).json({
-              status: false,
-              message: "An application has already been submitted.",
-            });
-          }
-
-          return res.status(200).json({
-            status: true,
-            message: "Application exists.",
-          });
-        });
+        );
       } else {
         return res.status(404).json({
           status: false,
@@ -157,7 +164,7 @@ exports.submit = (req, res) => {
     application_id,
     branch_id,
     customer_id,
-    (err, exists) => {
+    (err, currentCandidateApplication) => {
       if (err) {
         console.error("Database error:", err);
         return res.status(500).json({
@@ -166,7 +173,7 @@ exports.submit = (req, res) => {
         });
       }
 
-      if (!exists) {
+      if (!currentCandidateApplication) {
         return res.status(404).json({
           status: false,
           message: "Application does not exist.",
@@ -213,6 +220,8 @@ exports.submit = (req, res) => {
           // Check if CEF application exists
           CEF.getCEFApplicationById(
             application_id,
+            branch_id,
+            customer_id,
             (err, currentCEFApplication) => {
               if (err) {
                 console.error(

@@ -72,6 +72,73 @@ const areEmailsUsed = (emails) => {
   });
 };
 
+exports.servicesPackagesData = (req, res) => {
+  const { admin_id, _token } = req.query;
+
+  let missingFields = [];
+  if (!admin_id || admin_id === "") missingFields.push("Admin ID");
+  if (!_token || _token === "") missingFields.push("Token");
+
+  if (missingFields.length > 0) {
+    return res.status(400).json({
+      status: false,
+      message: `Missing required fields: ${missingFields.join(", ")}`,
+    });
+  }
+
+  const action = JSON.stringify({ service: "view" });
+  AdminCommon.isAdminAuthorizedForAction(admin_id, action, (result) => {
+    if (!result.status) {
+      return res.status(403).json({
+        status: false,
+        message: result.message, // Return the message from the authorization function
+      });
+    }
+
+    // Verify admin token
+    AdminCommon.isAdminTokenValid(_token, admin_id, (err, result) => {
+      if (err) {
+        console.error("Error checking token validity:", err);
+        return res.status(500).json({ status: false, message: err.message });
+      }
+
+      if (!result.status) {
+        return res.status(401).json({ status: false, message: result.message });
+      }
+
+      const newToken = result.newToken;
+
+      Customer.servicesPackagesData((err, result) => {
+        if (err) {
+          console.error("Database error:", err);
+          return res.status(500).json({
+            status: false,
+            message: "Internal server error while fetching data.",
+            error: err.message, // Provide more specific error message
+            token: newToken, // Send back the new token in case the session is refreshed
+          });
+        }
+
+        if (!result || result.length === 0) {
+          return res.status(404).json({
+            status: false,
+            message: "No data found.",
+            token: newToken, // Ensure the token is still included
+          });
+        }
+
+        res.json({
+          status: true,
+          message: "Services packages fetched successfully.",
+          data: result, // Customer data or services packages based on what 'result' contains
+          totalResults: result.length,
+          token: newToken, // Return the new token in the response
+        });
+      });
+    });
+  });
+};
+
 exports.create = (req, res) => {
   const {
     admin_id,
@@ -84,19 +151,21 @@ exports.create = (req, res) => {
     username,
     branches,
     state_code,
-    clientData,
-    client_spoc,
     client_code,
     company_name,
     mobile_number,
-    contact_person,
+    custom_address,
     date_agreement,
+    client_spoc_id,
     client_standard,
+    custom_template,
+    scopeOfServices,
+    billing_spoc_id,
     additional_login,
     agreement_period,
-    name_of_escalation,
-    custom_template,
-    custom_address,
+    authorized_detail_id,
+    billing_escalation_id,
+    escalation_manager_id,
     send_mail,
   } = req.body;
 
@@ -111,18 +180,20 @@ exports.create = (req, res) => {
     address,
     branches,
     state_code,
-    clientData,
-    client_spoc,
     client_code,
     company_name,
     mobile_number,
-    contact_person,
     date_agreement,
+    client_spoc_id,
+    scopeOfServices,
     client_standard,
+    custom_template,
+    billing_spoc_id,
     additional_login,
     agreement_period,
-    name_of_escalation,
-    custom_template,
+    authorized_detail_id,
+    billing_escalation_id,
+    escalation_manager_id,
   };
 
   let additional_login_int = 0;
@@ -240,7 +311,7 @@ exports.create = (req, res) => {
                 profile_picture: null,
                 emails_json: JSON.stringify(emails),
                 mobile_number,
-                services: JSON.stringify(clientData),
+                services: JSON.stringify(scopeOfServices),
                 additional_login: additional_login_int,
                 username:
                   additional_login && additional_login.toLowerCase() === "yes"
@@ -272,9 +343,11 @@ exports.create = (req, res) => {
                   {
                     customer_id: customerId,
                     address,
-                    contact_person_name: contact_person,
-                    escalation_point_contact: name_of_escalation,
-                    single_point_of_contact: client_spoc,
+                    client_spoc_id,
+                    escalation_manager_id,
+                    billing_spoc_id,
+                    billing_escalation_id,
+                    authorized_detail_id,
                     gst_number: gstin,
                     tat_days: tat,
                     agreement_date: date_agreement,
@@ -286,7 +359,6 @@ exports.create = (req, res) => {
                         : null,
                     state,
                     state_code,
-                    payment_contact_person: null,
                     client_standard,
                   },
                   (err, metaResult) => {
@@ -651,9 +723,9 @@ exports.upload = async (req, res) => {
           let targetDir;
           let db_column;
           switch (upload_category) {
-            case "custom_logo":
+            case "logo":
               targetDir = `uploads/customer/${customer_code}/logo`;
-              db_column = `custom_logo`;
+              db_column = `logo`;
               break;
             case "agr_upload":
               targetDir = `uploads/customer/${customer_code}/agreement`;
@@ -1000,26 +1072,28 @@ exports.update = (req, res) => {
     admin_id,
     _token,
     customer_id,
-    tat,
+    name,
     state,
-    gstin,
+    mobile,
     emails,
     address,
     username,
-    state_code,
+    tat_days,
     services,
-    client_spoc,
-    client_code,
-    company_name,
-    mobile_number,
-    contact_person,
-    date_agreement,
-    client_standard,
-    additional_login,
-    agreement_period,
-    name_of_escalation,
-    custom_template,
+    state_code,
+    gst_number,
     custom_address,
+    agreement_date,
+    client_spoc_id,
+    client_standard,
+    custom_template,
+    billing_spoc_id,
+    additional_login,
+    client_unique_id,
+    agreement_duration,
+    authorized_detail_id,
+    escalation_manager_id,
+    billing_escalation_id,
   } = req.body;
 
   // Define required fields
@@ -1027,23 +1101,26 @@ exports.update = (req, res) => {
     admin_id,
     _token,
     customer_id,
-    tat,
+    name,
     state,
-    gstin,
+    mobile,
     emails,
     address,
+    services,
+    tat_days,
     state_code,
-    client_spoc,
-    client_code,
-    company_name,
-    mobile_number,
-    contact_person,
-    date_agreement,
+    gst_number,
+    client_unique_id,
+    client_spoc_id,
+    agreement_date,
+    billing_spoc_id,
+    custom_template,
     client_standard,
     additional_login,
-    agreement_period,
-    name_of_escalation,
-    custom_template,
+    agreement_duration,
+    authorized_detail_id,
+    escalation_manager_id,
+    billing_escalation_id,
   };
 
   let additional_login_int = 0;
@@ -1067,7 +1144,6 @@ exports.update = (req, res) => {
       message: `Missing required fields: ${missingFields.join(", ")}`,
     });
   }
-  const clientData = services;
 
   const action = JSON.stringify({ customer: "update" });
 
@@ -1119,15 +1195,14 @@ exports.update = (req, res) => {
           }
         };
 
-        compareAndAddChanges("name", company_name);
+        compareAndAddChanges("name", name);
         compareAndAddChanges("emails_json", JSON.stringify(emails));
-        compareAndAddChanges("client_unique_id", client_code);
         compareAndAddChanges("additional_login", additional_login_int);
         if (additional_login && additional_login.toLowerCase() === "yes") {
           compareAndAddChanges("username", username);
         }
-        compareAndAddChanges("mobile", mobile_number);
-        compareAndAddChanges("services", JSON.stringify(clientData));
+        compareAndAddChanges("mobile", mobile);
+        compareAndAddChanges("services", services);
 
         Customer.getCustomerMetaById(
           customer_id,
@@ -1146,35 +1221,34 @@ exports.update = (req, res) => {
 
             if (currentCustomerMeta) {
               compareAndAddChanges("address", address);
-              compareAndAddChanges("contact_person_name", contact_person);
+              compareAndAddChanges("client_spoc_id", client_spoc_id);
               compareAndAddChanges(
-                "escalation_point_contact",
-                name_of_escalation
+                "escalation_manager_id",
+                escalation_manager_id
               );
-              compareAndAddChanges("single_point_of_contact", client_spoc);
-              compareAndAddChanges("gst_number", gstin);
-              compareAndAddChanges("tat_days", tat);
-              compareAndAddChanges("agreement_date", date_agreement);
+              compareAndAddChanges("billing_spoc_id", billing_spoc_id);
+              compareAndAddChanges(
+                "billing_escalation_id",
+                billing_escalation_id
+              );
+              compareAndAddChanges(
+                "authorized_detail_id",
+                authorized_detail_id
+              );
+              compareAndAddChanges("gst_number", gst_number);
+              compareAndAddChanges("tat_days", tat_days);
+              compareAndAddChanges("agreement_date", agreement_date);
               compareAndAddChanges("client_standard", client_standard);
-              compareAndAddChanges("agreement_duration", agreement_period);
+              compareAndAddChanges("agreement_duration", agreement_duration);
               compareAndAddChanges("custom_template", custom_template);
-              if (custom_template && custom_template.toLowerCase() === "yes") {
-                compareAndAddChanges("custom_address", custom_address);
-              }
               compareAndAddChanges("state", state);
               compareAndAddChanges("state_code", state_code);
-              if (currentCustomerMeta.payment_contact_person !== null) {
-                changes.payment_contact_person = {
-                  old: currentCustomerMeta.payment_contact_person,
-                  new: null,
-                };
-              }
             }
 
-            if (client_code !== currentCustomer.client_code) {
+            if (client_unique_id !== currentCustomer.client_unique_id) {
               Customer.checkUniqueIdForUpdate(
                 customer_id,
-                client_code,
+                client_unique_id,
                 (err, exists) => {
                   if (err) {
                     console.error("Error checking unique ID:", err);
@@ -1188,7 +1262,7 @@ exports.update = (req, res) => {
                   if (exists) {
                     return res.status(400).json({
                       status: false,
-                      message: `Client Unique ID '${client_code}' already exists.`,
+                      message: `Client Unique ID '${client_unique_id}' already exists.`,
                       token: newToken,
                     });
                   }
@@ -1240,13 +1314,15 @@ exports.update = (req, res) => {
                 customer_id,
                 {
                   admin_id,
-                  client_unique_id: client_code,
-                  name: company_name,
+                  name,
                   address,
                   profile_picture: currentCustomer.profile_picture,
-                  emails_json: emails,
-                  mobile: mobile_number,
-                  services: JSON.stringify(clientData),
+                  emails_json: JSON.stringify(emails),
+                  mobile,
+                  services:
+                    typeof services === "string"
+                      ? JSON.parse(services)
+                      : services,
                   additional_login: additional_login_int,
                   username:
                     additional_login && additional_login.toLowerCase() === "yes"
@@ -1277,13 +1353,15 @@ exports.update = (req, res) => {
                       customer_id,
                       {
                         address,
-                        contact_person_name: contact_person,
-                        escalation_point_contact: name_of_escalation,
-                        single_point_of_contact: client_spoc,
-                        gst_number: gstin,
-                        tat_days: tat,
-                        agreement_date: date_agreement,
-                        agreement_duration: agreement_period,
+                        client_spoc_id,
+                        escalation_manager_id,
+                        billing_spoc_id,
+                        billing_escalation_id,
+                        authorized_detail_id,
+                        gst_number,
+                        tat_days,
+                        agreement_date,
+                        agreement_duration,
                         custom_template:
                           custom_template &&
                           custom_template.toLowerCase() === "yes"
@@ -1296,7 +1374,6 @@ exports.update = (req, res) => {
                             : null,
                         state,
                         state_code,
-                        payment_contact_person: null,
                         client_standard,
                       },
                       (err, metaResult) => {
@@ -1314,10 +1391,10 @@ exports.update = (req, res) => {
                         }
 
                         if (metaResult) {
-                          const headBranchEmail = JSON.parse(emails)[0];
+                          const headBranchEmail = emails[0];
                           Branch.updateHeadBranchEmail(
                             customer_id,
-                            company_name,
+                            name,
                             headBranchEmail,
                             (err, headBranchResult) => {
                               if (err) {

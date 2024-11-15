@@ -1,4 +1,4 @@
-const Client = require("../../../../models/customer/branch/clientApplicationModel");
+const ClientApplication = require("../../../../models/customer/branch/clientApplicationModel");
 const BranchCommon = require("../../../../models/customer/branch/commonModel");
 const Branch = require("../../../../models/customer/branch/branchModel");
 const Service = require("../../../../models/admin/serviceModel");
@@ -22,10 +22,8 @@ exports.create = (req, res) => {
     customer_id,
     name,
     employee_id,
-    spoc,
+    client_spoc_id,
     location,
-    batch_number,
-    sub_client,
     services,
     package,
     send_mail,
@@ -38,10 +36,8 @@ exports.create = (req, res) => {
     customer_id,
     name,
     employee_id,
-    spoc,
+    client_spoc_id,
     location,
-    batch_number,
-    sub_client,
   };
 
   // Check for missing fields
@@ -81,7 +77,7 @@ exports.create = (req, res) => {
       const newToken = result.newToken;
 
       // Check if employee ID is unique
-      Client.checkUniqueEmpId(employee_id, (err, exists) => {
+      ClientApplication.checkUniqueEmpId(employee_id, (err, exists) => {
         if (err) {
           console.error("Error checking unique ID:", err);
           return res
@@ -98,17 +94,15 @@ exports.create = (req, res) => {
         }
 
         // Create client application
-        Client.create(
+        ClientApplication.create(
           {
             name,
             employee_id,
-            spoc,
+            client_spoc_id,
             location,
-            batch_number,
-            sub_client,
             branch_id,
             services,
-            package,
+            packages: package,
             customer_id,
           },
           (err, result) => {
@@ -246,8 +240,6 @@ exports.create = (req, res) => {
                                   message:
                                     "Client application created successfully and email sent.",
                                   token: newToken,
-                                  toArr,
-                                  ccArr,
                                 });
                               })
                               .catch((emailError) => {
@@ -348,7 +340,7 @@ exports.list = (req, res) => {
 
       const newToken = tokenResult.newToken;
 
-      Client.list(branch_id, (err, clientResults) => {
+      ClientApplication.list(branch_id, (err, clientResults) => {
         if (err) {
           console.error("Database error:", err);
           return res.status(500).json({
@@ -378,10 +370,8 @@ exports.update = (req, res) => {
     client_application_id,
     name,
     employee_id,
-    spoc,
+    client_spoc_id,
     location,
-    batch_number,
-    sub_client,
     services,
     package,
   } = req.body;
@@ -393,10 +383,8 @@ exports.update = (req, res) => {
     client_application_id,
     name,
     employee_id,
-    spoc,
+    client_spoc_id,
     location,
-    batch_number,
-    sub_client,
   };
 
   // Check for missing fields
@@ -433,7 +421,7 @@ exports.update = (req, res) => {
       const newToken = result.newToken;
 
       // Fetch the current clientApplication
-      Client.getClientApplicationById(
+      ClientApplication.getClientApplicationById(
         client_application_id,
         (err, currentClientApplication) => {
           if (err) {
@@ -443,7 +431,7 @@ exports.update = (req, res) => {
             );
             return res.status(500).json({
               status: false,
-              message: "Failed to retrieve Client. Please try again.",
+              message: "Failed to retrieve ClientApplication. Please try again.",
               token: newToken,
             });
           }
@@ -466,28 +454,16 @@ exports.update = (req, res) => {
               new: employee_id,
             };
           }
-          if (currentClientApplication.spoc !== spoc) {
-            changes.spoc = {
-              old: currentClientApplication.spoc,
-              new: spoc,
+          if (currentClientApplication.client_spoc_id !== client_spoc_id) {
+            changes.client_spoc_id = {
+              old: currentClientApplication.client_spoc_id,
+              new: client_spoc_id,
             };
           }
           if (currentClientApplication.location !== location) {
             changes.location = {
               old: currentClientApplication.location,
               new: location,
-            };
-          }
-          if (currentClientApplication.batch_number !== batch_number) {
-            changes.batch_number = {
-              old: currentClientApplication.batch_number,
-              new: batch_number,
-            };
-          }
-          if (currentClientApplication.sub_client !== sub_client) {
-            changes.sub_client = {
-              old: currentClientApplication.sub_client,
-              new: sub_client,
             };
           }
           if (
@@ -505,7 +481,7 @@ exports.update = (req, res) => {
               new: package,
             };
           }
-          Client.checkUniqueEmpIdByClientApplicationID(
+          ClientApplication.checkUniqueEmpIdByClientApplicationID(
             employee_id,
             client_application_id,
             (err, exists) => {
@@ -529,16 +505,14 @@ exports.update = (req, res) => {
                 });
               }
 
-              Client.update(
+              ClientApplication.update(
                 {
                   name,
                   employee_id,
-                  spoc,
+                  client_spoc_id,
                   location,
-                  batch_number,
-                  sub_client,
                   services,
-                  package,
+                  packages: package,
                 },
                 client_application_id,
                 (err, result) => {
@@ -627,23 +601,23 @@ exports.upload = async (req, res) => {
         client_application_generated_id;
     }
 
-      // Check for missing fields
-      const missingFields = Object.keys(requiredFields)
-        .filter(
-          (field) =>
-            !requiredFields[field] ||
-            requiredFields[field] === "" ||
-            requiredFields[field] == "undefined" ||
-            requiredFields[field] == undefined
-        )
-        .map((field) => field.replace(/_/g, " "));
+    // Check for missing fields
+    const missingFields = Object.keys(requiredFields)
+      .filter(
+        (field) =>
+          !requiredFields[field] ||
+          requiredFields[field] === "" ||
+          requiredFields[field] == "undefined" ||
+          requiredFields[field] == undefined
+      )
+      .map((field) => field.replace(/_/g, " "));
 
-      if (missingFields.length > 0) {
-        return res.status(400).json({
-          status: false,
-          message: `Missing required fields: ${missingFields.join(", ")}`,
-        });
-      }
+    if (missingFields.length > 0) {
+      return res.status(400).json({
+        status: false,
+        message: `Missing required fields: ${missingFields.join(", ")}`,
+      });
+    }
 
     const action = JSON.stringify({ client_application: "update" });
     BranchCommon.isBranchAuthorizedForAction(branchId, action, (result) => {
@@ -707,7 +681,7 @@ exports.upload = async (req, res) => {
           savedImagePaths.push(savedImagePath);
         }
 
-        Client.upload(
+        ClientApplication.upload(
           clientAppId,
           dbColumn,
           savedImagePaths,
@@ -716,8 +690,7 @@ exports.upload = async (req, res) => {
               // If an error occurred, return the error details in the response
               return res.status(500).json({
                 status: false,
-                message:
-                  result || "An error occurred while saving the image.", // Use detailed error message if available
+                message: result || "An error occurred while saving the image.", // Use detailed error message if available
                 token: newToken,
                 savedImagePaths,
                 // details: result.details,
@@ -730,7 +703,7 @@ exports.upload = async (req, res) => {
             if (result && result.affectedRows > 0) {
               // Return success response if there are affected rows
               if (send_mail == 1) {
-                Client.getClientApplicationById(
+                ClientApplication.getClientApplicationById(
                   clientAppId,
                   (err, currentClientApplication) => {
                     if (err) {
@@ -740,7 +713,7 @@ exports.upload = async (req, res) => {
                       );
                       return res.status(500).json({
                         status: false,
-                        message: "Failed to retrieve Client. Please try again.",
+                        message: "Failed to retrieve ClientApplication. Please try again.",
                         token: newToken,
                         savedImagePaths,
                       });
@@ -1033,7 +1006,7 @@ exports.delete = (req, res) => {
         const newToken = tokenValidationResult.newToken;
 
         // Fetch the current clientApplication
-        Client.getClientApplicationById(id, (err, currentClientApplication) => {
+        ClientApplication.getClientApplicationById(id, (err, currentClientApplication) => {
           if (err) {
             console.error(
               "Database error during clientApplication retrieval:",
@@ -1041,7 +1014,7 @@ exports.delete = (req, res) => {
             );
             return res.status(500).json({
               status: false,
-              message: "Failed to retrieve Client. Please try again.",
+              message: "Failed to retrieve ClientApplication. Please try again.",
               token: newToken,
             });
           }
@@ -1055,7 +1028,7 @@ exports.delete = (req, res) => {
           }
 
           // Delete the clientApplication
-          Client.delete(id, (err, result) => {
+          ClientApplication.delete(id, (err, result) => {
             if (err) {
               console.error(
                 "Database error during clientApplication deletion:",
@@ -1072,7 +1045,7 @@ exports.delete = (req, res) => {
               );
               return res.status(500).json({
                 status: false,
-                message: "Failed to delete Client. Please try again.",
+                message: "Failed to delete ClientApplication. Please try again.",
                 token: newToken,
               });
             }
