@@ -1,15 +1,7 @@
 const { pool, startConnection, connectionRelease } = require("../../config/db");
 
 const Service = {
-  create: (
-    title,
-    description,
-    group_id,
-    short_code,
-    sac_code,
-    admin_id,
-    callback
-  ) => {
+  create: (title, description, admin_id, callback) => {
     // Step 1: Check if a service with the same title already exists
     const checkServiceSql = `
       SELECT * FROM \`services\` WHERE \`title\` = ?
@@ -37,13 +29,13 @@ const Service = {
 
         // Step 3: Insert the new service
         const insertServiceSql = `
-          INSERT INTO \`services\` (\`title\`, \`description\`, \`group_id\`, \`short_code\`,  \`sac_code\`, \`admin_id\`)
-          VALUES (?, ?, ?, ?, ?, ?)
+          INSERT INTO \`services\` (\`title\`, \`description\`, \`admin_id\`)
+          VALUES (?, ?, ?)
         `;
 
         connection.query(
           insertServiceSql,
-          [title, description, group_id, short_code, sac_code, admin_id],
+          [title, description, admin_id],
           (insertErr, results) => {
             connectionRelease(connection); // Release the connection
 
@@ -59,13 +51,7 @@ const Service = {
   },
 
   list: (callback) => {
-    const sql = `
-      SELECT 
-        s.*, 
-        sg.title AS group_name 
-      FROM \`services\` s
-      JOIN \`service_groups\` sg ON s.group_id = sg.id
-    `;
+    const sql = `SELECT * FROM \`services\``;
 
     startConnection((err, connection) => {
       if (err) {
@@ -79,7 +65,6 @@ const Service = {
           console.error("Database query error: 47", queryErr);
           return callback(queryErr, null);
         }
-
         callback(null, results);
       });
     });
@@ -153,18 +138,10 @@ const Service = {
     });
   },
 
-  update: (
-    id,
-    title,
-    description,
-    group_id,
-    short_code,
-    sac_code,
-    callback
-  ) => {
+  update: (id, title, description, callback) => {
     const sql = `
       UPDATE \`services\`
-      SET \`title\` = ?, \`description\` = ?, \`group_id\` = ?, \`short_code\` = ?, \`sac_code\` = ?
+      SET \`title\` = ?, \`description\` = ?
       WHERE \`id\` = ?
     `;
 
@@ -173,19 +150,15 @@ const Service = {
         return callback(err, null);
       }
 
-      connection.query(
-        sql,
-        [title, description, group_id, short_code, sac_code, id],
-        (queryErr, results) => {
-          connectionRelease(connection); // Release the connection
+      connection.query(sql, [title, description, id], (queryErr, results) => {
+        connectionRelease(connection); // Release the connection
 
-          if (queryErr) {
-            console.error(" 51", queryErr);
-            return callback(queryErr, null);
-          }
-          callback(null, results);
+        if (queryErr) {
+          console.error(" 51", queryErr);
+          return callback(queryErr, null);
         }
-      );
+        callback(null, results);
+      });
     });
   },
 
