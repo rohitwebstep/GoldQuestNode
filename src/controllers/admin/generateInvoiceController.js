@@ -254,9 +254,11 @@ exports.generateInvoice = async (req, res) => {
               const customerServiceList = JSON.parse(
                 results.customerInfo.services
               );
-              const customerServiceIds = customerServiceList.map(
-                (service) => service.serviceId
-              );
+              const customerServiceIds =
+                customerServiceList.length > 0
+                  ? customerServiceList.map((service) => service.serviceId)
+                  : [];
+
               const serviceNames = await getServiceNames(customerServiceIds);
 
               // Respond with the fetched customer data and applications
