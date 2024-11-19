@@ -251,6 +251,10 @@ const Customer = {
           \`admins\` AS qc_admin 
         ON 
           qc_admin.id = cmt.qc_done_by
+        LEFT JOIN 
+          \`admins\` AS report_admin 
+        ON 
+          report_admin.id = cmt.report_generate_by
         WHERE 
           ca.\`branch_id\` = ?`;
 
