@@ -259,17 +259,19 @@ const Customer = {
       INSERT INTO \`customer_metas\` (
         \`customer_id\`, \`address\`,
         \`single_point_of_contact\`,
+        \`contact_person\`,
         \`gst_number\`, \`tat_days\`, 
         \`agreement_date\`, \`agreement_duration\`, \`custom_template\`,
         \`custom_address\`, \`state\`, \`state_code\`, 
         \`client_standard\`
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     const valuesCustomerMetas = [
       metaData.customer_id,
       metaData.address,
       metaData.client_spoc,
+      metaData.contact_person,
       metaData.gst_number,
       metaData.tat_days,
       metaData.agreement_date,
