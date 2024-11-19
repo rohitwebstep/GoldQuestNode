@@ -90,6 +90,7 @@ exports.create = (req, res) => {
     custom_address,
     date_agreement,
     client_spoc,
+    name_of_escalation,
     contact_person,
     client_standard,
     custom_template,
@@ -115,6 +116,7 @@ exports.create = (req, res) => {
     mobile_number,
     date_agreement,
     client_spoc,
+    name_of_escalation,
     contact_person,
     clientData,
     client_standard,
@@ -271,6 +273,7 @@ exports.create = (req, res) => {
                     customer_id: customerId,
                     address,
                     client_spoc,
+                    name_of_escalation,
                     contact_person,
                     gst_number: gstin,
                     tat_days: tat,
@@ -1008,7 +1011,8 @@ exports.update = (req, res) => {
     gst_number,
     custom_address,
     agreement_date,
-    client_spoc,
+    single_point_of_contact,
+    escalation_point_contact,
     client_standard,
     custom_template,
     additional_login,
@@ -1031,7 +1035,8 @@ exports.update = (req, res) => {
     state_code,
     gst_number,
     client_unique_id,
-    client_spoc,
+    single_point_of_contact,
+    escalation_point_contact,
     agreement_date,
     custom_template,
     client_standard,
@@ -1137,7 +1142,14 @@ exports.update = (req, res) => {
 
             if (currentCustomerMeta) {
               compareAndAddChanges("address", address);
-              compareAndAddChanges("client_spoc", client_spoc);
+              compareAndAddChanges(
+                "single_point_of_contact",
+                single_point_of_contact
+              );
+              compareAndAddChanges(
+                "escalation_point_contact",
+                escalation_point_contact
+              );
               compareAndAddChanges("gst_number", gst_number);
               compareAndAddChanges("tat_days", tat_days);
               compareAndAddChanges("agreement_date", agreement_date);
@@ -1256,7 +1268,8 @@ exports.update = (req, res) => {
                       customer_id,
                       {
                         address,
-                        client_spoc,
+                        client_spoc: single_point_of_contact,
+                        escalation_point_contact,
                         gst_number,
                         tat_days,
                         agreement_date,
