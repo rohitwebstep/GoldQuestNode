@@ -2038,3 +2038,178 @@ exports.upload = async (req, res) => {
     });
   });
 };
+
+exports.annexureDataByServiceIds = (req, res) => {
+  const { service_ids, application_id, admin_id, _token } = req.query;
+
+  let missingFields = [];
+  if (
+    !service_ids ||
+    service_ids === "" ||
+    service_ids === undefined ||
+    service_ids === "undefined"
+  ) {
+    missingFields.push("Service ID");
+  }
+
+  if (
+    !application_id ||
+    application_id === "" ||
+    application_id === undefined ||
+    application_id === "undefined"
+  ) {
+    missingFields.push("Application ID");
+  }
+  if (
+    !admin_id ||
+    admin_id === "" ||
+    admin_id === undefined ||
+    admin_id === "undefined"
+  ) {
+    missingFields.push("Admin ID");
+  }
+  if (
+    !_token ||
+    _token === "" ||
+    _token === undefined ||
+    _token === "undefined"
+  ) {
+    missingFields.push("Token");
+  }
+
+  if (missingFields.length > 0) {
+    return res.status(400).json({
+      status: false,
+      message: `Missing required fields: ${missingFields.join(", ")}`,
+    });
+  }
+
+  const action = JSON.stringify({ cmt_application: "view" });
+  AdminCommon.isAdminAuthorizedForAction(admin_id, action, (result) => {
+    if (!result.status) {
+      return res.status(403).json({
+        status: false,
+        message: result.message,
+      });
+    }
+
+    // Verify admin token
+    AdminCommon.isAdminTokenValid(_token, admin_id, (err, result) => {
+      if (err) {
+        console.error("Error checking token validity:", err);
+        return res.status(500).json({ status: false, message: err.message });
+      }
+
+      if (!result.status) {
+        return res.status(401).json({ status: false, message: result.message });
+      }
+
+      const newToken = result.newToken;
+
+      // Split service_id into an array
+      const serviceIds = service_ids.split(",").map((id) => id.trim());
+      const annexureResults = [];
+      let pendingRequests = serviceIds.length;
+
+      if (pendingRequests === 0) {
+        // No service IDs provided, return immediately.
+        return res.status(200).json({
+          status: true,
+          message: "No service IDs to process.",
+          results: annexureResults,
+          token: newToken,
+        });
+      }
+
+      serviceIds.forEach((id) => {
+        ClientMasterTrackerModel.reportFormJsonByServiceID(
+          id,
+          (err, reportFormJson) => {
+            if (err) {
+              console.error(
+                `Error fetching report form JSON for service ID ${id}:`,
+                err
+              );
+              annexureResults.push({
+                service_id: id,
+                serviceStatus: false,
+                message: err.message,
+              });
+              finalizeRequest();
+              return;
+            }
+
+            if (!reportFormJson) {
+              console.warn(`Report form JSON not found for service ID ${id}`);
+              annexureResults.push({
+                service_id: id,
+                serviceStatus: false,
+                message: "Report form JSON not found",
+              });
+              finalizeRequest();
+              return;
+            }
+
+            const parsedData = JSON.parse(reportFormJson.json);
+            const db_table = parsedData.db_table.replace(/-/g, "_"); // Modify table name
+            const heading = parsedData.heading;
+
+            ClientMasterTrackerModel.annexureData(
+              application_id,
+              db_table,
+              (err, annexureData) => {
+                if (err) {
+                  console.error(
+                    `Error fetching annexure data for service ID ${id}:`,
+                    err
+                  );
+                  annexureResults.push({
+                    service_id: id,
+                    annexureStatus: false,
+                    annexureData: null,
+                    serviceStatus: true,
+                    reportFormJson,
+                    message: "An error occurred while fetching annexure data.",
+                    error: err,
+                  });
+                } else if (!annexureData) {
+                  console.warn(`Annexure data not found for service ID ${id}`);
+                  annexureResults.push({
+                    service_id: id,
+                    annexureStatus: false,
+                    annexureData: null,
+                    serviceStatus: true,
+                    reportFormJson,
+                    message: "Annexure Data not found.",
+                  });
+                } else {
+                  annexureResults.push({
+                    service_id: id,
+                    annexureStatus: true,
+                    serviceStatus: true,
+                    reportFormJson,
+                    annexureData,
+                    heading,
+                  });
+                }
+                finalizeRequest();
+              }
+            );
+          }
+        );
+      });
+
+      function finalizeRequest() {
+        pendingRequests -= 1;
+        if (pendingRequests === 0) {
+          return res.status(200).json({
+            status: true,
+            message: "Applications fetched successfully.",
+            results: annexureResults,
+            token: newToken,
+          });
+        }
+      }
+    });
+  });
+};
