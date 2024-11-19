@@ -22,8 +22,10 @@ exports.create = (req, res) => {
     customer_id,
     name,
     employee_id,
-    client_spoc,
+    spoc,
     location,
+    batch_number,
+    sub_client,
     services,
     package,
     send_mail,
@@ -36,7 +38,9 @@ exports.create = (req, res) => {
     customer_id,
     name,
     employee_id,
-    client_spoc,
+    spoc,
+    batch_number,
+    sub_client,
     location,
   };
 
@@ -98,7 +102,9 @@ exports.create = (req, res) => {
           {
             name,
             employee_id,
-            client_spoc,
+            spoc,
+            batch_number,
+            sub_client,
             location,
             branch_id,
             services,
@@ -370,7 +376,9 @@ exports.update = (req, res) => {
     client_application_id,
     name,
     employee_id,
-    client_spoc,
+    spoc,
+    batch_number,
+    sub_client,
     location,
     services,
     package,
@@ -383,7 +391,9 @@ exports.update = (req, res) => {
     client_application_id,
     name,
     employee_id,
-    client_spoc,
+    spoc,
+    batch_number,
+    sub_client,
     location,
   };
 
@@ -431,7 +441,8 @@ exports.update = (req, res) => {
             );
             return res.status(500).json({
               status: false,
-              message: "Failed to retrieve ClientApplication. Please try again.",
+              message:
+                "Failed to retrieve ClientApplication. Please try again.",
               token: newToken,
             });
           }
@@ -454,10 +465,10 @@ exports.update = (req, res) => {
               new: employee_id,
             };
           }
-          if (currentClientApplication.client_spoc !== client_spoc) {
-            changes.client_spoc = {
-              old: currentClientApplication.client_spoc,
-              new: client_spoc,
+          if (currentClientApplication.spoc !== spoc) {
+            changes.spoc = {
+              old: currentClientApplication.spoc,
+              new: spoc,
             };
           }
           if (currentClientApplication.location !== location) {
@@ -481,6 +492,22 @@ exports.update = (req, res) => {
               new: package,
             };
           }
+
+          if (batch_number !== "" && currentClientApplication.batch_number !== batch_number) {
+            changes.batch_number = {
+              old: currentClientApplication.batch_number,
+              new: batch_number,
+            };
+          }
+
+          if (sub_client !== "" && currentClientApplication.sub_client !== sub_client) {
+            changes.sub_client = {
+              old: currentClientApplication.sub_client,
+              new: sub_client,
+            };
+          }
+
+
           ClientApplication.checkUniqueEmpIdByClientApplicationID(
             employee_id,
             client_application_id,
@@ -509,7 +536,9 @@ exports.update = (req, res) => {
                 {
                   name,
                   employee_id,
-                  client_spoc,
+                  spoc,
+                  batch_number,
+                  sub_client,
                   location,
                   services,
                   packages: package,
@@ -713,7 +742,8 @@ exports.upload = async (req, res) => {
                       );
                       return res.status(500).json({
                         status: false,
-                        message: "Failed to retrieve ClientApplication. Please try again.",
+                        message:
+                          "Failed to retrieve ClientApplication. Please try again.",
                         token: newToken,
                         savedImagePaths,
                       });
@@ -1006,67 +1036,72 @@ exports.delete = (req, res) => {
         const newToken = tokenValidationResult.newToken;
 
         // Fetch the current clientApplication
-        ClientApplication.getClientApplicationById(id, (err, currentClientApplication) => {
-          if (err) {
-            console.error(
-              "Database error during clientApplication retrieval:",
-              err
-            );
-            return res.status(500).json({
-              status: false,
-              message: "Failed to retrieve ClientApplication. Please try again.",
-              token: newToken,
-            });
-          }
-
-          if (!currentClientApplication) {
-            return res.status(404).json({
-              status: false,
-              message: "Client Aplication not found.",
-              token: newToken,
-            });
-          }
-
-          // Delete the clientApplication
-          ClientApplication.delete(id, (err, result) => {
+        ClientApplication.getClientApplicationById(
+          id,
+          (err, currentClientApplication) => {
             if (err) {
               console.error(
-                "Database error during clientApplication deletion:",
+                "Database error during clientApplication retrieval:",
                 err
-              );
-              BranchCommon.branchActivityLog(
-                branch_id,
-                "Client Application",
-                "Delete",
-                "0",
-                JSON.stringify({ id }),
-                err,
-                () => {}
               );
               return res.status(500).json({
                 status: false,
-                message: "Failed to delete ClientApplication. Please try again.",
+                message:
+                  "Failed to retrieve ClientApplication. Please try again.",
                 token: newToken,
               });
             }
 
-            BranchCommon.branchActivityLog(
-              branch_id,
-              "Client Application",
-              "Delete",
-              "1",
-              JSON.stringify({ id }),
-              null,
-              () => {}
-            );
+            if (!currentClientApplication) {
+              return res.status(404).json({
+                status: false,
+                message: "Client Aplication not found.",
+                token: newToken,
+              });
+            }
 
-            res.status(200).json({
-              status: true,
-              message: "Client Application deleted successfully.",
-              token: newToken,
+            // Delete the clientApplication
+            ClientApplication.delete(id, (err, result) => {
+              if (err) {
+                console.error(
+                  "Database error during clientApplication deletion:",
+                  err
+                );
+                BranchCommon.branchActivityLog(
+                  branch_id,
+                  "Client Application",
+                  "Delete",
+                  "0",
+                  JSON.stringify({ id }),
+                  err,
+                  () => {}
+                );
+                return res.status(500).json({
+                  status: false,
+                  message:
+                    "Failed to delete ClientApplication. Please try again.",
+                  token: newToken,
+                });
+              }
+
+              BranchCommon.branchActivityLog(
+                branch_id,
+                "Client Application",
+                "Delete",
+                "1",
+                JSON.stringify({ id }),
+                null,
+                () => {}
+              );
+
+              res.status(200).json({
+                status: true,
+                message: "Client Application deleted successfully.",
+                token: newToken,
+              });
             });
-          });
-        });
+          }
+        );
       }
     );
   });

@@ -116,6 +116,8 @@ const clientApplication = {
       name,
       employee_id,
       client_spoc,
+      batch_number,
+      sub_client,
       location,
       branch_id,
       services,
@@ -165,12 +167,14 @@ const clientApplication = {
             \`name\`,
             \`employee_id\`,
             \`single_point_of_contact\`,
+            \`batch_number\`,
+            \`sub_client\`,
             \`location\`,
             \`branch_id\`,
             \`services\`,
             \`package\`,
             \`customer_id\`
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
 
           const values = [
@@ -178,6 +182,8 @@ const clientApplication = {
             name,
             employee_id,
             client_spoc,
+            batch_number,
+            sub_client,
             location,
             branch_id,
             serviceIds,
@@ -413,8 +419,16 @@ const clientApplication = {
           null
         );
       }
-      const { name, employee_id, client_spoc, location, services, packages } =
-        data;
+      const {
+        name,
+        employee_id,
+        client_spoc,
+        batch_number,
+        sub_client,
+        location,
+        services,
+        packages,
+      } = data;
 
       const sql = `
       UPDATE \`client_applications\`
@@ -422,6 +436,8 @@ const clientApplication = {
         \`name\` = ?,
         \`employee_id\` = ?,
         \`single_point_of_contact\` = ?,
+        \`batch_number\` = ?,
+        \`sub_client\` = ?,
         \`location\` = ?,
         \`services\` = ?,
         \`package\` = ?
@@ -453,6 +469,8 @@ const clientApplication = {
         name,
         employee_id,
         client_spoc,
+        batch_number,
+        sub_client,
         location,
         serviceIds,
         packageIds,
