@@ -260,7 +260,7 @@ const Customer = {
         \`customer_id\`, \`address\`,
         \`single_point_of_contact\`,
         \`escalation_point_contact\`,
-        \`contact_person\`,
+        \`contact_person_name\`,
         \`gst_number\`, \`tat_days\`, 
         \`agreement_date\`, \`agreement_duration\`, \`custom_template\`,
         \`custom_address\`, \`state\`, \`state_code\`, 
