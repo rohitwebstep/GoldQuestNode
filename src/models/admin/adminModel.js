@@ -1,6 +1,26 @@
 const { pool, startConnection, connectionRelease } = require("../../config/db");
 
 const Admin = {
+  list: (callback) => {
+    const sql = `SELECT * FROM \`admins\``;
+
+    startConnection((err, connection) => {
+      if (err) {
+        return callback(err, null);
+      }
+
+      connection.query(sql, (queryErr, results) => {
+        connectionRelease(connection); // Release the connection
+
+        if (queryErr) {
+          console.error("Database query error: 47", queryErr);
+          return callback(queryErr, null);
+        }
+        callback(null, results);
+      });
+    });
+  },
+
   findByEmailOrMobile: (username, callback) => {
     const sql = `
       SELECT \`id\`, \`emp_id\`, \`name\`, \`profile_picture\`, \`email\`, \`mobile\`, \`status\`, \`login_token\`, \`token_expiry\`
