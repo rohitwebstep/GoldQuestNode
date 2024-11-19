@@ -6,7 +6,6 @@ exports.create = (req, res) => {
   const {
     title,
     description,
-    group_id,
     short_code,
     sac_code,
     admin_id,
@@ -16,7 +15,6 @@ exports.create = (req, res) => {
   let missingFields = [];
   if (!title || title === "") missingFields.push("Title");
   if (!description || description === "") missingFields.push("Description");
-  if (!group_id || group_id === "") missingFields.push("Group ID");
   if (!short_code || short_code === "") missingFields.push("Short Code");
   if (!sac_code || sac_code === "") missingFields.push("SAC Code");
   if (!admin_id || description === "") missingFields.push("Admin ID");
@@ -54,7 +52,6 @@ exports.create = (req, res) => {
       Service.create(
         title,
         description,
-        group_id,
         short_code,
         sac_code,
         admin_id,
@@ -219,7 +216,6 @@ exports.update = (req, res) => {
     id,
     title,
     description,
-    group_id,
     short_code,
     sac_code,
     admin_id,
@@ -230,7 +226,6 @@ exports.update = (req, res) => {
   if (!id || id === "") missingFields.push("Service ID");
   if (!title || title === "") missingFields.push("Title");
   if (!description || description === "") missingFields.push("Description");
-  if (!group_id || group_id === "") missingFields.push("Group ID");
   if (!short_code || short_code === "") missingFields.push("Short Code");
   if (!sac_code || sac_code === "") missingFields.push("SAC Code");
   if (!admin_id || admin_id === "") missingFields.push("Admin ID");
@@ -291,7 +286,6 @@ exports.update = (req, res) => {
           id,
           title,
           description,
-          group_id,
           short_code,
           sac_code,
           (err, result) => {

@@ -1,10 +1,10 @@
 const { pool, startConnection, connectionRelease } = require("../../config/db");
 
 const Service = {
-  create: (title, description, admin_id, callback) => {
+  create: (title, description, short_code, sac_code, admin_id, callback) => {
     // Step 1: Check if a service with the same title already exists
     const checkServiceSql = `
-      SELECT * FROM \`services\` WHERE \`title\` = ?
+      SELECT * FROM \`services\` WHERE \`title\` = ? OR \`short_code\` = ? OR \`sac_code\` = ?
     `;
 
     startConnection((err, connection) => {
@@ -12,41 +12,47 @@ const Service = {
         return callback(err, null);
       }
 
-      connection.query(checkServiceSql, [title], (checkErr, serviceResults) => {
-        if (checkErr) {
-          console.error("Error checking service:", checkErr);
-          connectionRelease(connection); // Release connection on error
-          return callback(checkErr, null);
-        }
+      connection.query(
+        checkServiceSql,
+        [title, short_code, sac_code],
+        (checkErr, serviceResults) => {
+          if (checkErr) {
+            console.error("Error checking service:", checkErr);
+            connectionRelease(connection); // Release connection on error
+            return callback(checkErr, null);
+          }
 
-        // Step 2: If a service with the same title exists, return an error
-        if (serviceResults.length > 0) {
-          const error = new Error("Service with the same name already exists");
-          console.error(error.message);
-          connectionRelease(connection); // Release connection before returning error
-          return callback(error, null);
-        }
+          // Step 2: If a service with the same title exists, return an error
+          if (serviceResults.length > 0) {
+            const error = new Error(
+              "Service with the same name already exists"
+            );
+            console.error(error.message);
+            connectionRelease(connection); // Release connection before returning error
+            return callback(error, null);
+          }
 
-        // Step 3: Insert the new service
-        const insertServiceSql = `
-          INSERT INTO \`services\` (\`title\`, \`description\`, \`admin_id\`)
-          VALUES (?, ?, ?)
+          // Step 3: Insert the new service
+          const insertServiceSql = `
+          INSERT INTO \`services\` (\`title\`, \`description\`, \`short_code\`, \`sac_code\`, \`admin_id\`)
+          VALUES (?, ?, ?, ?, ?)
         `;
 
-        connection.query(
-          insertServiceSql,
-          [title, description, admin_id],
-          (insertErr, results) => {
-            connectionRelease(connection); // Release the connection
+          connection.query(
+            insertServiceSql,
+            [title, description, short_code, sac_code, admin_id],
+            (insertErr, results) => {
+              connectionRelease(connection); // Release the connection
 
-            if (insertErr) {
-              console.error("Database query error: 46", insertErr);
-              return callback(insertErr, null);
+              if (insertErr) {
+                console.error("Database query error: 46", insertErr);
+                return callback(insertErr, null);
+              }
+              callback(null, results);
             }
-            callback(null, results);
-          }
-        );
-      });
+          );
+        }
+      );
     });
   },
 
@@ -138,10 +144,10 @@ const Service = {
     });
   },
 
-  update: (id, title, description, callback) => {
+  update: (id, title, description, short_code, sac_code, callback) => {
     const sql = `
       UPDATE \`services\`
-      SET \`title\` = ?, \`description\` = ?
+      SET \`title\` = ?, \`description\` = ? , \`short_code\` = ?, \`sac_code\` = ?
       WHERE \`id\` = ?
     `;
 
@@ -150,15 +156,19 @@ const Service = {
         return callback(err, null);
       }
 
-      connection.query(sql, [title, description, id], (queryErr, results) => {
-        connectionRelease(connection); // Release the connection
+      connection.query(
+        sql,
+        [title, description, short_code, sac_code, id],
+        (queryErr, results) => {
+          connectionRelease(connection); // Release the connection
 
-        if (queryErr) {
-          console.error(" 51", queryErr);
-          return callback(queryErr, null);
+          if (queryErr) {
+            console.error(" 51", queryErr);
+            return callback(queryErr, null);
+          }
+          callback(null, results);
         }
-        callback(null, results);
-      });
+      );
     });
   },
 
