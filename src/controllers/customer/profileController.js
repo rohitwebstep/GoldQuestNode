@@ -1013,6 +1013,7 @@ exports.update = (req, res) => {
     agreement_date,
     single_point_of_contact,
     escalation_point_contact,
+    contact_person,
     client_standard,
     custom_template,
     additional_login,
@@ -1037,6 +1038,7 @@ exports.update = (req, res) => {
     client_unique_id,
     single_point_of_contact,
     escalation_point_contact,
+    contact_person,
     agreement_date,
     custom_template,
     client_standard,
@@ -1150,6 +1152,11 @@ exports.update = (req, res) => {
                 "escalation_point_contact",
                 escalation_point_contact
               );
+              compareAndAddChanges(
+                "contact_person",
+                contact_person
+              );
+              
               compareAndAddChanges("gst_number", gst_number);
               compareAndAddChanges("tat_days", tat_days);
               compareAndAddChanges("agreement_date", agreement_date);
@@ -1270,6 +1277,7 @@ exports.update = (req, res) => {
                         address,
                         client_spoc: single_point_of_contact,
                         escalation_point_contact,
+                        contact_person,
                         gst_number,
                         tat_days,
                         agreement_date,
