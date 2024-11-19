@@ -258,7 +258,7 @@ const Customer = {
     const sqlCustomerMetas = `
       INSERT INTO \`customer_metas\` (
         \`customer_id\`, \`address\`,
-        \`client_spoc\`,
+        \`single_point_of_contact\`,
         \`gst_number\`, \`tat_days\`, 
         \`agreement_date\`, \`agreement_duration\`, \`custom_template\`,
         \`custom_address\`, \`state\`, \`state_code\`, 
@@ -315,7 +315,7 @@ const Customer = {
       UPDATE \`customer_metas\` 
       SET 
         \`address\` = ?, 
-        \`client_spoc\` = ?,
+        \`single_point_of_contact\` = ?,
         \`gst_number\` = ?, 
         \`tat_days\` = ?, 
         \`agreement_date\` = ?, 
@@ -477,7 +477,7 @@ const Customer = {
         customers.emails, 
         customers.mobile, 
         customers.services, 
-        customer_metas.client_spoc,
+        customer_metas.single_point_of_contact,
         customers.id, 
         customer_metas.address,
         customer_metas.gst_number,

@@ -164,7 +164,7 @@ const clientApplication = {
             \`application_id\`,
             \`name\`,
             \`employee_id\`,
-            \`client_spoc\`,
+            \`single_point_of_contact\`,
             \`location\`,
             \`branch_id\`,
             \`services\`,
@@ -421,7 +421,7 @@ const clientApplication = {
       SET
         \`name\` = ?,
         \`employee_id\` = ?,
-        \`client_spoc\` = ?,
+        \`single_point_of_contact\` = ?,
         \`location\` = ?,
         \`services\` = ?,
         \`package\` = ?
