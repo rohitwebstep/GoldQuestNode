@@ -219,18 +219,40 @@ const Customer = {
 
       // Base SQL query with JOINs to fetch client_spoc_name and cmt_applications data if it exists
       let sql = `
-          SELECT 
-            ca.*, 
-            ca.id AS main_id, 
-            cmt.*
-          FROM 
-            \`client_applications\` ca
-          LEFT JOIN 
-            \`cmt_applications\` cmt 
-          ON 
-            ca.id = cmt.client_application_id
-          WHERE 
-            ca.\`branch_id\` = ?`;
+        SELECT 
+          ca.*, 
+          ca.id AS main_id, 
+          cmt.first_insufficiency_marks,
+          cmt.first_insuff_date,
+          cmt.first_insuff_reopened_date,
+          cmt.second_insufficiency_marks,
+          cmt.second_insuff_date,
+          cmt.second_insuff_reopened_date,
+          cmt.third_insufficiency_marks,
+          cmt.third_insuff_date,
+          cmt.third_insuff_reopened_date,
+          cmt.overall_status,
+          cmt.report_date,
+          cmt.report_status,
+          cmt.report_type,
+          cmt.qc_done_by,
+          qc_admin.name AS qc_done_by_name,
+          cmt.delay_reason,
+          cmt.report_generate_by,
+          report_admin.name AS report_generated_by_name,
+          cmt.case_upload
+        FROM 
+          \`client_applications\` ca
+        LEFT JOIN 
+          \`cmt_applications\` cmt 
+        ON 
+          ca.id = cmt.client_application_id
+        LEFT JOIN 
+          \`admins\` AS qc_admin 
+        ON 
+          qc_admin.id = cmt.qc_done_by
+        WHERE 
+          ca.\`branch_id\` = ?`;
 
       const params = [branch_id]; // Start with branch_id
 
