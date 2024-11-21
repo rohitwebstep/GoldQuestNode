@@ -4,6 +4,7 @@ const reportCaseStatusController = require("../../../controllers/customer/branch
 
 // Basic routes
 router.get("/annexure-data", reportCaseStatusController.annexureData);
+router.get("/list", reportCaseStatusController.list);
 
 router.get(
   "/report-form-json-by-service-id",

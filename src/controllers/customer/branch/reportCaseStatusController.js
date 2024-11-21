@@ -6,6 +6,100 @@ const AdminCommon = require("../../../models/admin/commonModel");
 const Service = require("../../../models/admin/serviceModel");
 const reportCaseStatus = require("../../../models/customer/branch/reportCaseStatusModel");
 
+exports.list = (req, res) => {
+  const { filter_status, branch_id, _token, status } = req.query;
+
+  let missingFields = [];
+  if (
+    !branch_id ||
+    branch_id === "" ||
+    branch_id === undefined ||
+    branch_id === "undefined"
+  )
+    missingFields.push("Branch ID");
+  if (
+    !_token ||
+    _token === "" ||
+    _token === undefined ||
+    _token === "undefined"
+  )
+    missingFields.push("Token");
+
+  if (missingFields.length > 0) {
+    return res.status(400).json({
+      status: false,
+      message: `Missing required fields: ${missingFields.join(", ")}`,
+    });
+  }
+
+  const action = JSON.stringify({ report_case_status: "view" });
+
+  // Step 2: Check if the branch is authorized for the action
+  BranchCommon.isBranchAuthorizedForAction(branch_id, action, (authResult) => {
+    if (!authResult.status) {
+      return res.status(403).json({
+        status: false,
+        message: authResult.message, // Return the authorization error message
+      });
+    }
+
+    // Step 3: Verify the branch token
+    BranchCommon.isBranchTokenValid(
+      _token,
+      branch_id,
+      (tokenErr, tokenResult) => {
+        if (tokenErr) {
+          console.error("Error checking token validity:", tokenErr);
+          return res.status(500).json({
+            status: false,
+            message: tokenErr,
+          });
+        }
+
+        if (!tokenResult.status) {
+          return res.status(401).json({
+            status: false,
+            message: tokenResult.message, // Return the token validation message
+          });
+        }
+
+        const newToken = tokenResult.newToken;
+
+        if (
+          !status ||
+          status === "" ||
+          status === undefined ||
+          status === "undefined"
+        ) {
+          let status = null;
+        }
+
+        ClientMasterTrackerModel.applicationListByBranch(
+          filter_status,
+          branch_id,
+          status,
+          (err, result) => {
+            if (err) {
+              console.error("Database error:", err);
+              return res
+                .status(500)
+                .json({ status: false, message: err.message, token: newToken });
+            }
+
+            res.json({
+              status: true,
+              message: "Branches tracker fetched successfully",
+              customers: result,
+              totalResults: result.length,
+              token: newToken,
+            });
+          }
+        );
+      }
+    );
+  });
+};
+
 exports.reportFormJsonByServiceID = (req, res) => {
   const { service_id, branch_id, _token } = req.query;
 
