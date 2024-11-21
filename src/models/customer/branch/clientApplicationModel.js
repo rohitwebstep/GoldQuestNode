@@ -213,16 +213,17 @@ const clientApplication = {
           null
         );
       }
+
       const sqlClient = `
-      SELECT 
-        *
-      FROM 
-        \`client_applications\`
-      WHERE 
-        branch_id = ?
-      ORDER BY 
-        created_at DESC;
-    `;
+        SELECT 
+          *
+        FROM 
+          \`client_applications\`
+        WHERE 
+          branch_id = ?
+        ORDER BY 
+          created_at DESC;
+      `;
 
       connection.query(sqlClient, [branch_id], (err, clientResults) => {
         if (err) {
@@ -234,6 +235,7 @@ const clientApplication = {
         const finalResults = [];
         const cmtPromises = clientResults.map((clientApp) => {
           return new Promise((resolve, reject) => {
+            // Query for CMT applications
             const sqlCmt =
               "SELECT * FROM cmt_applications WHERE client_application_id = ?";
             connection.query(sqlCmt, [clientApp.id], (err, cmtResults) => {
@@ -254,11 +256,43 @@ const clientApplication = {
                 );
               });
 
-              finalResults.push({
-                ...clientApp,
-                cmtApplications: cmtData.length > 0 ? cmtData : [],
-              });
-              resolve();
+              // Handle services splitting and querying
+              const servicesIds = clientApp.services
+                ? clientApp.services.split(",")
+                : [];
+              if (servicesIds.length === 0) {
+                finalResults.push({
+                  ...clientApp,
+                  cmtApplications: cmtData,
+                  serviceNames: [],
+                });
+                return resolve();
+              }
+
+              const servicesQuery =
+                "SELECT title FROM services WHERE id IN (?)";
+
+              connection.query(
+                servicesQuery,
+                [servicesIds],
+                (err, servicesResults) => {
+                  if (err) {
+                    console.error("Database query error for services:", err);
+                    return reject(err);
+                  }
+
+                  const servicesTitles = servicesResults.map(
+                    (service) => service.title
+                  );
+
+                  finalResults.push({
+                    ...clientApp,
+                    cmtApplications: cmtData,
+                    serviceNames: servicesTitles, // Add services titles to the result
+                  });
+                  resolve();
+                }
+              );
             });
           });
         });

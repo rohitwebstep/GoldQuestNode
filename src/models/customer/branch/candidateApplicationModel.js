@@ -112,13 +112,60 @@ const candidateApplication = {
       }
 
       connection.query(sql, [branch_id], (err, results) => {
-        connectionRelease(connection); // Ensure connection is released
-
         if (err) {
           console.error("Database query error: 100", err);
+          connectionRelease(connection); // Ensure connection is released
           return callback(err, null);
         }
-        callback(null, results);
+
+        const finalResults = [];
+        const servicePromises = results.map((application) => {
+          return new Promise((resolve, reject) => {
+            // Extract service IDs
+            const servicesIds = application.services
+              ? application.services.split(",")
+              : [];
+
+            if (servicesIds.length === 0) {
+              finalResults.push({ ...application, serviceNames: "" });
+              return resolve(); // No services to fetch
+            }
+
+            // Query for service titles
+            const servicesQuery =
+              "SELECT title FROM `services` WHERE id IN (?)";
+            connection.query(
+              servicesQuery,
+              [servicesIds],
+              (err, servicesResults) => {
+                if (err) {
+                  console.error("Database query error for services:", err);
+                  return reject(err);
+                }
+
+                const servicesTitles = servicesResults.map(
+                  (service) => service.title
+                );
+
+                finalResults.push({
+                  ...application,
+                  serviceNames: servicesTitles, // Add services titles to the result
+                });
+                resolve();
+              }
+            );
+          });
+        });
+
+        Promise.all(servicePromises)
+          .then(() => {
+            connectionRelease(connection); // Ensure connection is released
+            callback(null, finalResults);
+          })
+          .catch((err) => {
+            connectionRelease(connection); // Ensure connection is released
+            callback(err, null);
+          });
       });
     });
   },
