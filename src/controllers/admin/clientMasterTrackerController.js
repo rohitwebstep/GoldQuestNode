@@ -247,23 +247,43 @@ exports.applicationListByBranch = (req, res) => {
         let status = null;
       }
 
-      ClientMasterTrackerModel.applicationListByBranch(
-        filter_status,
-        branch_id,
-        status,
-        (err, result) => {
-          if (err) {
-            console.error("Database error:", err);
-            return res
-              .status(500)
-              .json({ status: false, message: err.message, token: newToken });
-          }
 
+      const dataPromises = [
+        new Promise((resolve) =>
+          ClientMasterTrackerModel.applicationListByBranch(
+            filter_status,
+            branch_id,
+            status,
+            (err, result) => {
+              if (err) return resolve([]);
+              resolve(result);
+            })
+        ),
+        new Promise((resolve) =>
+          ClientMasterTrackerModel.filterOptionsForBranch(
+            branch_id, (err, result) => {
+              if (err) return resolve([]);
+              resolve(result);
+            })
+        ),
+      ];
+
+      Promise.all(dataPromises).then(
+        ([
+          customers,
+          filterOptions,
+        ]) => {
           res.json({
             status: true,
-            message: "Branches tracker fetched successfully",
-            customers: result,
-            totalResults: result.length,
+            message: "Billing SPOCs fetched successfully",
+            data: {
+              customers,
+              filterOptions,
+            },
+            totalResults: {
+              customers: customers.length,
+              filterOptions: filterOptions.length,
+            },
             token: newToken,
           });
         }
