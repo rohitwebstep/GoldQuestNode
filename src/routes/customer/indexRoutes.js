@@ -6,6 +6,7 @@ const profileController = require("../../controllers/customer/profileController"
 router.post("/create", profileController.create);
 router.post("/upload", profileController.upload);
 router.get("/list", profileController.list);
+router.get("/add-customer-listings", profileController.addCustomerListings);
 router.get("/inactive-list", profileController.inactiveList);
 router.put("/update", profileController.update);
 router.get("/fetch-branch-password", profileController.fetchBranchPassword);

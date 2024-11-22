@@ -1,5 +1,7 @@
 const crypto = require("crypto");
 const Customer = require("../../models/customer/customerModel");
+const Service = require("../../models/admin/serviceModel");
+const Package = require("../../models/admin/packageModel");
 const Branch = require("../../models/customer/branch/branchModel");
 const AdminCommon = require("../../models/admin/commonModel");
 const BranchCommon = require("../../models/customer/branch/commonModel");
@@ -257,7 +259,7 @@ exports.create = (req, res) => {
                     "0",
                     null,
                     err,
-                    () => {}
+                    () => { }
                   );
                   return res.status(500).json({
                     status: false,
@@ -301,7 +303,7 @@ exports.create = (req, res) => {
                         "0",
                         `{id: ${customerId}}`,
                         err,
-                        () => {}
+                        () => { }
                       );
                       return res.status(500).json({
                         status: false,
@@ -370,7 +372,7 @@ exports.create = (req, res) => {
                               "1",
                               `{id: ${customerId}}`,
                               null,
-                              () => {}
+                              () => { }
                             );
 
                             if (send_mail == 1) {
@@ -391,7 +393,7 @@ exports.create = (req, res) => {
                                       "0",
                                       null,
                                       err,
-                                      () => {}
+                                      () => { }
                                     );
 
                                     return res.status(500).json({
@@ -699,7 +701,7 @@ exports.upload = async (req, res) => {
                     "0",
                     null,
                     err,
-                    () => {}
+                    () => { }
                   );
                   return res.status(500).json({
                     status: false,
@@ -726,7 +728,7 @@ exports.upload = async (req, res) => {
                           "0",
                           null,
                           err,
-                          () => {} // Callback after logging the error
+                          () => { } // Callback after logging the error
                         );
 
                         // Return error response
@@ -1281,12 +1283,12 @@ exports.update = (req, res) => {
                         agreement_duration,
                         custom_template:
                           custom_template &&
-                          custom_template.toLowerCase() === "yes"
+                            custom_template.toLowerCase() === "yes"
                             ? 1
                             : 0,
                         custom_address:
                           custom_template &&
-                          custom_template.toLowerCase() === "yes"
+                            custom_template.toLowerCase() === "yes"
                             ? custom_address
                             : null,
                         state,
@@ -1489,7 +1491,7 @@ exports.active = (req, res) => {
               "0",
               JSON.stringify({ customer_id, ...changes }),
               err,
-              () => {}
+              () => { }
             );
             return res.status(500).json({
               status: false,
@@ -1505,7 +1507,7 @@ exports.active = (req, res) => {
             "1",
             JSON.stringify({ customer_id, ...changes }),
             null,
-            () => {}
+            () => { }
           );
 
           res.status(200).json({
@@ -1597,7 +1599,7 @@ exports.inactive = (req, res) => {
               "0",
               JSON.stringify({ customer_id, ...changes }),
               err,
-              () => {}
+              () => { }
             );
             return res.status(500).json({
               status: false,
@@ -1613,7 +1615,7 @@ exports.inactive = (req, res) => {
             "1",
             JSON.stringify({ customer_id, ...changes }),
             null,
-            () => {}
+            () => { }
           );
 
           res.status(200).json({
@@ -1708,7 +1710,7 @@ exports.delete = (req, res) => {
                 "0",
                 JSON.stringify({ id }),
                 err,
-                () => {}
+                () => { }
               );
               return res.status(500).json({
                 status: false,
@@ -1724,7 +1726,7 @@ exports.delete = (req, res) => {
               "1",
               JSON.stringify({ id }),
               null,
-              () => {}
+              () => { }
             );
 
             res.status(200).json({
@@ -1784,5 +1786,94 @@ exports.customerBasicInfoWithBranchAuth = (req, res) => {
         token: newToken,
       });
     });
+  });
+};
+
+exports.addCustomerListings = (req, res) => {
+  const { admin_id, _token } = req.query;
+
+  // Check for missing fields
+  let missingFields = [];
+  if (!admin_id || admin_id === "") missingFields.push("Admin ID");
+  if (!_token || _token === "") missingFields.push("Token");
+
+  if (missingFields.length > 0) {
+    return res.status(400).json({
+      status: false,
+      message: `Missing required fields: ${missingFields.join(", ")}`,
+    });
+  }
+
+  const action = JSON.stringify({ customer: "create" });
+
+  // Check admin authorization
+  AdminCommon.isAdminAuthorizedForAction(admin_id, action, (result) => {
+    if (!result.status) {
+      // Check the status returned by the authorization function
+      return res.status(403).json({
+        status: false,
+        message: result.message, // Return the message from the authorization function
+      });
+    }
+
+    // Validate admin token
+    AdminCommon.isAdminTokenValid(
+      _token,
+      admin_id,
+      (err, tokenValidationResult) => {
+        if (err) {
+          console.error("Token validation error:", err);
+          return res.status(500).json({
+            status: false,
+            message: err.message,
+          });
+        }
+
+        if (!tokenValidationResult.status) {
+          return res.status(401).json({
+            status: false,
+            message: tokenValidationResult.message,
+          });
+        }
+
+        const newToken = tokenValidationResult.newToken;
+
+        // Fetch all required data
+        const dataPromises = [
+          new Promise((resolve) =>
+            Service.list((err, result) => {
+              if (err) return resolve([]);
+              resolve(result);
+            })
+          ),
+          new Promise((resolve) =>
+            Package.list((err, result) => {
+              if (err) return resolve([]);
+              resolve(result);
+            })
+          ),
+        ];
+
+        Promise.all(dataPromises).then(
+          ([
+            services,
+            packages,
+          ]) => {
+            res.json({
+              status: true,
+              message: "Billing SPOCs fetched successfully",
+              data: {
+                services,
+                packages,
+              },
+              totalResults: {
+                services: services.length,
+                packages: packages.length,
+              },
+              token: newToken,
+            });
+          }
+        );
+      });
   });
 };
