@@ -2,11 +2,14 @@ const crypto = require("crypto");
 const Admin = require("../../models/admin/adminModel");
 const Common = require("../../models/admin/commonModel");
 const AppModel = require("../../models/appModel");
+const { twoFactorAuth } = require("../../mailer/admin/auth/twoFactorAuth");
+const { forgetPassword } = require("../../mailer/admin/auth/forgetPassword");
 
 // Utility function to generate a random token
 const generateToken = () => crypto.randomBytes(32).toString("hex");
 
 const getCurrentTime = () => new Date();
+const generateOTP = () => Math.floor(100000 + Math.random() * 900000);
 
 // Utility function to get token expiry time (15 minutes from the current time)
 const getTokenExpiry = () => {
@@ -14,7 +17,10 @@ const getTokenExpiry = () => {
   return new Date(getCurrentTime().getTime() + expiryDurationInMinutes * 60000);
 };
 
-const { forgetPassword } = require("../../mailer/admin/auth/forgetPassword");
+const getOTPExpiry = () => {
+  const expiryDurationInMinutes = 10; // Duration for token expiry in minutes
+  return new Date(getCurrentTime().getTime() + expiryDurationInMinutes * 60000);
+};
 
 // Admin login handler
 exports.login = (req, res) => {
@@ -22,14 +28,9 @@ exports.login = (req, res) => {
   const missingFields = [];
 
   // Validate required fields
-  if (!username || username === "") {
-    missingFields.push("Username");
-  }
-  if (!password || password === "") {
-    missingFields.push("Password");
-  }
+  if (!username || username === "") missingFields.push("Username");
+  if (!password || password === "") missingFields.push("Password");
 
-  // If there are missing fields, return an error response
   if (missingFields.length > 0) {
     return res.status(400).json({
       status: false,
@@ -37,18 +38,15 @@ exports.login = (req, res) => {
     });
   }
 
-  // Find admin by email or mobile number
   Admin.findByEmailOrMobile(username, (err, result) => {
     if (err) {
-      console.error("Step 5: Database error:", err);
       return res.status(500).json({ status: false, message: err.message });
     }
 
-    // If no admin found, return a 404 response
     if (result.length === 0) {
       return res.status(404).json({
         status: false,
-        message: "Admin not found with the provided email or mobile number",
+        message: "Admin not found with the provided email or mobile number.",
       });
     }
 
@@ -57,112 +55,323 @@ exports.login = (req, res) => {
     // Validate password
     Admin.validatePassword(username, password, (err, isValid) => {
       if (err) {
-        console.error(
-          "Step 8: Database error during password validation:",
-          err
-        );
-        Common.adminLoginLog(admin.id, "login", "0", err.message, () => {});
+        Common.adminLoginLog(admin.id, "login", "0", err.message, () => { });
         return res.status(500).json({ status: false, message: err.message });
       }
 
-      // If the password is incorrect, log the attempt and return a 401 response
       if (!isValid) {
-        Common.adminLoginLog(
-          admin.id,
-          "login",
-          "0",
-          "Incorrect password",
-          () => {}
-        );
-        return res
-          .status(401)
-          .json({ status: false, message: "Incorrect password" });
+        Common.adminLoginLog(admin.id, "login", "0", "Incorrect password", () => { });
+        return res.status(401).json({ status: false, message: "Incorrect password" });
       }
 
       // Check admin account status
-      if (admin.status == 0) {
-        Common.adminLoginLog(
-          admin.id,
-          "login",
-          "0",
-          "Admin account is not yet verified.",
-          () => {}
-        );
+      if (admin.status === 0) {
+        Common.adminLoginLog(admin.id, "login", "0", "Account not verified", () => { });
         return res.status(400).json({
           status: false,
-          message:
-            "Admin account is not yet verified. Please complete the verification process before proceeding.",
+          message: "Admin account is not verified.",
         });
       }
 
-      if (admin.status == 2) {
-        Common.adminLoginLog(
-          admin.id,
-          "login",
-          "0",
-          "Admin account has been suspended.",
-          () => {}
-        );
+      if (admin.status === 2) {
+        Common.adminLoginLog(admin.id, "login", "0", "Account suspended", () => { });
         return res.status(400).json({
           status: false,
-          message:
-            "Admin account has been suspended. Please contact the help desk for further assistance.",
+          message: "Admin account is suspended.",
         });
       }
 
-      // Get current time and token expiry
       const currentTime = getCurrentTime();
       const tokenExpiry = new Date(admin.token_expiry);
 
-      // Check if the existing token is still valid
       if (admin.login_token && tokenExpiry > currentTime) {
-        Common.adminLoginLog(
-          admin.id,
-          "login",
-          "0",
-          "Another admin is currently logged in.",
-          () => {}
-        );
+        Common.adminLoginLog(admin.id, "login", "0", "Another admin logged in", () => { });
         return res.status(400).json({
           status: false,
-          message:
-            "Another admin is currently logged in. Please try again later.",
+          message: "Another admin is currently logged in. Please try again later.",
         });
       }
 
-      // Generate new token and expiry time
-      const token = generateToken();
-      const newTokenExpiry = getTokenExpiry();
+      if (admin.two_factor_enabled && admin.two_factor_enabled == 1) {
+        const isMobile = /^\d{10}$/.test(username);
+        const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(username);
 
-      // Update the token in the database
-      Admin.updateToken(admin.id, token, newTokenExpiry, (err) => {
-        if (err) {
-          console.error("Step 15: Database error while updating token:", err);
-          Common.adminLoginLog(
-            admin.id,
-            "login",
-            "0",
-            "Error updating token: " + err,
-            () => {}
-          );
+        const otp = generateOTP();
+        const otpExpiry = getOTPExpiry();
+
+        if (isEmail) {
+
+          // Update the token in the database
+          Admin.updateToken(admin.id, null, null, (err) => {
+            if (err) {
+              Common.adminLoginLog(
+                admin.id,
+                "login",
+                "0",
+                "Error updating token: " + err,
+                () => { }
+              );
+              return res.status(500).json({
+                status: false,
+                message: `Error updating token: ${err}`,
+              });
+            }
+            Admin.updateOTP(admin.id, otp, otpExpiry, (err, result) => {
+              if (err) {
+                return res.status(500).json({
+                  status: false,
+                  message: "Failed to update OTP. Please try again later.",
+                });
+              }
+
+              const toArr = [{ name: admin.name, email: username }];
+              twoFactorAuth("admin auth", "two-factor-auth", otp, admin.name, toArr, [])
+                .then(() => {
+                  return res.status(200).json({
+                    status: true,
+                    message: "OTP sent successfully.",
+                  });
+                })
+                .catch((emailError) => {
+                  return res.status(200).json({
+                    status: true,
+                    message: "OTP generated successfully, but email failed.",
+                  });
+                });
+            });
+          });
+        } else if (isMobile) {
           return res.status(500).json({
             status: false,
-            message: `Error updating token: ${err}`,
+            message: "Failed to send OTP on mobile. Please try again later.",
+          });
+        } else {
+          return res.status(500).json({
+            status: false,
+            message: "unexpected method used for login",
           });
         }
-        Common.adminLoginLog(admin.id, "login", "1", null, () => {});
-        const { login_token, token_expiry, ...adminDataWithoutToken } = admin;
+      } else {
+        // Generate new token and expiry time
+        const token = generateToken();
+        const newTokenExpiry = getTokenExpiry();
 
-        res.json({
+        // Update the token in the database
+        Admin.updateToken(admin.id, token, newTokenExpiry, (err) => {
+          if (err) {
+            Common.adminLoginLog(
+              admin.id,
+              "login",
+              "0",
+              "Error updating token: " + err,
+              () => { }
+            );
+            return res.status(500).json({
+              status: false,
+              message: `Error updating token: ${err}`,
+            });
+          }
+          Common.adminLoginLog(admin.id, "login", "1", null, () => { });
+          const { otp, two_factor_enabled, otp_expiry, login_token, token_expiry, ...adminDataWithoutToken } = admin;
+          res.json({
+            status: true,
+            message: "Login successful",
+            adminData: adminDataWithoutToken,
+            token,
+          });
+        });
+      }
+    });
+  });
+};
+
+exports.verifyTwoFactor = (req, res) => {
+  console.log("Request received for verifyTwoFactor.");
+  const { username, otp } = req.body;
+  console.log("Request body:", { username, otp });
+
+  const missingFields = [];
+
+  // Validate required fields
+  if (!username || username.trim() === "") missingFields.push("Username");
+  if (!otp || otp.trim() === "") missingFields.push("OTP");
+
+  const otpAsNumber = Number(otp); // Attempt to convert OTP to a number
+
+  if (isNaN(otpAsNumber)) {
+    console.log("OTP is not a valid number.");
+    return res.status(400).json({
+      status: false,
+      message: "OTP must be a valid number.",
+    });
+  }
+
+  const otpInt = parseInt(otpAsNumber, 10);
+
+  if (missingFields.length > 0) {
+    console.log("Missing required fields:", missingFields);
+    return res.status(400).json({
+      status: false,
+      message: `Missing required fields: ${missingFields.join(", ")}`,
+    });
+  }
+
+  console.log("Finding admin by email or mobile...");
+  // Find admin by email or mobile
+  Admin.findByEmailOrMobile(username, (err, result) => {
+    if (err) {
+      console.error("Error finding admin:", err);
+      return res.status(500).json({
+        status: false,
+        message: "An internal error occurred while verifying the user.",
+      });
+    }
+
+    console.log("Admin search result:", result);
+    if (result.length === 0) {
+      console.log("No admin found with the provided email or mobile number.");
+      return res.status(404).json({
+        status: false,
+        message: "No admin found with the provided email or mobile number.",
+      });
+    }
+
+    const admin = result[0];
+    console.log("Admin found:", admin);
+
+    // Validate account status
+    if (admin.status === 0) {
+      console.log("Admin account not verified.");
+      Common.adminLoginLog(admin.id, "login", "0", "Account not verified", () => { });
+      return res.status(400).json({
+        status: false,
+        message: "Admin account is not verified.",
+      });
+    }
+
+    if (admin.status === 2) {
+      console.log("Admin account suspended.");
+      Common.adminLoginLog(admin.id, "login", "0", "Account suspended", () => { });
+      return res.status(400).json({
+        status: false,
+        message: "Admin account is suspended.",
+      });
+    }
+
+    // Validate token and two-factor authentication settings
+    const currentTime = getCurrentTime();
+    const tokenExpiry = new Date(admin.token_expiry);
+    console.log("Current time:", currentTime, "Token expiry:", tokenExpiry);
+
+    if (admin.login_token && tokenExpiry > currentTime) {
+      console.log("Another admin is currently logged in.");
+      Common.adminLoginLog(admin.id, "login", "0", "Another admin is logged in", () => { });
+      return res.status(400).json({
+        status: false,
+        message: "Another admin is currently logged in. Please try again later.",
+      });
+    }
+
+    if (admin.two_factor_enabled !== 1) {
+      console.log("Two-factor authentication disabled for this admin.");
+      return res.status(400).json({
+        status: false,
+        message: "Two-factor authentication is disabled for this admin.",
+      });
+    }
+
+    // Validate OTP
+    const otpExpiry = new Date(admin.otp_expiry);
+    console.log("OTP provided:", otpInt, "Stored OTP:", admin.otp, "OTP expiry:", otpExpiry);
+
+    if (admin.otp !== otpInt) {
+      console.log("Invalid OTP provided.");
+      Common.adminLoginLog(admin.id, "login", "0", "Invalid OTP", () => { });
+      return res.status(401).json({
+        status: false,
+        message: "The provided OTP is incorrect.",
+      });
+    }
+
+    if (otpExpiry <= currentTime) {
+      console.log("OTP has expired.");
+      Common.adminLoginLog(admin.id, "login", "0", "OTP expired", () => { });
+      return res.status(401).json({
+        status: false,
+        message: "The OTP has expired. Please request a new one.",
+      });
+    }
+
+    // Update token and return success response
+    const token = generateToken();
+    const newTokenExpiry = getTokenExpiry();
+    console.log("Generated token:", token, "New token expiry:", newTokenExpiry);
+
+    Admin.updateOTP(admin.id, null, null, (err, result) => {
+      if (err) {
+        return res.status(500).json({
+          status: false,
+          message: "Failed to update OTP. Please try again later.",
+        });
+      }
+      Admin.updateToken(admin.id, token, newTokenExpiry, (err) => {
+        if (err) {
+          console.error("Error updating token:", err);
+          Common.adminLoginLog(admin.id, "login", "0", "Error updating token", () => { });
+          return res.status(500).json({
+            status: false,
+            message: "An error occurred while updating the session token. Please try again.",
+          });
+        }
+
+        console.log("Token updated successfully.");
+        Common.adminLoginLog(admin.id, "login", "1", "Login successful", () => { });
+        const { otp, two_factor_enabled, otp_expiry, login_token, token_expiry, ...adminDataWithoutSensitiveInfo } = admin;
+
+        console.log("Sending successful login response.");
+        return res.json({
           status: true,
-          message: "Login successful",
-          adminData: adminDataWithoutToken,
+          message: "Login successful.",
+          adminData: adminDataWithoutSensitiveInfo,
           token,
         });
       });
     });
   });
 };
+
+/*
+// Generate new token and expiry time
+const token = generateToken();
+const newTokenExpiry = getTokenExpiry();
+
+// Update the token in the database
+Admin.updateToken(admin.id, token, newTokenExpiry, (err) => {
+  if (err) {
+    console.error("Step 15: Database error while updating token:", err);
+    Common.adminLoginLog(
+      admin.id,
+      "login",
+      "0",
+      "Error updating token: " + err,
+      () => { }
+    );
+    return res.status(500).json({
+      status: false,
+      message: `Error updating token: ${err}`,
+    });
+  }
+  Common.adminLoginLog(admin.id, "login", "1", null, () => { });
+  const { login_token, token_expiry, ...adminDataWithoutToken } = admin;
+
+  res.json({
+    status: true,
+    message: "Login successful",
+    adminData: adminDataWithoutToken,
+    token,
+  });
+});
+*/
 
 // Admin logout handler
 exports.logout = (req, res) => {
@@ -276,7 +485,7 @@ exports.validateLogin = (req, res) => {
         "login",
         "0",
         "Admin account is not yet verified.",
-        () => {}
+        () => { }
       );
       return res.status(400).json({
         status: false,
@@ -291,7 +500,7 @@ exports.validateLogin = (req, res) => {
         "login",
         "0",
         "Admin account has been suspended.",
-        () => {}
+        () => { }
       );
       return res.status(400).json({
         status: false,
@@ -398,7 +607,7 @@ exports.updatePassword = (req, res) => {
           "0",
           "Admin attempted to update password",
           err,
-          () => {}
+          () => { }
         );
         return res.status(500).json({
           status: false,
@@ -415,7 +624,7 @@ exports.updatePassword = (req, res) => {
         "1",
         "Admin successfully updated password",
         null,
-        () => {}
+        () => { }
       );
 
       return res.status(200).json({
@@ -485,7 +694,7 @@ exports.forgotPasswordRequest = (req, res) => {
               "forgot-password",
               "0",
               `Error updating token: ${err.message}`,
-              () => {}
+              () => { }
             );
             return res.status(500).json({
               status: false,
@@ -494,9 +703,8 @@ exports.forgotPasswordRequest = (req, res) => {
           }
 
           // Send password reset email
-          const resetLink = `${
-            appInfo.host || "https://www.goldquestglobal.com"
-          }/reset-password?email=${admin.email}&token=${token}`;
+          const resetLink = `${appInfo.host || "https://www.goldquestglobal.com"
+            }/reset-password?email=${admin.email}&token=${token}`;
           const toArr = [{ name: admin.name, email: admin.email }];
 
           forgetPassword(
@@ -512,7 +720,7 @@ exports.forgotPasswordRequest = (req, res) => {
                 "forgot-password",
                 "1",
                 null,
-                () => {}
+                () => { }
               );
               return res.status(200).json({
                 status: true,
@@ -526,7 +734,7 @@ exports.forgotPasswordRequest = (req, res) => {
                 "forgot-password",
                 "0",
                 `Failed to send email: ${emailError.message}`,
-                () => {}
+                () => { }
               );
               return res.status(500).json({
                 status: false,
@@ -616,7 +824,7 @@ exports.forgotPassword = (req, res) => {
           "0",
           "Failed password update attempt",
           err,
-          () => {}
+          () => { }
         );
         return res.status(500).json({
           status: false,
@@ -632,7 +840,7 @@ exports.forgotPassword = (req, res) => {
         "1",
         "Admin password updated successfully",
         null,
-        () => {}
+        () => { }
       );
 
       return res.status(200).json({

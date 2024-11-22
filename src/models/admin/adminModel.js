@@ -23,7 +23,7 @@ const Admin = {
 
   findByEmailOrMobile: (username, callback) => {
     const sql = `
-      SELECT \`id\`, \`emp_id\`, \`name\`, \`profile_picture\`, \`email\`, \`mobile\`, \`status\`, \`login_token\`, \`token_expiry\`
+      SELECT \`id\`, \`emp_id\`, \`name\`, \`profile_picture\`, \`email\`, \`mobile\`, \`status\`, \`login_token\`, \`token_expiry\`, \`otp\`, \`two_factor_enabled\`, \`otp_expiry\`
       FROM \`admins\`
       WHERE \`email\` = ? OR \`mobile\` = ?
     `;
@@ -144,6 +144,47 @@ const Admin = {
 
         if (queryErr) {
           console.error("Database query error: 8", queryerr);
+          return callback(
+            {
+              message: "An error occurred while updating the password.",
+              error: queryErr,
+            },
+            null
+          );
+        }
+
+        // Check if the admin_id was found and the update affected any rows
+        if (results.affectedRows === 0) {
+          return callback(
+            {
+              message:
+                "Admin not found or password not updated. Please check the provided details.",
+            },
+            null
+          );
+        }
+
+        callback(null, {
+          message: "Password updated successfully.",
+          affectedRows: results.affectedRows,
+        });
+      });
+    });
+  },
+
+  updateOTP: (admin_id, otp, otp_expiry, callback) => {
+    const sql = `UPDATE \`admins\` SET \`otp\` = ?, \`otp_expiry\` = ?,  \`reset_password_token\` = null, \`login_token\` = null, \`token_expiry\` = null, \`password_token_expiry\` = null WHERE \`id\` = ?`;
+
+    startConnection((err, connection) => {
+      if (err) {
+        return callback(err, null);
+      }
+
+      connection.query(sql, [otp, otp_expiry, admin_id], (queryErr, results) => {
+        connectionRelease(connection); // Release the connection
+
+        if (queryErr) {
+          console.error("Database query error: 8", queryErr);
           return callback(
             {
               message: "An error occurred while updating the password.",
