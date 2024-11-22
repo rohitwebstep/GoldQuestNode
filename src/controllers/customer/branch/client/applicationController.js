@@ -2,6 +2,7 @@ const ClientApplication = require("../../../../models/customer/branch/clientAppl
 const BranchCommon = require("../../../../models/customer/branch/commonModel");
 const Branch = require("../../../../models/customer/branch/branchModel");
 const Service = require("../../../../models/admin/serviceModel");
+const Customer = require("../../../../models/customer/customerModel");
 const AppModel = require("../../../../models/appModel");
 const {
   createMail,
@@ -124,7 +125,7 @@ exports.create = (req, res) => {
                 "0",
                 null,
                 err,
-                () => {}
+                () => { }
               );
               return res.status(500).json({
                 status: false,
@@ -142,7 +143,7 @@ exports.create = (req, res) => {
               "1",
               `{id: ${result.insertId}}`,
               null,
-              () => {}
+              () => { }
             );
 
             if (send_mail == 0) {
@@ -309,11 +310,12 @@ exports.create = (req, res) => {
 
 // Controller to list all clientApplications
 exports.list = (req, res) => {
-  const { branch_id, _token } = req.query;
+  const { branch_id, _token, customer_id } = req.query;
 
   let missingFields = [];
   if (!branch_id) missingFields.push("Branch ID");
   if (!_token) missingFields.push("Token");
+  if (!customer_id) missingFields.push("Customer ID");
 
   if (missingFields.length > 0) {
     return res.status(400).json({
@@ -346,25 +348,42 @@ exports.list = (req, res) => {
 
       const newToken = tokenResult.newToken;
 
-      ClientApplication.list(branch_id, (err, clientResults) => {
-        if (err) {
-          console.error("Database error:", err);
-          return res.status(500).json({
-            status: false,
-            message: "An error occurred while fetching client applications.",
+      // Fetch all required data
+      const dataPromises = [
+        new Promise((resolve) =>
+          ClientApplication.list(branch_id, (err, result) => {
+            if (err) return resolve([]);
+            resolve(result);
+          })
+        ),
+        new Promise((resolve) =>
+          Customer.basicInfoByID(customer_id, (err, result) => {
+            if (err) return resolve([]);
+            resolve(result[0]);
+          })
+        ),
+      ];
+
+      Promise.all(dataPromises).then(
+        ([
+          clientApplications,
+          customerInfo,
+        ]) => {
+          res.json({
+            status: true,
+            message: "Client applications fetched successfully.",
+            data: {
+              clientApplications,
+              customerInfo,
+            },
+            totalResults: {
+              clientApplications: clientApplications.length,
+              customerInfo: customerInfo.length,
+            },
             token: newToken,
-            err,
           });
         }
-
-        res.json({
-          status: true,
-          message: "Client applications fetched successfully.",
-          clientApplications: clientResults,
-          totalResults: clientResults.length,
-          token: newToken,
-        });
-      });
+      );
     });
   });
 };
@@ -557,7 +576,7 @@ exports.update = (req, res) => {
                       "0",
                       JSON.stringify({ client_application_id, ...changes }),
                       err,
-                      () => {}
+                      () => { }
                     );
                     return res.status(500).json({
                       status: false,
@@ -573,7 +592,7 @@ exports.update = (req, res) => {
                     "1",
                     JSON.stringify({ client_application_id, ...changes }),
                     null,
-                    () => {}
+                    () => { }
                   );
 
                   res.status(200).json({
@@ -866,7 +885,7 @@ exports.upload = async (req, res) => {
 
                                 const serviceIds =
                                   typeof services === "string" &&
-                                  services.trim() !== ""
+                                    services.trim() !== ""
                                     ? services.split(",").map((id) => id.trim())
                                     : [];
 
@@ -1074,7 +1093,7 @@ exports.delete = (req, res) => {
                   "0",
                   JSON.stringify({ id }),
                   err,
-                  () => {}
+                  () => { }
                 );
                 return res.status(500).json({
                   status: false,
@@ -1091,7 +1110,7 @@ exports.delete = (req, res) => {
                 "1",
                 JSON.stringify({ id }),
                 null,
-                () => {}
+                () => { }
               );
 
               res.status(200).json({

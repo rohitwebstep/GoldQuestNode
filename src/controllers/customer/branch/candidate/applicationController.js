@@ -1,6 +1,7 @@
 const Candidate = require("../../../../models/customer/branch/candidateApplicationModel");
 const BranchCommon = require("../../../../models/customer/branch/commonModel");
 const Service = require("../../../../models/admin/serviceModel");
+const Customer = require("../../../../models/customer/customerModel");
 const AppModel = require("../../../../models/appModel");
 
 const {
@@ -125,7 +126,7 @@ exports.create = (req, res) => {
                   "0",
                   null,
                   err,
-                  () => {}
+                  () => { }
                 );
                 return res.status(500).json({
                   status: false,
@@ -141,7 +142,7 @@ exports.create = (req, res) => {
                 "1",
                 `{id: ${result.insertId}}`,
                 null,
-                () => {}
+                () => { }
               );
 
               BranchCommon.getBranchandCustomerEmailsForNotification(
@@ -176,9 +177,9 @@ exports.create = (req, res) => {
 
                   const serviceIds = services
                     ? services
-                        .split(",")
-                        .map((id) => parseInt(id.trim(), 10))
-                        .filter(Number.isInteger)
+                      .split(",")
+                      .map((id) => parseInt(id.trim(), 10))
+                      .filter(Number.isInteger)
                     : [];
 
                   const serviceNames = [];
@@ -336,11 +337,12 @@ exports.create = (req, res) => {
 
 // Controller to list all candidateApplications
 exports.list = (req, res) => {
-  const { branch_id, _token } = req.query;
+  const { branch_id, _token, customer_id } = req.query;
 
   let missingFields = [];
   if (!branch_id) missingFields.push("Branch ID");
   if (!_token) missingFields.push("Token");
+  if (!customer_id) missingFields.push("Customer ID");
 
   if (missingFields.length > 0) {
     return res.status(400).json({
@@ -371,24 +373,42 @@ exports.list = (req, res) => {
 
       const newToken = result.newToken;
 
-      Candidate.list(branch_id, (err, result) => {
-        if (err) {
-          console.error("Database error:", err);
-          return res.status(500).json({
-            status: false,
-            message: "An error occurred while fetching candidate applications.",
+      // Fetch all required data
+      const dataPromises = [
+        new Promise((resolve) =>
+          Candidate.list(branch_id, (err, result) => {
+            if (err) return resolve([]);
+            resolve(result);
+          })
+        ),
+        new Promise((resolve) =>
+          Customer.basicInfoByID(customer_id, (err, result) => {
+            if (err) return resolve([]);
+            resolve(result[0]);
+          })
+        ),
+      ];
+
+      Promise.all(dataPromises).then(
+        ([
+          candidateApplications,
+          customerInfo,
+        ]) => {
+          res.json({
+            status: true,
+            message: "Candidate applications fetched successfully.",
+            data: {
+              candidateApplications,
+              customerInfo,
+            },
+            totalResults: {
+              candidateApplications: candidateApplications.length,
+              customerInfo: customerInfo.length,
+            },
             token: newToken,
           });
         }
-
-        res.json({
-          status: true,
-          message: "Candidate applications fetched successfully.",
-          candidateApplications: result,
-          totalResults: result.length,
-          token: newToken,
-        });
-      });
+      );
     });
   });
 };
@@ -561,7 +581,7 @@ exports.update = (req, res) => {
                       "0",
                       JSON.stringify({ candidate_application_id, ...changes }),
                       err,
-                      () => {}
+                      () => { }
                     );
                     return res.status(500).json({
                       status: false,
@@ -577,7 +597,7 @@ exports.update = (req, res) => {
                     "1",
                     JSON.stringify({ candidate_application_id, ...changes }),
                     null,
-                    () => {}
+                    () => { }
                   );
 
                   res.status(200).json({
@@ -684,7 +704,7 @@ exports.delete = (req, res) => {
                   "0",
                   JSON.stringify({ id }),
                   err,
-                  () => {}
+                  () => { }
                 );
                 return res.status(500).json({
                   status: false,
@@ -700,7 +720,7 @@ exports.delete = (req, res) => {
                 "1",
                 JSON.stringify({ id }),
                 null,
-                () => {}
+                () => { }
               );
 
               res.status(200).json({
