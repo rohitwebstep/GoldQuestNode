@@ -1222,8 +1222,8 @@ exports.update = (req, res) => {
 
             function continueUpdate() {
               if (
-                additional_login &&
-                additional_login.toLowerCase() === "yes" &&
+                additional_login_int &&
+                additional_login_int === 1 &&
                 username !== currentCustomer.username
               ) {
                 Customer.checkUsernameForUpdate(
@@ -1271,7 +1271,7 @@ exports.update = (req, res) => {
                       : services,
                   additional_login: additional_login_int,
                   username:
-                    additional_login && additional_login.toLowerCase() === "yes"
+                    additional_login_int && additional_login_int === 1
                       ? username
                       : null,
                 },
