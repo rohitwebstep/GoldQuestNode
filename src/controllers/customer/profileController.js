@@ -552,9 +552,9 @@ exports.create = (req, res) => {
                                                   "create",
                                                   company_name,
                                                   formattedBranches,
-                                                  password,
                                                   dbBranch.is_head,
-                                                  customerRecipientList
+                                                  customerRecipientList,
+                                                  password
                                                 )
                                                   .then(resolve)
                                                   .catch(reject);
@@ -574,9 +574,9 @@ exports.create = (req, res) => {
                                               name: dbBranch.name,
                                             },
                                           ],
-                                          password,
                                           dbBranch.is_head,
-                                          []
+                                          [],
+                                          password
                                         ).catch((emailError) => {
                                           console.error(
                                             "Error sending email:",
@@ -880,9 +880,9 @@ exports.upload = async (req, res) => {
                                 "create",
                                 company_name,
                                 formattedBranches,
-                                password,
                                 dbBranch.is_head,
-                                customerRecipientList
+                                customerRecipientList,
+                                password
                               ).catch((emailError) => {
                                 console.error(
                                   "Error sending email:",
@@ -903,9 +903,9 @@ exports.upload = async (req, res) => {
                             "create",
                             company_name,
                             [{ email: dbBranch.email, name: dbBranch.name }], // Send only the current branch
-                            password,
                             dbBranch.is_head,
-                            []
+                            [],
+                            password
                           ).catch((emailError) => {
                             console.error("Error sending email:", emailError);
                             return Promise.resolve(
