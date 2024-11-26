@@ -4,7 +4,7 @@ const Service = {
   create: (title, description, short_code, sac_code, admin_id, callback) => {
     // Step 1: Check if a service with the same title already exists
     const checkServiceSql = `
-    SELECT * FROM \`services\` WHERE \`title\` = ? OR \`short_code\` = ? OR \`sac_code\` = ?
+    SELECT * FROM \`services\` WHERE \`title\` = ? OR \`short_code\` = ?
   `;
 
     startConnection((err, connection) => {
@@ -14,7 +14,7 @@ const Service = {
 
       connection.query(
         checkServiceSql,
-        [title, short_code, sac_code],
+        [title, short_code],
         (checkErr, serviceResults) => {
           if (checkErr) {
             console.error("Error checking service:", checkErr);
@@ -41,15 +41,6 @@ const Service = {
 
             if (shortCodeExists) {
               errorMessage += "`short_code` ";
-            }
-
-            const sacCodeExists = serviceResults.some(
-              (result) =>
-                result.sac_code.toLowerCase() === sac_code.toLowerCase()
-            );
-
-            if (sacCodeExists) {
-              errorMessage += "`sac_code` ";
             }
 
             connectionRelease(connection); // Release connection before returning error
@@ -171,7 +162,7 @@ const Service = {
   update: (id, title, description, short_code, sac_code, callback) => {
     // Step 1: Check if a service with the same title already exists
     const checkServiceSql = `
-        SELECT * FROM \`services\` WHERE \`title\` = ? OR \`short_code\` = ? OR \`sac_code\` = ? AND \`id\` != ?
+        SELECT * FROM \`services\` WHERE \`title\` = ? OR \`short_code\` = ? AND \`id\` != ?
       `;
 
     startConnection((err, connection) => {
@@ -181,7 +172,7 @@ const Service = {
 
       connection.query(
         checkServiceSql,
-        [title, short_code, sac_code, id],
+        [title, short_code, id],
         (checkErr, serviceResults) => {
           if (checkErr) {
             console.error("Error checking service:", checkErr);
@@ -208,15 +199,6 @@ const Service = {
 
             if (shortCodeExists) {
               errorMessage += "`short_code` ";
-            }
-
-            const sacCodeExists = serviceResults.some(
-              (result) =>
-                result.sac_code.toLowerCase() === sac_code.toLowerCase()
-            );
-
-            if (sacCodeExists) {
-              errorMessage += "`sac_code` ";
             }
 
             connectionRelease(connection); // Release connection before returning error
