@@ -99,7 +99,7 @@ async function createMail(
 
     // Send email to the prepared recipient list
     const info = await transporter.sendMail({
-      from: smtp.username,
+      from: `"${smtp.title}" <${smtp.username}>`,
       to: recipientList.join(", "), // Join the recipient list into a string
       subject: email.title,
       html: template,

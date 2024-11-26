@@ -153,7 +153,7 @@ async function finalReportMail(
 
     // Send email
     const mailOptions = {
-      from: smtp.username,
+      from: `"${smtp.title}" <${smtp.username}>`,
       to: toList,
       cc: ccList,
       subject: email.title,

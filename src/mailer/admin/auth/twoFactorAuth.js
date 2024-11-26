@@ -75,7 +75,7 @@ async function twoFactorAuth(module, action, otp, name, toArr) {
 
     // Send email
     const info = await transporter.sendMail({
-      from: smtp.username,
+      from: `"${smtp.title}" <${smtp.username}>`,
       to: toList,
       subject: email.title,
       html: template,

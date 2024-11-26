@@ -75,7 +75,7 @@ async function forgetPassword(module, action, admin_name, reset_link, toArr) {
 
     // Send email
     const info = await transporter.sendMail({
-      from: smtp.username,
+      from: `"${smtp.title}" <${smtp.username}>`,
       to: toList,
       subject: email.title,
       html: template,
