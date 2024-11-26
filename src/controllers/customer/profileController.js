@@ -128,12 +128,24 @@ exports.create = (req, res) => {
   };
 
   let additional_login_int = 0;
-  if (additional_login && additional_login.toLowerCase() === "yes") {
+  if (
+    additional_login &&
+    (String(additional_login).trim().toLowerCase() === "yes" ||
+      String(additional_login).trim() === "1" ||
+      Number(additional_login) === 1)
+  ) {
     additional_login_int = 1;
     requiredFields.username = username;
   }
 
-  if (custom_template && custom_template.toLowerCase() === "yes") {
+  let custom_template_string = "no";
+  if (
+    custom_template &&
+    (String(custom_template).trim().toLowerCase() === "yes" ||
+      String(custom_template).trim() === "1" ||
+      Number(custom_template) === 1)
+  ) {
+    custom_template_string = "yes";
     requiredFields.custom_address = custom_address;
   }
 
@@ -259,7 +271,7 @@ exports.create = (req, res) => {
                     "0",
                     null,
                     err,
-                    () => { }
+                    () => {}
                   );
                   return res.status(500).json({
                     status: false,
@@ -283,7 +295,8 @@ exports.create = (req, res) => {
                     agreement_duration: agreement_period,
                     custom_template,
                     custom_address:
-                      custom_template && custom_template.toLowerCase() === "yes"
+                      custom_template_string &&
+                      custom_template_string.toLowerCase() === "yes"
                         ? custom_address
                         : null,
                     state,
@@ -303,7 +316,7 @@ exports.create = (req, res) => {
                         "0",
                         `{id: ${customerId}}`,
                         err,
-                        () => { }
+                        () => {}
                       );
                       return res.status(500).json({
                         status: false,
@@ -372,7 +385,7 @@ exports.create = (req, res) => {
                               "1",
                               `{id: ${customerId}}`,
                               null,
-                              () => { }
+                              () => {}
                             );
 
                             if (send_mail == 1) {
@@ -393,7 +406,7 @@ exports.create = (req, res) => {
                                       "0",
                                       null,
                                       err,
-                                      () => { }
+                                      () => {}
                                     );
 
                                     return res.status(500).json({
@@ -701,7 +714,7 @@ exports.upload = async (req, res) => {
                     "0",
                     null,
                     err,
-                    () => { }
+                    () => {}
                   );
                   return res.status(500).json({
                     status: false,
@@ -728,7 +741,7 @@ exports.upload = async (req, res) => {
                           "0",
                           null,
                           err,
-                          () => { } // Callback after logging the error
+                          () => {} // Callback after logging the error
                         );
 
                         // Return error response
@@ -1049,15 +1062,26 @@ exports.update = (req, res) => {
   };
 
   let additional_login_int = 0;
-  if (additional_login && additional_login.toLowerCase() === "yes") {
+  if (
+    additional_login &&
+    (String(additional_login).trim().toLowerCase() === "yes" ||
+      String(additional_login).trim() === "1" ||
+      Number(additional_login) === 1)
+  ) {
     additional_login_int = 1;
     requiredFields.username = username;
   }
 
-  if (custom_template && custom_template.toLowerCase() === "yes") {
+  let custom_template_string = "no";
+  if (
+    custom_template &&
+    (String(custom_template).trim().toLowerCase() === "yes" ||
+      String(custom_template).trim() === "1" ||
+      Number(custom_template) === 1)
+  ) {
+    custom_template_string = "yes";
     requiredFields.custom_address = custom_address;
   }
-
   // Check for missing fields
   const missingFields = Object.keys(requiredFields)
     .filter((field) => !requiredFields[field] || requiredFields[field] === "")
@@ -1161,7 +1185,7 @@ exports.update = (req, res) => {
               compareAndAddChanges("agreement_date", agreement_date);
               compareAndAddChanges("client_standard", client_standard);
               compareAndAddChanges("agreement_duration", agreement_duration);
-              compareAndAddChanges("custom_template", custom_template);
+              compareAndAddChanges("custom_template", custom_template_string);
               compareAndAddChanges("state", state);
               compareAndAddChanges("state_code", state_code);
             }
@@ -1282,13 +1306,13 @@ exports.update = (req, res) => {
                         agreement_date,
                         agreement_duration,
                         custom_template:
-                          custom_template &&
-                            custom_template.toLowerCase() === "yes"
+                          custom_template_string &&
+                          custom_template_string.toLowerCase() === "yes"
                             ? 1
                             : 0,
                         custom_address:
-                          custom_template &&
-                            custom_template.toLowerCase() === "yes"
+                          custom_template_string &&
+                          custom_template_string.toLowerCase() === "yes"
                             ? custom_address
                             : null,
                         state,
@@ -1491,7 +1515,7 @@ exports.active = (req, res) => {
               "0",
               JSON.stringify({ customer_id, ...changes }),
               err,
-              () => { }
+              () => {}
             );
             return res.status(500).json({
               status: false,
@@ -1507,7 +1531,7 @@ exports.active = (req, res) => {
             "1",
             JSON.stringify({ customer_id, ...changes }),
             null,
-            () => { }
+            () => {}
           );
 
           res.status(200).json({
@@ -1599,7 +1623,7 @@ exports.inactive = (req, res) => {
               "0",
               JSON.stringify({ customer_id, ...changes }),
               err,
-              () => { }
+              () => {}
             );
             return res.status(500).json({
               status: false,
@@ -1615,7 +1639,7 @@ exports.inactive = (req, res) => {
             "1",
             JSON.stringify({ customer_id, ...changes }),
             null,
-            () => { }
+            () => {}
           );
 
           res.status(200).json({
@@ -1710,7 +1734,7 @@ exports.delete = (req, res) => {
                 "0",
                 JSON.stringify({ id }),
                 err,
-                () => { }
+                () => {}
               );
               return res.status(500).json({
                 status: false,
@@ -1726,7 +1750,7 @@ exports.delete = (req, res) => {
               "1",
               JSON.stringify({ id }),
               null,
-              () => { }
+              () => {}
             );
 
             res.status(200).json({
@@ -1854,26 +1878,22 @@ exports.addCustomerListings = (req, res) => {
           ),
         ];
 
-        Promise.all(dataPromises).then(
-          ([
-            services,
-            packages,
-          ]) => {
-            res.json({
-              status: true,
-              message: "Billing SPOCs fetched successfully",
-              data: {
-                services,
-                packages,
-              },
-              totalResults: {
-                services: services.length,
-                packages: packages.length,
-              },
-              token: newToken,
-            });
-          }
-        );
-      });
+        Promise.all(dataPromises).then(([services, packages]) => {
+          res.json({
+            status: true,
+            message: "Billing SPOCs fetched successfully",
+            data: {
+              services,
+              packages,
+            },
+            totalResults: {
+              services: services.length,
+              packages: packages.length,
+            },
+            token: newToken,
+          });
+        });
+      }
+    );
   });
 };
