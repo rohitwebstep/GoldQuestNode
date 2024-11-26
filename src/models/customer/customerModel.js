@@ -265,7 +265,7 @@ const Customer = {
         \`agreement_date\`, \`agreement_duration\`, \`custom_template\`,
         \`custom_address\`, \`state\`, \`state_code\`, 
         \`client_standard\`
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     const valuesCustomerMetas = [
