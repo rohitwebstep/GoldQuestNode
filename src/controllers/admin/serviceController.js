@@ -3,14 +3,8 @@ const Common = require("../../models/admin/commonModel");
 
 // Controller to create a new service
 exports.create = (req, res) => {
-  const {
-    title,
-    description,
-    short_code,
-    sac_code,
-    admin_id,
-    _token,
-  } = req.body;
+  const { title, description, short_code, sac_code, admin_id, _token } =
+    req.body;
 
   let missingFields = [];
   if (!title || title === "") missingFields.push("Title");
@@ -64,7 +58,7 @@ exports.create = (req, res) => {
               "Create",
               "0",
               null,
-              err,
+              err.message,
               () => {}
             );
             return res
@@ -212,15 +206,8 @@ exports.getServiceById = (req, res) => {
 
 // Controller to update a service
 exports.update = (req, res) => {
-  const {
-    id,
-    title,
-    description,
-    short_code,
-    sac_code,
-    admin_id,
-    _token,
-  } = req.body;
+  const { id, title, description, short_code, sac_code, admin_id, _token } =
+    req.body;
 
   let missingFields = [];
   if (!id || id === "") missingFields.push("Service ID");
@@ -297,7 +284,7 @@ exports.update = (req, res) => {
                 "Update",
                 "0",
                 JSON.stringify({ id, ...changes }),
-                err,
+                err.message,
                 () => {}
               );
               return res

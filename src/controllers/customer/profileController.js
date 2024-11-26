@@ -74,6 +74,63 @@ const areEmailsUsed = (emails) => {
   });
 };
 
+const areEmailsUsedForUpdate = (emails, customer_id) => {
+  return new Promise((resolve, reject) => {
+    // Validate inputs
+    if (!emails || !Array.isArray(emails) || emails.length === 0) {
+      return reject(new Error("Missing required field: Emails"));
+    }
+
+    // Check each email
+    const emailCheckPromises = emails.map((email) => {
+      return new Promise((resolve, reject) => {
+        Branch.isEmailUsedForUpdate(email, customer_id, (err, isUsed) => {
+          if (err) {
+            return reject(err);
+          }
+          resolve({ email, isUsed });
+        });
+      });
+    });
+
+    // Wait for all email checks to complete
+    Promise.all(emailCheckPromises)
+      .then((results) => {
+        // Filter out emails that are in use
+        const usedEmails = results
+          .filter((result) => result.isUsed)
+          .map((result) => result.email);
+
+        // Determine if any emails are used
+        const areAnyUsed = usedEmails.length > 0;
+
+        // Create the response message if any emails are used
+        let message = "";
+        if (areAnyUsed) {
+          const emailCount = usedEmails.length;
+
+          if (emailCount === 1) {
+            message = `${usedEmails[0]} is already used.`;
+          } else if (emailCount === 2) {
+            message = `${usedEmails[0]} and ${usedEmails[1]} are already used.`;
+          } else {
+            const lastEmail = usedEmails.pop(); // Remove the last email for formatting
+            message = `${usedEmails.join(
+              ", "
+            )} and ${lastEmail} are already used.`;
+          }
+        }
+
+        // Resolve with a boolean and the message
+        resolve({ areAnyUsed, message });
+      })
+      .catch((err) => {
+        console.error("Error checking email usage:", err);
+        reject(new Error("Error checking email usage: " + err.message));
+      });
+  });
+};
+
 exports.create = (req, res) => {
   const {
     admin_id,
@@ -180,10 +237,31 @@ exports.create = (req, res) => {
       if (!result.status) {
         return res.status(401).json({ status: false, message: result.message });
       }
+      const newToken = result.newToken;
 
       const allEmails = emails.concat(
         branches.map((branch) => branch.branch_email)
       );
+
+      // Find duplicate emails
+      const duplicateEmails = allEmails.filter(
+        (email, index, self) => self.indexOf(email) !== index
+      );
+
+      // Get unique duplicates and show in the error message
+      if (duplicateEmails.length > 0) {
+        const uniqueDuplicateEmails = [...new Set(duplicateEmails)]; // Get unique duplicate emails
+        console.error(
+          `Email(s) used many times: ${uniqueDuplicateEmails.join(", ")}`
+        );
+        return res.status(400).json({
+          status: false,
+          error: "email is used many times",
+          repeatedEmails: uniqueDuplicateEmails,
+          token: result.newToken,
+        });
+      }
+
       areEmailsUsed(allEmails)
         .then(({ areAnyUsed, message }) => {
           if (areAnyUsed) {
@@ -193,7 +271,7 @@ exports.create = (req, res) => {
               token: result.newToken,
             });
           }
-          const newToken = result.newToken;
+
           const password = generatePassword(company_name);
 
           // Check if client_unique_id already exists
@@ -216,7 +294,7 @@ exports.create = (req, res) => {
             }
 
             // Check if username is required and exists
-            if (additional_login && additional_login.toLowerCase() === "yes") {
+            if (additional_login_int && additional_login_int === 1) {
               Customer.checkUsername(username, (err, exists) => {
                 if (err) {
                   console.error("Error checking username:", err);
@@ -1116,260 +1194,311 @@ exports.update = (req, res) => {
 
       const newToken = result.newToken;
 
-      Customer.getCustomerById(customer_id, (err, currentCustomer) => {
-        if (err) {
-          console.error("Database error during customer retrieval:", err);
-          return res.status(500).json({
-            status: false,
-            message: "Failed to retrieve Customer. Please try again.",
-            token: newToken,
-          });
-        }
+      // Find duplicate emails
+      const duplicateEmails = emails.filter(
+        (email, index, self) => self.indexOf(email) !== index
+      );
 
-        if (!currentCustomer) {
-          return res.status(404).json({
-            status: false,
-            message: "Customer not found.",
-            token: newToken,
-          });
-        }
+      // Get unique duplicates
+      if (duplicateEmails.length > 0) {
+        const uniqueDuplicateEmails = [...new Set(duplicateEmails)]; // Get unique duplicate emails
+        console.error(
+          `Email(s) used many times: ${uniqueDuplicateEmails.join(", ")}`
+        );
 
-        const changes = {};
-        const compareAndAddChanges = (key, newValue) => {
-          if (currentCustomer[key] !== newValue) {
-            changes[key] = {
-              old: currentCustomer[key],
-              new: newValue,
-            };
+        return res.status(400).json({
+          status: false,
+          error: "email is used many times",
+          repeatedEmails: uniqueDuplicateEmails,
+          token: "newGeneratedTokenHere", // replace with actual token generation logic
+        });
+      }
+
+      areEmailsUsedForUpdate(emails, customer_id)
+        .then(({ areAnyUsed, message }) => {
+          if (areAnyUsed) {
+            return res.status(400).json({
+              status: false,
+              message: message, // Return the formatted message in the response
+              token: result.newToken,
+            });
           }
-        };
 
-        compareAndAddChanges("name", name);
-        compareAndAddChanges("emails_json", JSON.stringify(emails));
-        compareAndAddChanges("additional_login", additional_login_int);
-
-        if (additional_login_int && additional_login_int === 1) {
-          compareAndAddChanges("username", username);
-        }
-        compareAndAddChanges("mobile", mobile);
-        compareAndAddChanges("services", services);
-
-        Customer.getCustomerMetaById(
-          customer_id,
-          (err, currentCustomerMeta) => {
+          Customer.getCustomerById(customer_id, (err, currentCustomer) => {
             if (err) {
-              console.error(
-                "Database error during customer meta retrieval:",
-                err
-              );
+              console.error("Database error during customer retrieval:", err);
               return res.status(500).json({
                 status: false,
-                message: "Failed to retrieve Customer meta. Please try again.",
+                message: "Failed to retrieve Customer. Please try again.",
                 token: newToken,
               });
             }
 
-            if (currentCustomerMeta) {
-              compareAndAddChanges("address", address);
-              compareAndAddChanges(
-                "single_point_of_contact",
-                single_point_of_contact
-              );
-              compareAndAddChanges(
-                "escalation_point_contact",
-                escalation_point_contact
-              );
-              compareAndAddChanges("contact_person_name", contact_person_name);
-
-              compareAndAddChanges("gst_number", gst_number);
-              compareAndAddChanges("tat_days", tat_days);
-              compareAndAddChanges("agreement_date", agreement_date);
-              compareAndAddChanges("client_standard", client_standard);
-              compareAndAddChanges("agreement_duration", agreement_duration);
-              compareAndAddChanges("custom_template", custom_template_string);
-              compareAndAddChanges("state", state);
-              compareAndAddChanges("state_code", state_code);
+            if (!currentCustomer) {
+              return res.status(404).json({
+                status: false,
+                message: "Customer not found.",
+                token: newToken,
+              });
             }
 
-            if (client_unique_id !== currentCustomer.client_unique_id) {
-              Customer.checkUniqueIdForUpdate(
-                customer_id,
-                client_unique_id,
-                (err, exists) => {
-                  if (err) {
-                    console.error("Error checking unique ID:", err);
-                    return res.status(500).json({
-                      status: false,
-                      message: "Internal server error",
-                      token: newToken,
-                    });
-                  }
+            const changes = {};
+            const compareAndAddChanges = (key, newValue) => {
+              if (currentCustomer[key] !== newValue) {
+                changes[key] = {
+                  old: currentCustomer[key],
+                  new: newValue,
+                };
+              }
+            };
 
-                  if (exists) {
-                    return res.status(400).json({
-                      status: false,
-                      message: `Client Unique ID '${client_unique_id}' already exists.`,
-                      token: newToken,
-                    });
-                  }
+            compareAndAddChanges("name", name);
+            compareAndAddChanges("emails_json", JSON.stringify(emails));
+            compareAndAddChanges("additional_login", additional_login_int);
 
+            if (additional_login_int && additional_login_int === 1) {
+              compareAndAddChanges("username", username);
+            }
+            compareAndAddChanges("mobile", mobile);
+            compareAndAddChanges("services", services);
+
+            Customer.getCustomerMetaById(
+              customer_id,
+              (err, currentCustomerMeta) => {
+                if (err) {
+                  console.error(
+                    "Database error during customer meta retrieval:",
+                    err
+                  );
+                  return res.status(500).json({
+                    status: false,
+                    message:
+                      "Failed to retrieve Customer meta. Please try again.",
+                    token: newToken,
+                  });
+                }
+
+                if (currentCustomerMeta) {
+                  compareAndAddChanges("address", address);
+                  compareAndAddChanges(
+                    "single_point_of_contact",
+                    single_point_of_contact
+                  );
+                  compareAndAddChanges(
+                    "escalation_point_contact",
+                    escalation_point_contact
+                  );
+                  compareAndAddChanges(
+                    "contact_person_name",
+                    contact_person_name
+                  );
+
+                  compareAndAddChanges("gst_number", gst_number);
+                  compareAndAddChanges("tat_days", tat_days);
+                  compareAndAddChanges("agreement_date", agreement_date);
+                  compareAndAddChanges("client_standard", client_standard);
+                  compareAndAddChanges(
+                    "agreement_duration",
+                    agreement_duration
+                  );
+                  compareAndAddChanges(
+                    "custom_template",
+                    custom_template_string
+                  );
+                  compareAndAddChanges("state", state);
+                  compareAndAddChanges("state_code", state_code);
+                }
+
+                if (client_unique_id !== currentCustomer.client_unique_id) {
+                  Customer.checkUniqueIdForUpdate(
+                    customer_id,
+                    client_unique_id,
+                    (err, exists) => {
+                      if (err) {
+                        console.error("Error checking unique ID:", err);
+                        return res.status(500).json({
+                          status: false,
+                          message: "Internal server error",
+                          token: newToken,
+                        });
+                      }
+
+                      if (exists) {
+                        return res.status(400).json({
+                          status: false,
+                          message: `Client Unique ID '${client_unique_id}' already exists.`,
+                          token: newToken,
+                        });
+                      }
+
+                      continueUpdate();
+                    }
+                  );
+                } else {
                   continueUpdate();
                 }
-              );
-            } else {
-              continueUpdate();
-            }
 
-            function continueUpdate() {
-              if (
-                additional_login_int &&
-                additional_login_int === 1 &&
-                username !== currentCustomer.username
-              ) {
-                Customer.checkUsernameForUpdate(
-                  customer_id,
-                  username,
-                  (err, exists) => {
-                    if (err) {
-                      console.error("Error checking username:", err);
-                      return res.status(500).json({
-                        status: false,
-                        message: "Internal server error",
-                        token: newToken,
-                      });
-                    }
-
-                    if (exists) {
-                      return res.status(400).json({
-                        status: false,
-                        message: `Username '${username}' already exists.`,
-                        token: newToken,
-                      });
-                    }
-
-                    updateCustomerRecord();
-                  }
-                );
-              } else {
-                updateCustomerRecord();
-              }
-            }
-
-            function updateCustomerRecord() {
-              Customer.update(
-                customer_id,
-                {
-                  admin_id,
-                  name,
-                  address,
-                  profile_picture: currentCustomer.profile_picture,
-                  emails_json: JSON.stringify(emails),
-                  mobile,
-                  services:
-                    typeof services === "string"
-                      ? JSON.parse(services)
-                      : services,
-                  additional_login: additional_login_int,
-                  username:
-                    additional_login_int && additional_login_int === 1
-                      ? username
-                      : null,
-                },
-                (err, result) => {
-                  if (err) {
-                    console.error(
-                      "Database error during customer update:",
-                      err
-                    );
-                    return res.status(500).json({
-                      status: false,
-                      message: "Failed to update customer. Please try again.",
-                      token: newToken,
-                    });
-                  }
-
-                  if (result) {
-                    const updatedFields = Object.keys(changes).map((field) => ({
-                      field,
-                      old_value: changes[field].old,
-                      new_value: changes[field].new,
-                    }));
-
-                    Customer.updateCustomerMetaByCustomerId(
+                function continueUpdate() {
+                  if (
+                    additional_login_int &&
+                    additional_login_int === 1 &&
+                    username !== currentCustomer.username
+                  ) {
+                    Customer.checkUsernameForUpdate(
                       customer_id,
-                      {
-                        address,
-                        client_spoc: single_point_of_contact,
-                        escalation_point_contact,
-                        contact_person: contact_person_name,
-                        gst_number,
-                        tat_days,
-                        agreement_date,
-                        agreement_duration,
-                        custom_template:
-                          custom_template_string &&
-                          custom_template_string.toLowerCase() === "yes"
-                            ? 1
-                            : 0,
-                        custom_address:
-                          custom_template_string &&
-                          custom_template_string.toLowerCase() === "yes"
-                            ? custom_address
-                            : null,
-                        state,
-                        state_code,
-                        client_standard,
-                      },
-                      (err, metaResult) => {
+                      username,
+                      (err, exists) => {
                         if (err) {
-                          console.error(
-                            "Database error during customer meta update:",
-                            err
-                          );
+                          console.error("Error checking username:", err);
                           return res.status(500).json({
                             status: false,
-                            message:
-                              "Failed to update customer meta. Please try again.",
+                            message: "Internal server error",
                             token: newToken,
                           });
                         }
 
-                        if (metaResult) {
-                          const headBranchEmail = emails[0];
-                          Branch.updateHeadBranchEmail(
-                            customer_id,
-                            name,
-                            headBranchEmail,
-                            (err, headBranchResult) => {
-                              if (err) {
-                                console.error(
-                                  "Error updating head branch email:",
-                                  err
-                                );
-                                return res.status(500).json({
-                                  status: false,
-                                  message:
-                                    "Internal server error while updating head branch email.",
-                                  token: newToken,
-                                });
-                              }
-                              return res.status(200).json({
-                                status: true,
-                                message: "Customer updated successfully.",
+                        if (exists) {
+                          return res.status(400).json({
+                            status: false,
+                            message: `Username '${username}' already exists.`,
+                            token: newToken,
+                          });
+                        }
+
+                        updateCustomerRecord();
+                      }
+                    );
+                  } else {
+                    updateCustomerRecord();
+                  }
+                }
+
+                function updateCustomerRecord() {
+                  Customer.update(
+                    customer_id,
+                    {
+                      admin_id,
+                      name,
+                      address,
+                      profile_picture: currentCustomer.profile_picture,
+                      emails_json: JSON.stringify(emails),
+                      mobile,
+                      services:
+                        typeof services === "string"
+                          ? JSON.parse(services)
+                          : services,
+                      additional_login: additional_login_int,
+                      username:
+                        additional_login_int && additional_login_int === 1
+                          ? username
+                          : null,
+                    },
+                    (err, result) => {
+                      if (err) {
+                        console.error(
+                          "Database error during customer update:",
+                          err
+                        );
+                        return res.status(500).json({
+                          status: false,
+                          message:
+                            "Failed to update customer. Please try again.",
+                          token: newToken,
+                        });
+                      }
+
+                      if (result) {
+                        const updatedFields = Object.keys(changes).map(
+                          (field) => ({
+                            field,
+                            old_value: changes[field].old,
+                            new_value: changes[field].new,
+                          })
+                        );
+
+                        Customer.updateCustomerMetaByCustomerId(
+                          customer_id,
+                          {
+                            address,
+                            client_spoc: single_point_of_contact,
+                            escalation_point_contact,
+                            contact_person: contact_person_name,
+                            gst_number,
+                            tat_days,
+                            agreement_date,
+                            agreement_duration,
+                            custom_template:
+                              custom_template_string &&
+                              custom_template_string.toLowerCase() === "yes"
+                                ? 1
+                                : 0,
+                            custom_address:
+                              custom_template_string &&
+                              custom_template_string.toLowerCase() === "yes"
+                                ? custom_address
+                                : null,
+                            state,
+                            state_code,
+                            client_standard,
+                          },
+                          (err, metaResult) => {
+                            if (err) {
+                              console.error(
+                                "Database error during customer meta update:",
+                                err
+                              );
+                              return res.status(500).json({
+                                status: false,
+                                message:
+                                  "Failed to update customer meta. Please try again.",
                                 token: newToken,
                               });
                             }
-                          );
-                        }
+
+                            if (metaResult) {
+                              const headBranchEmail = emails[0];
+                              Branch.updateHeadBranchEmail(
+                                customer_id,
+                                name,
+                                headBranchEmail,
+                                (err, headBranchResult) => {
+                                  if (err) {
+                                    console.error(
+                                      "Error updating head branch email:",
+                                      err
+                                    );
+                                    return res.status(500).json({
+                                      status: false,
+                                      message:
+                                        "Internal server error while updating head branch email.",
+                                      token: newToken,
+                                    });
+                                  }
+                                  return res.status(200).json({
+                                    status: true,
+                                    message: "Customer updated successfully.",
+                                    token: newToken,
+                                  });
+                                }
+                              );
+                            }
+                          }
+                        );
                       }
-                    );
-                  }
+                    }
+                  );
                 }
-              );
-            }
-          }
-        );
-      });
+              }
+            );
+          });
+        })
+        .catch((err) => {
+          console.error(err);
+          return res.status(500).json({
+            status: false,
+            message: "An error occurred while checking email usage.",
+          });
+        });
     });
   });
 };

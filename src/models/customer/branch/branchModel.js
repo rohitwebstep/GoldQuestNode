@@ -248,7 +248,7 @@ const Branch = {
     });
   },
 
-  listByCustomerID: (customer_id, callback) => {
+  isEmailUsedForUpdate: (email, customer_id, callback) => {
     startConnection((err, connection) => {
       if (err) {
         return callback(
@@ -257,15 +257,21 @@ const Branch = {
         );
       }
 
-      const sql = `SELECT * FROM \`branches\` WHERE \`customer_id\` = ?`;
-      connection.query(sql, [customer_id], (err, results) => {
+      const sql = `SELECT * FROM \`branches\` WHERE \`email\` = ? AND \`customer_id\` != ?`;
+      connection.query(sql, [email, customer_id], (err, results) => {
         connectionRelease(connection); // Ensure connection is released
 
         if (err) {
-          console.error("Database query error: 88", err);
-          return callback(err, null);
+          console.error("Database query error:", err);
+          return callback(
+            { message: "Database query error", error: err },
+            null
+          );
         }
-        callback(null, results);
+
+        // Return true if the email is found, false otherwise
+        const isUsed = results.length > 0;
+        callback(null, isUsed);
       });
     });
   },

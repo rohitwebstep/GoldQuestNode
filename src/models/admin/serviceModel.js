@@ -4,8 +4,8 @@ const Service = {
   create: (title, description, short_code, sac_code, admin_id, callback) => {
     // Step 1: Check if a service with the same title already exists
     const checkServiceSql = `
-      SELECT * FROM \`services\` WHERE \`title\` = ? OR \`short_code\` = ? OR \`sac_code\` = ?
-    `;
+    SELECT * FROM \`services\` WHERE \`title\` = ? OR \`short_code\` = ? OR \`sac_code\` = ?
+  `;
 
     startConnection((err, connection) => {
       if (err) {
@@ -22,14 +22,38 @@ const Service = {
             return callback(checkErr, null);
           }
 
-          // Step 2: If a service with the same title exists, return an error
+          // Step 2: If a service with the same title, short code, or sac code exists, return specific error
           if (serviceResults.length > 0) {
-            const error = new Error(
-              "Service with the same name already exists"
+            let errorMessage =
+              "Service with the following values already exists: ";
+
+            const titleExists = serviceResults.some(
+              (result) => result.title.toLowerCase() === title.toLowerCase()
             );
-            console.error(error.message);
+            if (titleExists) {
+              errorMessage += "`title` ";
+            }
+
+            const shortCodeExists = serviceResults.some(
+              (result) =>
+                result.short_code.toLowerCase() === short_code.toLowerCase()
+            );
+
+            if (shortCodeExists) {
+              errorMessage += "`short_code` ";
+            }
+
+            const sacCodeExists = serviceResults.some(
+              (result) =>
+                result.sac_code.toLowerCase() === sac_code.toLowerCase()
+            );
+
+            if (sacCodeExists) {
+              errorMessage += "`sac_code` ";
+            }
+
             connectionRelease(connection); // Release connection before returning error
-            return callback(error, null);
+            return callback({ message: errorMessage }, null);
           }
 
           // Step 3: Insert the new service
@@ -46,7 +70,7 @@ const Service = {
 
               if (insertErr) {
                 console.error("Database query error: 46", insertErr);
-                return callback(insertErr, null);
+                return callback({ message: insertErr }, null);
               }
               callback(null, results);
             }
@@ -145,11 +169,10 @@ const Service = {
   },
 
   update: (id, title, description, short_code, sac_code, callback) => {
-    const sql = `
-      UPDATE \`services\`
-      SET \`title\` = ?, \`description\` = ? , \`short_code\` = ?, \`sac_code\` = ?
-      WHERE \`id\` = ?
-    `;
+    // Step 1: Check if a service with the same title already exists
+    const checkServiceSql = `
+        SELECT * FROM \`services\` WHERE \`title\` = ? OR \`short_code\` = ? OR \`sac_code\` = ? AND \`id\` != ?
+      `;
 
     startConnection((err, connection) => {
       if (err) {
@@ -157,16 +180,73 @@ const Service = {
       }
 
       connection.query(
-        sql,
-        [title, description, short_code, sac_code, id],
-        (queryErr, results) => {
-          connectionRelease(connection); // Release the connection
-
-          if (queryErr) {
-            console.error(" 51", queryErr);
-            return callback(queryErr, null);
+        checkServiceSql,
+        [title, short_code, sac_code, id],
+        (checkErr, serviceResults) => {
+          if (checkErr) {
+            console.error("Error checking service:", checkErr);
+            connectionRelease(connection); // Release connection on error
+            return callback(checkErr, null);
           }
-          callback(null, results);
+
+          // Step 2: If a service with the same title, short code, or sac code exists, return specific error
+          if (serviceResults.length > 0) {
+            let errorMessage =
+              "Service with the following values already exists: ";
+
+            const titleExists = serviceResults.some(
+              (result) => result.title.toLowerCase() === title.toLowerCase()
+            );
+            if (titleExists) {
+              errorMessage += "`title` ";
+            }
+
+            const shortCodeExists = serviceResults.some(
+              (result) =>
+                result.short_code.toLowerCase() === short_code.toLowerCase()
+            );
+
+            if (shortCodeExists) {
+              errorMessage += "`short_code` ";
+            }
+
+            const sacCodeExists = serviceResults.some(
+              (result) =>
+                result.sac_code.toLowerCase() === sac_code.toLowerCase()
+            );
+
+            if (sacCodeExists) {
+              errorMessage += "`sac_code` ";
+            }
+
+            connectionRelease(connection); // Release connection before returning error
+            return callback({ message: errorMessage }, null);
+          }
+          const sql = `
+                      UPDATE \`services\`
+                      SET \`title\` = ?, \`description\` = ? , \`short_code\` = ?, \`sac_code\` = ?
+                      WHERE \`id\` = ?
+                    `;
+
+          startConnection((err, connection) => {
+            if (err) {
+              return callback(err, null);
+            }
+
+            connection.query(
+              sql,
+              [title, description, short_code, sac_code, id],
+              (queryErr, results) => {
+                connectionRelease(connection); // Release the connection
+
+                if (queryErr) {
+                  console.error(" 51", queryErr);
+                  return callback(queryErr, null);
+                }
+                callback(null, results);
+              }
+            );
+          });
         }
       );
     });

@@ -157,7 +157,14 @@ const common = {
 
       connection.query(
         insertSql,
-        [admin_id, module, action, result, update, error],
+        [
+          admin_id || null,
+          module || null,
+          action || null,
+          result || null,
+          update || null,
+          error || null,
+        ],
         (err) => {
           connectionRelease(connection); // Release the connection
 
