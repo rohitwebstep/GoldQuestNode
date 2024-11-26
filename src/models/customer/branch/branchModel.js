@@ -276,6 +276,28 @@ const Branch = {
     });
   },
 
+  listByCustomerID: (customer_id, callback) => {
+    startConnection((err, connection) => {
+      if (err) {
+        return callback(
+          { message: "Failed to connect to the database", error: err },
+          null
+        );
+      }
+
+      const sql = `SELECT * FROM \`branches\` WHERE \`customer_id\` = ?`;
+      connection.query(sql, [customer_id], (err, results) => {
+        connectionRelease(connection); // Ensure connection is released
+
+        if (err) {
+          console.error("Database query error: 88", err);
+          return callback(err, null);
+        }
+        callback(null, results);
+      });
+    });
+  },
+
   getBranchById: (id, callback) => {
     startConnection((err, connection) => {
       if (err) {
