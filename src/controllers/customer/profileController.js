@@ -1147,7 +1147,8 @@ exports.update = (req, res) => {
         compareAndAddChanges("name", name);
         compareAndAddChanges("emails_json", JSON.stringify(emails));
         compareAndAddChanges("additional_login", additional_login_int);
-        if (additional_login && additional_login.toLowerCase() === "yes") {
+
+        if (additional_login_int && additional_login_int === 1) {
           compareAndAddChanges("username", username);
         }
         compareAndAddChanges("mobile", mobile);
