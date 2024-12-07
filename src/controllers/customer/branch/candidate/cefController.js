@@ -179,7 +179,37 @@ exports.submit = (req, res) => {
           message: "Application does not exist.",
         });
       }
-
+      if (currentCandidateApplication.is_custom_bgv !== 1) {
+        if (personal_information) {
+          [
+            "blood_group",
+            "pan_card_name",
+            "aadhar_card_name",
+            "food_cuppon",
+            "emergency_details_name",
+            "emergency_details_relation",
+            "emergency_details_contact_number",
+            "pf_details_pf_number",
+            "pf_details_pf_type",
+            "pf_details_pg_nominee",
+            "nps_details_details_pran_number",
+            "nps_details_details_nominee_details",
+            "nps_details_details_nps_contribution",
+            "bank_details_account_number",
+            "bank_details_bank_name",
+            "bank_details_branch_name",
+            "bank_details_ifsc_code",
+            "insurance_details_name",
+            "insurance_details_nominee_relation",
+            "insurance_details_nominee_dob",
+            "insurance_details_contact_number",
+          ].forEach((key) => {
+            if (key in personal_information) {
+              delete personal_information[key];
+            }
+          });
+        }
+      }
       // Retrieve branch details
       Branch.getBranchById(branch_id, (err, currentBranch) => {
         if (err) {

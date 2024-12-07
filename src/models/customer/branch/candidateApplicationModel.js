@@ -335,8 +335,12 @@ const candidateApplication = {
   },
 
   isApplicationExist: (app_id, branch_id, customer_id, callback) => {
-    const sql =
-      "SELECT * FROM `candidate_applications` WHERE `id` = ? AND `branch_id` = ? AND `customer_id` = ?";
+    const sql = `SELECT CA.*, C.is_custom_bgv AS is_custom_bgv
+      FROM candidate_applications AS CA 
+      INNER JOIN customers AS C ON C.id = ?
+      WHERE CA.id = ? 
+        AND CA.branch_id = ? 
+        AND CA.customer_id = ?`;
 
     startConnection((err, connection) => {
       if (err) {
@@ -348,7 +352,7 @@ const candidateApplication = {
 
       connection.query(
         sql,
-        [app_id, branch_id, customer_id],
+        [customer_id, app_id, branch_id, customer_id],
         (err, results) => {
           connectionRelease(connection); // Ensure connection is released
 
