@@ -156,6 +156,7 @@ exports.create = (req, res) => {
     clientData,
     additional_login,
     agreement_period,
+    custom_bgv,
     send_mail,
   } = req.body;
 
@@ -338,6 +339,7 @@ exports.create = (req, res) => {
                   additional_login && additional_login.toLowerCase() === "yes"
                     ? username
                     : null,
+                custom_bgv: custom_bgv || 0,
               },
               (err, result) => {
                 if (err) {

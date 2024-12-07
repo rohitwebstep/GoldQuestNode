@@ -139,7 +139,7 @@ const Customer = {
         );
       }
       const sqlCustomers = `
-        INSERT INTO \`customers\` (\`client_unique_id\`, \`name\`, \`additional_login\`, \`username\`, \`profile_picture\`, \`emails\`, \`mobile\`, \`services\`, \`admin_id\`
+        INSERT INTO \`customers\` (\`client_unique_id\`, \`name\`, \`additional_login\`, \`username\`, \`profile_picture\`, \`emails\`, \`mobile\`, \`services\`, \`admin_id\`, \`is_custom_bgv\`
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
 
@@ -153,6 +153,7 @@ const Customer = {
         customerData.mobile_number,
         customerData.services,
         customerData.admin_id,
+        customerData.custom_bgv,
       ];
 
       connection.query(sqlCustomers, valuesCustomers, (err, results) => {
