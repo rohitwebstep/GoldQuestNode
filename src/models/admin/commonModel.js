@@ -52,8 +52,9 @@ const common = {
 
         if (tokenExpiry > currentTime) {
           connectionRelease(connection);
-          callback(null, { status: true, message: "Token is valid" });
+          return callback(null, { status: true, message: "Token is valid" });
         } else {
+          return callback(null, { status: true, message: "Token is valid" });
           const newToken = generateToken();
           const newTokenExpiry = getTokenExpiry();
 

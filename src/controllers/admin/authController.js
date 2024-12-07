@@ -84,6 +84,7 @@ exports.login = (req, res) => {
       const currentTime = getCurrentTime();
       const tokenExpiry = new Date(admin.token_expiry);
 
+      /*
       if (admin.login_token && tokenExpiry > currentTime) {
         Common.adminLoginLog(admin.id, "login", "0", "Another admin logged in", () => { });
         return res.status(400).json({
@@ -91,6 +92,7 @@ exports.login = (req, res) => {
           message: "Another admin is currently logged in. Please try again later.",
         });
       }
+      */
 
       if (admin.two_factor_enabled && admin.two_factor_enabled == 1) {
         const isMobile = /^\d{10}$/.test(username);

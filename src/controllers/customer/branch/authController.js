@@ -151,6 +151,7 @@ exports.login = (req, res) => {
             const currentTime = getCurrentTime();
             const tokenExpiry = new Date(branch.token_expiry); // Convert token_expiry to Date object
 
+            /*
             // Check if the existing token is still valid
             if (branch.login_token && tokenExpiry > currentTime) {
               Common.branchLoginLog(
@@ -166,6 +167,7 @@ exports.login = (req, res) => {
                   "Another branch is currently logged in. Please try again later.",
               });
             }
+            */
 
             // Generate new token and expiry time
             const token = generateToken();
