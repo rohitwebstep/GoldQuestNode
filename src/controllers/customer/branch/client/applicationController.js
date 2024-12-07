@@ -125,7 +125,7 @@ exports.create = (req, res) => {
                 "0",
                 null,
                 err,
-                () => { }
+                () => {}
               );
               return res.status(500).json({
                 status: false,
@@ -143,7 +143,7 @@ exports.create = (req, res) => {
               "1",
               `{id: ${result.insertId}}`,
               null,
-              () => { }
+              () => {}
             );
 
             if (send_mail == 0) {
@@ -221,7 +221,7 @@ exports.create = (req, res) => {
                         const serviceIds =
                           typeof services === "string" && services.trim() !== ""
                             ? services.split(",").map((id) => id.trim())
-                            : [];
+                            : services;
 
                         const serviceNames = [];
 
@@ -364,26 +364,21 @@ exports.list = (req, res) => {
         ),
       ];
 
-      Promise.all(dataPromises).then(
-        ([
-          clientApplications,
-          customerInfo,
-        ]) => {
-          res.json({
-            status: true,
-            message: "Client applications fetched successfully.",
-            data: {
-              clientApplications,
-              customerInfo,
-            },
-            totalResults: {
-              clientApplications: clientApplications.length,
-              customerInfo: customerInfo.length,
-            },
-            token: newToken,
-          });
-        }
-      );
+      Promise.all(dataPromises).then(([clientApplications, customerInfo]) => {
+        res.json({
+          status: true,
+          message: "Client applications fetched successfully.",
+          data: {
+            clientApplications,
+            customerInfo,
+          },
+          totalResults: {
+            clientApplications: clientApplications.length,
+            customerInfo: customerInfo.length,
+          },
+          token: newToken,
+        });
+      });
     });
   });
 };
@@ -512,20 +507,25 @@ exports.update = (req, res) => {
             };
           }
 
-          if (batch_number !== "" && currentClientApplication.batch_number !== batch_number) {
+          if (
+            batch_number !== "" &&
+            currentClientApplication.batch_number !== batch_number
+          ) {
             changes.batch_number = {
               old: currentClientApplication.batch_number,
               new: batch_number,
             };
           }
 
-          if (sub_client !== "" && currentClientApplication.sub_client !== sub_client) {
+          if (
+            sub_client !== "" &&
+            currentClientApplication.sub_client !== sub_client
+          ) {
             changes.sub_client = {
               old: currentClientApplication.sub_client,
               new: sub_client,
             };
           }
-
 
           ClientApplication.checkUniqueEmpIdByClientApplicationID(
             employee_id,
@@ -576,7 +576,7 @@ exports.update = (req, res) => {
                       "0",
                       JSON.stringify({ client_application_id, ...changes }),
                       err,
-                      () => { }
+                      () => {}
                     );
                     return res.status(500).json({
                       status: false,
@@ -592,7 +592,7 @@ exports.update = (req, res) => {
                     "1",
                     JSON.stringify({ client_application_id, ...changes }),
                     null,
-                    () => { }
+                    () => {}
                   );
 
                   res.status(200).json({
@@ -885,7 +885,7 @@ exports.upload = async (req, res) => {
 
                                 const serviceIds =
                                   typeof services === "string" &&
-                                    services.trim() !== ""
+                                  services.trim() !== ""
                                     ? services.split(",").map((id) => id.trim())
                                     : [];
 
@@ -1093,7 +1093,7 @@ exports.delete = (req, res) => {
                   "0",
                   JSON.stringify({ id }),
                   err,
-                  () => { }
+                  () => {}
                 );
                 return res.status(500).json({
                   status: false,
@@ -1110,7 +1110,7 @@ exports.delete = (req, res) => {
                 "1",
                 JSON.stringify({ id }),
                 null,
-                () => { }
+                () => {}
               );
 
               res.status(200).json({
