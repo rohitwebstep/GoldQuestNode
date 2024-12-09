@@ -13,4 +13,10 @@ router.get("/logout", authController.logout);
 router.get("/list", adminController.list);
 router.post("/verify-admin-login", authController.validateLogin);
 
+router.post("/create", adminController.create);
+router.post("/upload", adminController.upload);
+router.get("/list", adminController.list);
+router.put("/update", adminController.update);
+router.delete("/delete", adminController.delete);
+
 module.exports = router;
