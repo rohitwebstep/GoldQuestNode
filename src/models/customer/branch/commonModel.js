@@ -12,17 +12,22 @@ const generateToken = () => crypto.randomBytes(32).toString("hex");
 const getTokenExpiry = () => new Date(Date.now() + 3600000).toISOString();
 
 const common = {
-  isBranchTokenValid: (_token, branch_id, callback) => {
+  isBranchTokenValid: (_token, sub_user_id, branch_id, callback) => {
     if (typeof callback !== "function") {
-      console.error("Callback is not a function");
+      console.error("Callback is not a function 4");
       return;
     }
-
-    const sql = `
-      SELECT \`login_token\`, \`token_expiry\`
+    let sql;
+    if (sub_user_id) {
+      sql = `SELECT \`login_token\`, \`token_expiry\`
+      FROM \`branch_sub_users\`
+      WHERE \`id\` = ?`;
+    } else {
+      sql = `SELECT \`login_token\`, \`token_expiry\`
       FROM \`branches\`
       WHERE \`id\` = ?
     `;
+    }
 
     startConnection((err, connection) => {
       if (err) {
@@ -56,7 +61,7 @@ const common = {
 
         if (tokenExpiry > currentTime) {
           connectionRelease(connection);
-          return callback(null, { status: true, message: "Token is valid" });
+          callback(null, { status: true, message: "Token is valid" });
         } else {
           return callback(null, { status: true, message: "Token is valid" });
           const newToken = generateToken();
@@ -96,7 +101,7 @@ const common = {
 
   branchLoginLog: (branch_id, action, result, error, callback) => {
     if (typeof callback !== "function") {
-      console.error("Callback is not a function");
+      console.error("Callback is not a function 5");
       return;
     }
 
@@ -137,7 +142,7 @@ const common = {
     callback
   ) => {
     if (typeof callback !== "function") {
-      console.error("Callback is not a function");
+      console.error("Callback is not a function 6");
       return;
     }
 
@@ -271,7 +276,7 @@ const common = {
 
   getBranchandCustomerEmailsForNotification: (branch_id, callback) => {
     if (typeof callback !== "function") {
-      console.error("Callback is not a function");
+      console.error("Callback is not a function 7");
       return;
     }
 
@@ -341,7 +346,7 @@ const common = {
 
   getCustomerNameByBranchID: (branch_id, callback) => {
     if (typeof callback !== "function") {
-      console.error("Callback is not a function");
+      console.error("Callback is not a function 8");
       return;
     }
 

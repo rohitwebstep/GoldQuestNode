@@ -16,7 +16,7 @@ const common = {
    */
   isCustomerTokenValid: (_token, customer_id, callback) => {
     if (typeof callback !== "function") {
-      console.error("Callback is not a function");
+      console.error("Callback is not a function 1");
       return;
     }
 
@@ -121,7 +121,7 @@ const common = {
    */
   customerLoginLog: (customer_id, action, result, error, callback) => {
     if (typeof callback !== "function") {
-      console.error("Callback is not a function");
+      console.error("Callback is not a function 2");
       return;
     }
 
@@ -179,7 +179,7 @@ const common = {
     callback
   ) => {
     if (typeof callback !== "function") {
-      console.error("Callback is not a function");
+      console.error("Callback is not a function 3");
       return;
     }
 

@@ -46,6 +46,7 @@ exports.list = (req, res) => {
     // Step 3: Verify the branch token
     BranchCommon.isBranchTokenValid(
       _token,
+      sub_user_id || null,
       branch_id,
       (tokenErr, tokenResult) => {
         if (tokenErr) {
@@ -147,6 +148,7 @@ exports.reportFormJsonByServiceID = (req, res) => {
     // Step 3: Verify the branch token
     BranchCommon.isBranchTokenValid(
       _token,
+      sub_user_id || null,
       branch_id,
       (tokenErr, tokenResult) => {
         if (tokenErr) {
@@ -257,6 +259,7 @@ exports.annexureData = (req, res) => {
     // Step 3: Verify the branch token
     BranchCommon.isBranchTokenValid(
       _token,
+      sub_user_id || null,
       branch_id,
       (tokenErr, tokenResult) => {
         if (tokenErr) {
@@ -350,6 +353,7 @@ exports.annexureDataByServiceIds = (req, res) => {
 
     BranchCommon.isBranchTokenValid(
       _token,
+      sub_user_id || null,
       branch_id,
       (tokenErr, tokenResult) => {
         if (tokenErr) {
