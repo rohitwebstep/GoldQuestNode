@@ -38,7 +38,6 @@ exports.create = (req, res) => {
         message: `Authorization failed: ${result.message}`,
       });
     }
-
     // Validate the token for the branch
     BranchCommon.isBranchTokenValid(
       _token,
@@ -147,7 +146,6 @@ exports.list = (req, res) => {
         message: `Authorization failed: ${result.message}`,
       });
     }
-
     // Validate the token for the branch
     BranchCommon.isBranchTokenValid(
       _token,
@@ -236,7 +234,6 @@ exports.updateEmail = (req, res) => {
         message: `Authorization failed: ${result.message}`,
       });
     }
-
     // Validate the token for the branch
     BranchCommon.isBranchTokenValid(
       _token,
@@ -366,7 +363,6 @@ exports.updatePassword = (req, res) => {
         message: `Authorization failed: ${result.message}`,
       });
     }
-
     // Validate the token for the branch
     BranchCommon.isBranchTokenValid(
       _token,
@@ -492,7 +488,6 @@ exports.delete = (req, res) => {
         message: `Authorization failed: ${result.message}`,
       });
     }
-
     // Validate the token for the branch
     BranchCommon.isBranchTokenValid(
       _token,

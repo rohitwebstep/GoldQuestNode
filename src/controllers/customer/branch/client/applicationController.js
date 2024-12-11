@@ -75,7 +75,7 @@ exports.create = (req, res) => {
         message: result.message,
       });
     }
-
+    let sub_user_id;
     // Validate branch token
     BranchCommon.isBranchTokenValid(
       _token,
@@ -363,7 +363,6 @@ exports.bulkCreate = (req, res) => {
         message: result.message,
       });
     }
-
     // Validate branch token
     BranchCommon.isBranchTokenValid(
       _token,
@@ -754,7 +753,7 @@ exports.list = (req, res) => {
         message: result.message, // Return the message from the authorization function
       });
     }
-
+    let sub_user_id;
     // Verify branch token
     BranchCommon.isBranchTokenValid(
       _token,
@@ -858,7 +857,7 @@ exports.update = (req, res) => {
         message: result.message,
       });
     }
-
+    let sub_user_id;
     BranchCommon.isBranchTokenValid(
       _token,
       sub_user_id || null,
@@ -1112,7 +1111,7 @@ exports.upload = async (req, res) => {
           message: result.message,
         });
       }
-
+      let sub_user_id;
       BranchCommon.isBranchTokenValid(
         token,
         sub_user_id || null,
@@ -1481,7 +1480,7 @@ exports.delete = (req, res) => {
         message: result.message, // Return the message from the authorization function
       });
     }
-
+    let sub_user_id;
     // Validate branch token
     BranchCommon.isBranchTokenValid(
       _token,

@@ -1913,6 +1913,7 @@ exports.customerBasicInfoWithBranchAuth = (req, res) => {
     });
   }
 
+  let sub_user_id;
   // Verify admin token
   BranchCommon.isBranchTokenValid(
     branch_token,

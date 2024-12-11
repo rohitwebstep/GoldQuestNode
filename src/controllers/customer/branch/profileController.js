@@ -35,7 +35,7 @@ exports.index = (req, res) => {
         message: authResult.message,
       });
     }
-
+    let sub_user_id;
     // Step 2: Verify the branch token
     BranchCommon.isBranchTokenValid(
       _token,
@@ -302,7 +302,7 @@ exports.filterOptionsForClientApplications = (req, res) => {
         message: authResult.message, // Return the authorization error message
       });
     }
-
+    let sub_user_id;
     // Step 3: Verify the branch token
     BranchCommon.isBranchTokenValid(
       _token,
@@ -397,7 +397,7 @@ exports.filterOptionsForCandidateApplications = (req, res) => {
         message: authResult.message, // Return the authorization error message
       });
     }
-
+    let sub_user_id;
     // Step 3: Verify the branch token
     BranchCommon.isBranchTokenValid(
       _token,
@@ -975,6 +975,7 @@ exports.getServiceById = (req, res) => {
       message: `Missing required fields: ${missingFields.join(", ")}`,
     });
   }
+  let sub_user_id;
   BranchCommon.isBranchTokenValid(
     _token,
     sub_user_id || null,
@@ -1071,7 +1072,7 @@ exports.annexureDataByServiceId = (req, res) => {
       message: `Missing required fields: ${missingFields.join(", ")}`,
     });
   }
-
+  let sub_user_id;
   BranchCommon.isBranchTokenValid(
     _token,
     sub_user_id || null,

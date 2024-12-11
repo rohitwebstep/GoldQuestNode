@@ -241,7 +241,7 @@ exports.updatePassword = (req, res) => {
       message: `Missing required fields: ${missingFields.join(", ")}`,
     });
   }
-
+  let sub_user_id;
   // Validate branch token
   Common.isBranchTokenValid(
     _token,
@@ -315,7 +315,7 @@ exports.logout = (req, res) => {
       message: `Missing required fields: ${missingFields.join(", ")}`,
     });
   }
-
+  let sub_user_id;
   // Validate the branch token
   Common.isBranchTokenValid(
     _token,
@@ -425,7 +425,7 @@ exports.validateLogin = (req, res) => {
           "Branch account has been suspended. Please contact the help desk for further assistance.",
       });
     }
-
+    let sub_user_id;
     // Check if the existing token is still valid
     Common.isBranchTokenValid(
       _token,

@@ -42,7 +42,7 @@ exports.list = (req, res) => {
         message: authResult.message, // Return the authorization error message
       });
     }
-
+    let sub_user_id;
     // Step 3: Verify the branch token
     BranchCommon.isBranchTokenValid(
       _token,
@@ -144,7 +144,7 @@ exports.reportFormJsonByServiceID = (req, res) => {
         message: authResult.message, // Return the authorization error message
       });
     }
-
+    let sub_user_id;
     // Step 3: Verify the branch token
     BranchCommon.isBranchTokenValid(
       _token,
@@ -255,7 +255,7 @@ exports.annexureData = (req, res) => {
         message: authResult.message, // Return the authorization error message
       });
     }
-
+    let sub_user_id;
     // Step 3: Verify the branch token
     BranchCommon.isBranchTokenValid(
       _token,
@@ -350,7 +350,7 @@ exports.annexureDataByServiceIds = (req, res) => {
         message: authResult.message,
       });
     }
-
+    let sub_user_id;
     BranchCommon.isBranchTokenValid(
       _token,
       sub_user_id || null,
