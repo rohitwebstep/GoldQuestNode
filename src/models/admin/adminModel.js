@@ -46,16 +46,31 @@ const Admin = {
 
           // If results are found, check which fields are already in use
           if (results.length > 0) {
-            const existingAdmin = results[0];
             const usedFields = [];
 
-            if (existingAdmin.email === email) usedFields.push("email");
-            if (existingAdmin.mobile === mobile) usedFields.push("mobile");
-            if (existingAdmin.emp_id === employee_id)
-              usedFields.push("Employee ID");
+            // Iterate over all results
+            for (let i = 0; i < results.length; i++) {
+              const existingAdmin = results[i];
 
+              // Check if any field is a duplicate
+              if (existingAdmin.email === email) {
+                usedFields.push("email");
+              }
+
+              if (existingAdmin.mobile === mobile) {
+                usedFields.push("mobile");
+              }
+
+              if (existingAdmin.emp_id === employee_id) {
+                usedFields.push("Employee ID");
+              }
+            }
+
+            // If there are any duplicate fields, release connection and return the error message
             if (usedFields.length > 0) {
               connectionRelease(connection); // Release connection if duplicates found
+
+              // Log the message being returned to the callback
               return callback(
                 {
                   message: `Another admin is registered with the following ${usedFields.join(
@@ -79,7 +94,7 @@ const Admin = {
               connectionRelease(connection); // Release the connection
 
               if (queryErr) {
-                console.error("Database query error: 6", queryErr);
+                console.error("Database query error: 612", queryErr);
                 return callback(queryErr, null);
               }
               callback(null, results); // Successfully inserted the admin
@@ -144,7 +159,7 @@ const Admin = {
               \`mobile\` = ?, 
               \`email\` = ?, 
               \`role\` = ?, 
-              \`status\` = ?, 
+              \`status\` = ?
             WHERE \`id\` = ?
           `;
 
