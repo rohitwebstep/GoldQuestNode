@@ -10,6 +10,7 @@ app.use(cors());
 
 // Basic routes
 router.post("/create", candidateController.create);
+router.post("/bulk-create", candidateController.bulkCreate);
 router.get("/list", candidateController.list);
 router.put("/update", candidateController.update);
 router.delete("/delete", candidateController.delete);
