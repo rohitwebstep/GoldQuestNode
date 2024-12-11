@@ -20,8 +20,8 @@ const subUser = {
 
       // Check if the email already exists for the given branch_id
       const checkEmailSql = `
-          SELECT * FROM \`branch_sub_users\`
-          WHERE \`email\` = ? AND \`branch_id\` = ?
+            SELECT * FROM \`branch_sub_users\`
+            WHERE \`email\` = ? AND \`branch_id\` = ?
         `;
 
       connection.query(checkEmailSql, [email, branch_id], (err, results) => {
@@ -42,29 +42,70 @@ const subUser = {
 
         // SQL query for inserting a new record into branch_sub_users
         const insertSql = `
-            INSERT INTO \`branch_sub_users\` (
-              \`branch_id\`,
-              \`customer_id\`,
-              \`email\`,
-              \`password\`
-            ) VALUES (?, ?, ?, ?)
-          `;
+                INSERT INTO \`branch_sub_users\` (
+                  \`branch_id\`,
+                  \`customer_id\`,
+                  \`email\`,
+                  \`password\`
+                ) VALUES (?, ?, ?, ?)
+            `;
 
         const values = [branch_id, customer_id, email, password];
 
         connection.query(insertSql, values, (err, results) => {
-          // Release connection after query execution
-          connectionRelease(connection);
-
           if (err) {
-            console.error("Database query error: 109", err);
+            console.error("Error inserting branch sub-user:", err);
+            connectionRelease(connection);
             return callback(err, null);
           }
 
           // Assuming you want to send the `new_application_id` back, you should extract it from `results.insertId`
           const new_application_id = results.insertId;
 
-          return callback(null, { results, new_application_id });
+          // SQL query for fetching branch and customer names
+          const branchCustomerSql = `
+                    SELECT 
+                        B.name AS branch_name, 
+                        C.name AS customer_name 
+                    FROM \`branches\` AS B 
+                    INNER JOIN \`customers\` AS C 
+                    ON B.customer_id = C.id 
+                    WHERE B.id = ? AND C.id = ?
+                `;
+
+          const branchCustomerValues = [branch_id, customer_id];
+
+          connection.query(
+            branchCustomerSql,
+            branchCustomerValues,
+            (branchCustomerErr, branchCustomerResults) => {
+              // Release connection after query execution
+              connectionRelease(connection);
+
+              if (branchCustomerErr) {
+                console.error(
+                  "Error fetching branch and customer names:",
+                  branchCustomerErr
+                );
+                return callback(branchCustomerErr, null);
+              }
+
+              if (branchCustomerResults.length === 0) {
+                return callback(
+                  { message: "Branch or customer not found." },
+                  null
+                );
+              }
+
+              const { branch_name, customer_name } = branchCustomerResults[0];
+
+              return callback(null, {
+                new_application_id,
+                branch_name,
+                customer_name,
+              });
+            }
+          );
         });
       });
     });

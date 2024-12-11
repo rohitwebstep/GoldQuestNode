@@ -3,9 +3,8 @@ const BranchCommon = require("../../../../models/customer/branch/commonModel");
 const Branch = require("../../../../models/customer/branch/branchModel");
 
 const {
-  bulkCreateMail,
-} = require("../../../../mailer/customer/branch/client/bulkCreateMail");
-
+  createMail,
+} = require("../../../../mailer/customer/branch/sub-user/createMail");
 
 // Controller to create a new service
 exports.create = (req, res) => {
@@ -96,6 +95,7 @@ exports.create = (req, res) => {
                 });
               }
 
+              const { branch_name, customer_name } = result;
               // Log the activity
               BranchCommon.branchActivityLog(
                 branch_id,
@@ -106,12 +106,34 @@ exports.create = (req, res) => {
                 null,
                 () => {}
               );
-
-              return res.json({
-                status: true,
-                message: "Sub-user account successfully created.",
-                token: newToken,
-              });
+              const toArr = [{ name: email, email: email }];
+              let ccArr = [];
+              createMail(
+                "Sub User",
+                "create",
+                email,
+                password,
+                branch_name,
+                customer_name,
+                toArr,
+                ccArr
+              )
+                .then(() => {
+                  return res.status(201).json({
+                    status: true,
+                    message: "Sub-user account successfully created.",
+                    token: newToken,
+                  });
+                })
+                .catch((emailError) => {
+                  console.error("Error sending email:", emailError);
+                  return res.status(201).json({
+                    status: true,
+                    message:
+                      "Sub-user account created successfully, but failed to send email.",
+                    token: newToken,
+                  });
+                });
             }
           );
         });

@@ -1,54 +1,14 @@
 const nodemailer = require("nodemailer");
 const { startConnection, connectionRelease } = require("../../../../config/db"); // Import the existing MySQL connection
 
-// Function to generate HTML table from service details
-const generateTable = (services) => {
-  if (!Array.isArray(services) || services.length === 0) {
-    return `<tr>
-              <td style="text-align: center;">No services available.</td>
-            </tr>`;
-  }
-
-  let rows = "";
-
-  services.forEach((service) => {
-    rows += `<tr>
-                <td>${service}</td>
-              </tr>`;
-  });
-
-  return rows;
-};
-
-const generateDocs = (docs) => {
-  // Split the input string into an array of document names
-  const docsArr = docs.split(",").map((doc) => doc.trim());
-
-  // Check if the docsArr array is valid
-  if (!Array.isArray(docsArr) || docsArr.length === 0) {
-    return "<p>No documents available</p>";
-  }
-
-  let links = "";
-
-  // Generate <a> tags for each document
-  docsArr.forEach((doc, index) => {
-    links += `<a href="${doc}"><span>Doc ${index + 1}</span></a> `;
-  });
-
-  return links.trim(); // Remove any trailing spaces
-};
-
 // Function to send email
 async function createMail(
   module,
   action,
-  name,
-  application_id,
-  company_name,
-  client_code,
-  services,
-  docs,
+  sub_user_email,
+  sub_user_password,
+  branch_name,
+  customer_name,
   toArr,
   ccArr
 ) {
@@ -97,29 +57,13 @@ async function createMail(
       },
     });
 
-    // Generate the HTML table from service details
-    const table = generateTable(services);
-    let docsHTML = "";
-    if (docs && docs.length > 0) {
-      docsHTML = generateDocs(docs);
-    }
-
     // Replace placeholders in the email template
     let template = email.template;
     template = template
-      .replace(/{{company_name}}/g, company_name)
-      .replace(/{{client_name}}/g, name)
-      .replace(/{{application_id}}/g, application_id)
-      .replace(/{{client_code}}/g, client_code)
-      .replace(/{{services}}/g, table);
-
-    // If docsHTML has content, replace its placeholder
-    if (docsHTML) {
-      template = template.replace(/{{docs}}/g, docsHTML);
-    } else {
-      // If there are no documents, remove the placeholder from the template
-      template = template.replace(/{{docs}}/g, "");
-    }
+      .replace(/{{email}}/g, sub_user_email)
+      .replace(/{{password}}/g, sub_user_password)
+      .replace(/{{branch_name}}/g, branch_name)
+      .replace(/{{customer_name}}/g, customer_name);
 
     // Prepare CC list
     const ccList = ccArr
