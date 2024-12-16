@@ -565,7 +565,7 @@ const Customer = {
       }
 
       // Use a parameterized query to prevent SQL injection
-      const sql = "SELECT `json` FROM `report_forms` WHERE `id` = ?";
+      const sql = "SELECT `json` FROM `report_forms` WHERE `service_id` = ?";
       connection.query(sql, [service_id], (err, results) => {
         connectionRelease(connection); // Release connection
         if (err) {
