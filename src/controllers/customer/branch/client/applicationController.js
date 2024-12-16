@@ -402,7 +402,10 @@ exports.bulkCreate = (req, res) => {
             const allFieldsEmpty =
               !app.applicant_full_name?.trim() &&
               !app.employee_id?.trim() &&
-              !app.location?.trim();
+              !app.location?.trim() &&
+              !app.spoc?.trim() &&
+              !app.batch_number?.trim() &&
+              !app.sub_client?.trim();
 
             // If all fields are empty, exclude this application
             if (allFieldsEmpty) {
@@ -415,6 +418,9 @@ exports.bulkCreate = (req, res) => {
               missingFields.push("Applicant Full Name");
             if (!("employee_id" in app)) missingFields.push("Employee ID");
             if (!("location" in app)) missingFields.push("Location");
+            if (!("spoc" in app)) missingFields.push("SPOC");
+            if (!("batch_number" in app)) missingFields.push("Batch Number");
+            if (!("sub_client" in app)) missingFields.push("Sub Client");
 
             if (missingFields.length > 0) {
               emptyValues.push(
@@ -431,6 +437,9 @@ exports.bulkCreate = (req, res) => {
               emptyFields.push("Applicant Full Name");
             if (!app.employee_id?.trim()) emptyFields.push("Employee ID");
             if (!app.location?.trim()) emptyFields.push("Location");
+            if (!app.spoc?.trim()) emptyFields.push("SPOC");
+            if (!app.batch_number?.trim()) emptyFields.push("Batch Number");
+            if (!app.sub_client?.trim()) emptyFields.push("Sub Client");
 
             if (emptyFields.length > 0) {
               emptyValues.push(
@@ -495,8 +504,10 @@ exports.bulkCreate = (req, res) => {
                     {
                       name: app.applicant_full_name,
                       employee_id: app.employee_id,
-                      client_spoc_id: spocId,
                       location: app.location,
+                      spoc: app.spoc,
+                      batch_number: app.batch_number,
+                      sub_client: app.sub_client,
                       branch_id,
                       services,
                       packages: package,
