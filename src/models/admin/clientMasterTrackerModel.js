@@ -1151,6 +1151,45 @@ const Customer = {
       });
     });
   },
+
+  updateReportDownloadStatus: (id, callback) => {
+    const sql = `
+      UPDATE client_applications
+      SET is_report_downloaded = 1
+      WHERE id = ?
+    `;
+
+    /*
+    const sql = `
+      UPDATE client_applications ca
+      JOIN cmt ON ca.id = cmt.client_application_id
+      SET ca.is_report_downloaded = 1
+      WHERE 
+        ca.id = ? 
+        AND cmt.report_date IS NOT NULL
+        AND TRIM(cmt.report_date) != '0000-00-00'
+        AND TRIM(cmt.report_date) != ''
+        AND cmt.overall_status IN ('complete', 'completed')
+        AND (cmt.is_verify = 'yes' OR cmt.is_verify = 1 OR cmt.is_verify = '1');
+    `;
+    */
+
+    startConnection((err, connection) => {
+      if (err) {
+        return callback(err, null);
+      }
+
+      connection.query(sql, [id], (queryErr, results) => {
+        connectionRelease(connection);
+
+        if (queryErr) {
+          console.error("Error in query execution:", queryErr);
+          return callback(queryErr, null);
+        }
+        callback(null, results);
+      });
+    });
+  },
 };
 
 module.exports = Customer;
