@@ -582,34 +582,6 @@ const Customer = {
       }
 
       const customerData = results[0];
-      if (spocIdString) {
-        const spocIds = spocIdString
-          .toString()
-          .split(",")
-          .map((id) => id.trim());
-
-        const spocQuery = `
-          SELECT id, name 
-          FROM client_spocs
-          WHERE id IN (${spocIds.map(() => "?").join(",")});
-        `;
-
-        try {
-          const spocDetails = await new Promise((resolve, reject) => {
-            connection.query(spocQuery, spocIds, (spocErr, spocResults) => {
-              if (spocErr) return reject(spocErr);
-              resolve(spocResults); // Include the entire result (id and name)
-            });
-          });
-          customerData.client_spoc_details = spocDetails; // Assign id and name to the customer data
-        } catch (spocErr) {
-          console.error("Error fetching client_spoc details:", spocErr);
-          customerData.client_spoc_details = null;
-        }
-      } else {
-        customerData.client_spoc_details = null;
-      }
-
       let servicesData;
       try {
         servicesData = JSON.parse(customerData.services);
