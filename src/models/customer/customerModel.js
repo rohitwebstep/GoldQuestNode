@@ -140,7 +140,7 @@ const Customer = {
       }
       const sqlCustomers = `
         INSERT INTO \`customers\` (\`client_unique_id\`, \`name\`, \`additional_login\`, \`username\`, \`profile_picture\`, \`emails\`, \`mobile\`, \`services\`, \`admin_id\`, \`is_custom_bgv\`
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
 
       const valuesCustomers = [
