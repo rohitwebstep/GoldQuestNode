@@ -949,7 +949,6 @@ exports.list = (req, res) => {
               },
               totalResults: {
                 candidateApplications: candidateApplications.length,
-                customerInfo: customerInfo.length,
               },
               token: newToken,
             });

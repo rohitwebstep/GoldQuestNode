@@ -741,7 +741,6 @@ function sendNotificationEmails(
 // Controller to list all clientApplications
 exports.list = (req, res) => {
   const { branch_id, _token, customer_id } = req.query;
-
   let missingFields = [];
   if (!branch_id) missingFields.push("Branch ID");
   if (!_token) missingFields.push("Token");
@@ -755,15 +754,16 @@ exports.list = (req, res) => {
   }
 
   const action = "client_application";
+
   BranchCommon.isBranchAuthorizedForAction(branch_id, action, (result) => {
     if (!result.status) {
       return res.status(403).json({
         status: false,
-        message: result.message, // Return the message from the authorization function
+        message: result.message,
       });
     }
+
     let sub_user_id;
-    // Verify branch token
     BranchCommon.isBranchTokenValid(
       _token,
       sub_user_id || null,
@@ -782,18 +782,23 @@ exports.list = (req, res) => {
 
         const newToken = tokenResult.newToken;
 
-        // Fetch all required data
         const dataPromises = [
           new Promise((resolve) =>
             ClientApplication.list(branch_id, (err, result) => {
-              if (err) return resolve([]);
+              if (err) {
+                console.error("Error fetching client applications:", err);
+                return resolve([]);
+              }
               resolve(result);
             })
           ),
           new Promise((resolve) =>
             Customer.basicInfoByID(customer_id, (err, result) => {
-              if (err) return resolve([]);
-              resolve(result[0]);
+              if (err) {
+                console.error("Error fetching customer info:", err);
+                return resolve([]);
+              }
+              resolve(result);
             })
           ),
         ];
@@ -808,7 +813,6 @@ exports.list = (req, res) => {
             },
             totalResults: {
               clientApplications: clientApplications.length,
-              customerInfo: customerInfo.length,
             },
             token: newToken,
           });
