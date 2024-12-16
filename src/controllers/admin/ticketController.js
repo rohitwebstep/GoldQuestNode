@@ -29,7 +29,7 @@ exports.list = (req, res) => {
 
   const adminID = Number(admin_id);
 
-  const action = JSON.stringify({ tat_delay: "view" });
+  const action = "tat_delay";
   AdminCommon.isAdminAuthorizedForAction(adminID, action, (result) => {
     if (!result.status) {
       return res.status(403).json({
@@ -89,7 +89,7 @@ exports.view = (req, res) => {
 
   const adminID = Number(admin_id);
 
-  const action = JSON.stringify({ tat_delay: "view" });
+  const action = "tat_delay";
   AdminCommon.isAdminAuthorizedForAction(adminID, action, (result) => {
     if (!result.status) {
       return res.status(403).json({
@@ -167,8 +167,7 @@ exports.chat = (req, res) => {
         token: newToken,
       });
     }
-    const action = JSON.stringify({ tat_delay: "view" });
-
+    const action = "tat_delay";
     // Check admin authorization and token validity
     AdminCommon.isAdminAuthorizedForAction(adminID, action, (authResult) => {
       if (!authResult.status) {
@@ -357,7 +356,7 @@ exports.delete = (req, res) => {
 
   const adminID = Number(admin_id);
 
-  const action = JSON.stringify({ tat_delay: "view" });
+  const action = "tat_delay";
   AdminCommon.isAdminAuthorizedForAction(adminID, action, (result) => {
     if (!result.status) {
       return res.status(403).json({

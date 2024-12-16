@@ -25,8 +25,7 @@ exports.index = (req, res) => {
     });
   }
 
-  const action = JSON.stringify({ index: "view" });
-
+  const action = "sub_user";
   // Step 1: Check if the branch is authorized for the action
   BranchCommon.isBranchAuthorizedForAction(branch_id, action, (authResult) => {
     if (!authResult.status) {
@@ -161,7 +160,7 @@ exports.list = (req, res) => {
     });
   }
 
-  const action = JSON.stringify({ branch: "view" });
+  const action = "branch";
   AdminCommon.isAdminAuthorizedForAction(admin_id, action, (result) => {
     if (!result.status) {
       return res.status(403).json({
@@ -219,7 +218,7 @@ exports.listByCustomerID = (req, res) => {
     });
   }
 
-  const action = JSON.stringify({ branch: "view" });
+  const action = "branch";
   AdminCommon.isAdminAuthorizedForAction(admin_id, action, (authResult) => {
     if (!authResult.status) {
       return res.status(403).json({
@@ -293,7 +292,7 @@ exports.filterOptionsForClientApplications = (req, res) => {
     });
   }
 
-  const action = JSON.stringify({ index: "view" });
+  const action = "sub_user";
   // Step 2: Check if the branch is authorized for the action
   BranchCommon.isBranchAuthorizedForAction(branch_id, action, (authResult) => {
     if (!authResult.status) {
@@ -388,7 +387,7 @@ exports.filterOptionsForCandidateApplications = (req, res) => {
     });
   }
 
-  const action = JSON.stringify({ index: "view" });
+  const action = "sub_user";
   // Step 2: Check if the branch is authorized for the action
   BranchCommon.isBranchAuthorizedForAction(branch_id, action, (authResult) => {
     if (!authResult.status) {
@@ -473,8 +472,7 @@ exports.update = (req, res) => {
     });
   }
 
-  const action = JSON.stringify({ branch: "update" });
-
+  const action = "branch";
   // Check admin authorization
   AdminCommon.isAdminAuthorizedForAction(admin_id, action, (result) => {
     if (!result.status) {
@@ -606,8 +604,7 @@ exports.active = (req, res) => {
     });
   }
 
-  const action = JSON.stringify({ branch: "status" });
-
+  const action = "branch";
   // Check admin authorization
   AdminCommon.isAdminAuthorizedForAction(admin_id, action, (result) => {
     if (!result.status) {
@@ -732,8 +729,7 @@ exports.inactive = (req, res) => {
     });
   }
 
-  const action = JSON.stringify({ branch: "status" });
-
+  const action = "branch";
   // Check admin authorization
   AdminCommon.isAdminAuthorizedForAction(admin_id, action, (result) => {
     if (!result.status) {
@@ -858,8 +854,7 @@ exports.delete = (req, res) => {
     });
   }
 
-  const action = JSON.stringify({ branch: "delete" });
-
+  const action = "branch";
   // Check admin authorization
   AdminCommon.isAdminAuthorizedForAction(admin_id, action, (result) => {
     if (!result.status) {

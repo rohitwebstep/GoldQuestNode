@@ -32,8 +32,7 @@ exports.list = (req, res) => {
     });
   }
 
-  const action = JSON.stringify({ report_case_status: "view" });
-
+  const action = "report_case_status";
   // Step 2: Check if the branch is authorized for the action
   BranchCommon.isBranchAuthorizedForAction(branch_id, action, (authResult) => {
     if (!authResult.status) {
@@ -134,8 +133,7 @@ exports.reportFormJsonByServiceID = (req, res) => {
     });
   }
 
-  const action = JSON.stringify({ report_case_status: "view" });
-
+  const action = "report_case_status";
   // Step 2: Check if the branch is authorized for the action
   BranchCommon.isBranchAuthorizedForAction(branch_id, action, (authResult) => {
     if (!authResult.status) {
@@ -245,8 +243,7 @@ exports.annexureData = (req, res) => {
     });
   }
 
-  const action = JSON.stringify({ report_case_status: "view" });
-
+  const action = "report_case_status";
   // Step 2: Check if the branch is authorized for the action
   BranchCommon.isBranchAuthorizedForAction(branch_id, action, (authResult) => {
     if (!authResult.status) {
@@ -342,7 +339,7 @@ exports.annexureDataByServiceIds = (req, res) => {
     });
   }
 
-  const action = JSON.stringify({ report_case_status: "view" });
+  const action = "report_case_status";
   BranchCommon.isBranchAuthorizedForAction(branch_id, action, (authResult) => {
     if (!authResult.status) {
       return res.status(403).json({

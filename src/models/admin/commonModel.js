@@ -198,17 +198,24 @@ const common = {
         return callback({ message: "Connection error", error: err }, null);
       }
 
+      if (!connection) {
+        console.error("Connection is not available");
+        return callback({ message: "Connection is not available" }, null);
+      }
+
+      // First query: Get the admin's role
       connection.query(adminSQL, [admin_id], (err, results) => {
         if (err) {
+          console.error("Database query error: 5-8", err);
           connectionRelease(connection);
-          console.error("Database query error: 29", err);
           return callback(
-            { message: "Database query error", error: err },
+            { message: "Database query error (5-8)", error: err },
             null
           );
         }
 
         if (results.length === 0) {
+          console.log("No admin found with the provided ID");
           connectionRelease(connection);
           return callback(
             { message: "No admin found with the provided ID" },
@@ -216,64 +223,58 @@ const common = {
           );
         }
 
-        // Console log the role
         const role = results[0].role;
-
         const permissionsJsonByRoleSQL = `SELECT \`json\` FROM \`permissions\` WHERE \`role\` = ?`;
-        pool.query(permissionsJsonByRoleSQL, [role], (err, results) => {
-          connectionRelease(connection);
+
+        // Second query: Get permissions for the admin's role
+        connection.query(permissionsJsonByRoleSQL, [role], (err, results) => {
           if (err) {
-            console.error("Database query error: 30", err);
+            console.error("Database query error: 60", err);
+            connectionRelease(connection);
             return callback(
-              { message: "Database query error", error: err },
+              { message: "Database query error (5-9)", error: err },
               null
             );
           }
 
           if (results.length === 0) {
-            return callback(
-              { message: "No permissions found for the admin role" },
-              null
-            );
+            console.error("No permissions found for the admin role");
+            connectionRelease(connection);
+            return callback({ message: "Access Denied" }, null);
           }
 
-          // Console log the json
-          const permissionsJson = JSON.parse(results[0].json);
-          const permissions =
-            typeof permissionsJson === "string"
-              ? JSON.parse(permissionsJson)
-              : permissionsJson;
+          const permissionsRaw = results[0].json;
 
-          const actionObj =
-            typeof action === "string" ? JSON.parse(action) : action;
-
-          // Extract action type and action name from the action object
-          const [actionType, actionName] = Object.entries(actionObj)[0] || [];
-
-          // Check if action type and action name are valid
-          if (!actionType || !actionName) {
-            console.error("Invalid action format");
+          if (!permissionsRaw) {
+            console.error("Permissions field is empty");
+            connectionRelease(connection);
             return callback({ status: false, message: "Access Denied" });
           }
 
-          // Check if the action type exists in the permissions object
-          if (!permissions[actionType]) {
-            console.error("Action type not found in permissions");
+          try {
+            const permissionsJson = JSON.parse(permissionsRaw);
+            const permissions =
+              typeof permissionsJson === "string"
+                ? JSON.parse(permissionsJson)
+                : permissionsJson;
+
+            if (!permissions[action]) {
+              console.error("Action type not found in permissions");
+              connectionRelease(connection);
+              return callback({ status: false, message: "Access Denied" });
+            }
+
+            console.log(`Authorization successful for action: ${action}`);
+            connectionRelease(connection);
             return callback({
-              status: false,
-              message: "Access Denied",
+              status: true,
+              message: "Authorization Successful",
             });
+          } catch (parseErr) {
+            console.error("Error parsing permissions JSON:", parseErr);
+            connectionRelease(connection);
+            return callback({ status: false, message: "Access Denied" });
           }
-
-          // Check if the action name is authorized
-          const isAuthorized = permissions[actionType][actionName] === true;
-
-          return callback({
-            status: isAuthorized,
-            message: isAuthorized
-              ? "Authorization Successful"
-              : "Access Denied",
-          });
         });
       });
     });

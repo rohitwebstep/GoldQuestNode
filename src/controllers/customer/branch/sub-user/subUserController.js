@@ -27,8 +27,7 @@ exports.create = (req, res) => {
     });
   }
 
-  const action = JSON.stringify({ client_application: "view" });
-
+  const action = "sub_user";
   // Check if branch is authorized for the action
   BranchCommon.isBranchAuthorizedForAction(branch_id, action, (result) => {
     if (!result.status) {
@@ -158,8 +157,7 @@ exports.list = (req, res) => {
     });
   }
 
-  const action = JSON.stringify({ client_application: "view" });
-
+  const action = "sub_user";
   // Check if branch is authorized for the action
   BranchCommon.isBranchAuthorizedForAction(branch_id, action, (result) => {
     if (!result.status) {
@@ -246,8 +244,7 @@ exports.updateEmail = (req, res) => {
     });
   }
 
-  const action = JSON.stringify({ client_application: "view" });
-
+  const action = "sub_user";
   // Check if branch is authorized for the action
   BranchCommon.isBranchAuthorizedForAction(branch_id, action, (result) => {
     if (!result.status) {
@@ -375,8 +372,7 @@ exports.updatePassword = (req, res) => {
     });
   }
 
-  const action = JSON.stringify({ client_application: "view" });
-
+  const action = "sub_user";
   // Check if branch is authorized for the action
   BranchCommon.isBranchAuthorizedForAction(branch_id, action, (result) => {
     if (!result.status) {
@@ -500,8 +496,7 @@ exports.delete = (req, res) => {
     });
   }
 
-  const action = JSON.stringify({ client_application: "view" });
-
+  const action = "sub_user";
   // Check if branch is authorized for the action
   BranchCommon.isBranchAuthorizedForAction(branch_id, action, (result) => {
     if (!result.status) {

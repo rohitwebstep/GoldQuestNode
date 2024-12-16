@@ -18,7 +18,7 @@ exports.list = (req, res) => {
     });
   }
 
-  const action = JSON.stringify({ customer: "view" });
+  const action = "customer";
   AdminCommon.isAdminAuthorizedForAction(admin_id, action, (result) => {
     if (!result.status) {
       return res.status(403).json({

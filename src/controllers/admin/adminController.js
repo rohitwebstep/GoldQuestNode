@@ -9,7 +9,6 @@ const fs = require("fs");
 const path = require("path");
 const { upload, saveImage, saveImages } = require("../../utils/imageSave");
 
-
 exports.list = (req, res) => {
   const { admin_id, _token } = req.query;
 
@@ -23,7 +22,7 @@ exports.list = (req, res) => {
       message: `Missing required fields: ${missingFields.join(", ")}`,
     });
   }
-  const action = JSON.stringify({ admin: "view" });
+  const action = "admin";
   Common.isAdminAuthorizedForAction(admin_id, action, (result) => {
     if (!result.status) {
       return res.status(403).json({
@@ -78,8 +77,7 @@ exports.addClientListings = (req, res) => {
     });
   }
 
-  const action = JSON.stringify({ customer: "create" });
-
+  const action = "customer";
   Common.isAdminAuthorizedForAction(admin_id, action, (authResult) => {
     if (!authResult || !authResult.status) {
       return res.status(403).json({
@@ -187,9 +185,7 @@ exports.create = (req, res) => {
       message: `Missing required fields: ${missingFields.join(", ")}`,
     });
   }
-  // Define the action for admin authorization check
-  const action = JSON.stringify({ admin: "create" });
-  // Check if the admin is authorized to perform the action
+  const action = "admin";
   Common.isAdminAuthorizedForAction(admin_id, action, (authResult) => {
     if (!authResult.status) {
       return res.status(403).json({
@@ -344,8 +340,7 @@ exports.update = (req, res) => {
     });
   }
 
-  // Define the action for admin authorization check
-  const action = JSON.stringify({ admin: "update" });
+  const action = "admin";
   Common.isAdminAuthorizedForAction(admin_id, action, (authResult) => {
     if (!authResult.status) {
       return res.status(403).json({
@@ -466,8 +461,7 @@ exports.delete = (req, res) => {
     });
   }
 
-  const action = JSON.stringify({ admin: "delete" });
-  // Check if the admin is authorized to perform the action
+  const action = "admin";
   Common.isAdminAuthorizedForAction(admin_id, action, (authResult) => {
     if (!authResult.status) {
       return res.status(403).json({
@@ -616,8 +610,7 @@ exports.upload = async (req, res) => {
             token: newToken,
           });
         }
-        const action = JSON.stringify({ admin: "create" });
-        // Check authorization
+        const action = "admin";
         Common.isAdminAuthorizedForAction(
           adminId,
           action,

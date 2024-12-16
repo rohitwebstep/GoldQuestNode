@@ -16,7 +16,7 @@ exports.index = (req, res) => {
     });
   }
 
-  const action = JSON.stringify({ weekly_report: "send" });
+  const action = "weekly_report";
   Common.isAdminAuthorizedForAction(admin_id, action, (result) => {
     if (!result.status) {
       return res.status(403).json({

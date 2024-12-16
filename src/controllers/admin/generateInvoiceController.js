@@ -178,8 +178,7 @@ exports.generateInvoice = async (req, res) => {
   }
 
   // Action for admin authorization
-  const actionPayload = JSON.stringify({ invoice: "generate" });
-
+  const actionPayload = "invoice";
   AdminCommon.isAdminAuthorizedForAction(
     admin_id,
     actionPayload,

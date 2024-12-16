@@ -50,7 +50,7 @@ exports.list = (req, res) => {
     }
 
     // Check branch authorization
-    const action = JSON.stringify({ tat_delay: "view" });
+    const action = "ticket";
     BranchCommon.isBranchAuthorizedForAction(branchID, action, (authResult) => {
       if (!authResult.status) {
         return res.status(403).json({
@@ -142,7 +142,7 @@ exports.view = (req, res) => {
     }
 
     // Check branch authorization
-    const action = JSON.stringify({ tat_delay: "view" });
+    const action = "ticket";
     BranchCommon.isBranchAuthorizedForAction(branchID, action, (authResult) => {
       if (!authResult.status) {
         return res.status(403).json({
@@ -259,7 +259,7 @@ exports.chat = (req, res) => {
         }
 
         // Check branch authorization
-        const action = JSON.stringify({ tat_delay: "view" });
+        const action = "ticket";
         BranchCommon.isBranchAuthorizedForAction(
           branchID,
           action,
@@ -459,7 +459,7 @@ exports.create = (req, res) => {
         }
 
         // Check branch authorization
-        const action = JSON.stringify({ tat_delay: "view" });
+        const action = "ticket";
         BranchCommon.isBranchAuthorizedForAction(
           branchID,
           action,
@@ -723,7 +723,7 @@ exports.delete = (req, res) => {
         }
 
         // Check branch authorization
-        const action = JSON.stringify({ tat_delay: "view" });
+        const action = "ticket";
         BranchCommon.isBranchAuthorizedForAction(
           branchID,
           action,

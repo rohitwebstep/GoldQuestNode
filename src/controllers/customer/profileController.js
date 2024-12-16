@@ -219,7 +219,7 @@ exports.create = (req, res) => {
     });
   }
 
-  const action = JSON.stringify({ customer: "create" });
+  const action = "customer";
   AdminCommon.isAdminAuthorizedForAction(admin_id, action, (result) => {
     if (!result.status) {
       return res.status(403).json({
@@ -713,7 +713,7 @@ exports.upload = async (req, res) => {
       }
 
       // Check if the admin is authorized
-      const action = JSON.stringify({ customer: "create" });
+      const action = "customer";
       AdminCommon.isAdminAuthorizedForAction(admin_id, action, (result) => {
         if (!result.status) {
           console.warn("Admin not authorized:", result.message);
@@ -991,7 +991,7 @@ exports.inactiveList = (req, res) => {
     });
   }
 
-  const action = JSON.stringify({ customer: "view" });
+  const action = "customer";
   AdminCommon.isAdminAuthorizedForAction(admin_id, action, (result) => {
     if (!result.status) {
       return res.status(403).json({
@@ -1047,7 +1047,7 @@ exports.list = (req, res) => {
     });
   }
 
-  const action = JSON.stringify({ customer: "view" });
+  const action = "customer";
   AdminCommon.isAdminAuthorizedForAction(admin_id, action, (result) => {
     if (!result.status) {
       return res.status(403).json({
@@ -1174,8 +1174,7 @@ exports.update = (req, res) => {
     });
   }
 
-  const action = JSON.stringify({ customer: "update" });
-
+  const action = "customer";
   AdminCommon.isAdminAuthorizedForAction(admin_id, action, (result) => {
     if (!result.status) {
       return res.status(403).json({
@@ -1521,7 +1520,7 @@ exports.fetchBranchPassword = (req, res) => {
     });
   }
 
-  const action = JSON.stringify({ branch: "view" });
+  const action = "customer";
   AdminCommon.isAdminAuthorizedForAction(admin_id, action, (result) => {
     if (!result.status) {
       return res.status(403).json({
@@ -1592,8 +1591,7 @@ exports.active = (req, res) => {
     });
   }
 
-  const action = JSON.stringify({ customer: "status" });
-
+  const action = "customer";
   AdminCommon.isAdminAuthorizedForAction(admin_id, action, (result) => {
     if (!result.status) {
       return res.status(403).json({
@@ -1700,8 +1698,7 @@ exports.inactive = (req, res) => {
     });
   }
 
-  const action = JSON.stringify({ customer: "status" });
-
+  const action = "customer";
   AdminCommon.isAdminAuthorizedForAction(admin_id, action, (result) => {
     if (!result.status) {
       return res.status(403).json({
@@ -1802,8 +1799,7 @@ exports.delete = (req, res) => {
     });
   }
 
-  const action = JSON.stringify({ customer: "delete" });
-
+  const action = "customer";
   // Check admin authorization
   AdminCommon.isAdminAuthorizedForAction(admin_id, action, (result) => {
     if (!result.status) {
@@ -1966,8 +1962,7 @@ exports.addCustomerListings = (req, res) => {
     });
   }
 
-  const action = JSON.stringify({ customer: "create" });
-
+  const action = "customer";
   // Check admin authorization
   AdminCommon.isAdminAuthorizedForAction(admin_id, action, (result) => {
     if (!result.status) {

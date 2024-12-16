@@ -36,8 +36,7 @@ exports.list = (req, res) => {
     });
   }
 
-  // Action for admin authorization
-  const action = JSON.stringify({ cmt_application: "view" });
+  const action = "cmt_application";
   AdminCommon.isAdminAuthorizedForAction(admin_id, action, (authResult) => {
     if (!authResult.status) {
       return res.status(403).json({
@@ -77,26 +76,21 @@ exports.list = (req, res) => {
         ),
       ];
 
-      Promise.all(dataPromises).then(
-        ([
-          customers,
-          filterOptions,
-        ]) => {
-          res.json({
-            status: true,
-            message: "Billing SPOCs fetched successfully",
-            data: {
-              customers,
-              filterOptions,
-            },
-            totalResults: {
-              customers: customers.length,
-              filterOptions: filterOptions.length,
-            },
-            token: newToken,
-          });
-        }
-      );
+      Promise.all(dataPromises).then(([customers, filterOptions]) => {
+        res.json({
+          status: true,
+          message: "Billing SPOCs fetched successfully",
+          data: {
+            customers,
+            filterOptions,
+          },
+          totalResults: {
+            customers: customers.length,
+            filterOptions: filterOptions.length,
+          },
+          token: newToken,
+        });
+      });
     });
   });
 };
@@ -137,7 +131,7 @@ exports.listByCustomerId = (req, res) => {
     });
   }
 
-  const action = JSON.stringify({ cmt_application: "view" });
+  const action = "cmt_application";
   AdminCommon.isAdminAuthorizedForAction(admin_id, action, (result) => {
     if (!result.status) {
       return res.status(403).json({
@@ -216,7 +210,7 @@ exports.applicationListByBranch = (req, res) => {
     });
   }
 
-  const action = JSON.stringify({ cmt_application: "view" });
+  const action = "cmt_application";
   AdminCommon.isAdminAuthorizedForAction(admin_id, action, (result) => {
     if (!result.status) {
       return res.status(403).json({
@@ -247,7 +241,6 @@ exports.applicationListByBranch = (req, res) => {
         let status = null;
       }
 
-
       const dataPromises = [
         new Promise((resolve) =>
           ClientMasterTrackerModel.applicationListByBranch(
@@ -257,37 +250,35 @@ exports.applicationListByBranch = (req, res) => {
             (err, result) => {
               if (err) return resolve([]);
               resolve(result);
-            })
+            }
+          )
         ),
         new Promise((resolve) =>
           ClientMasterTrackerModel.filterOptionsForBranch(
-            branch_id, (err, result) => {
+            branch_id,
+            (err, result) => {
               if (err) return resolve([]);
               resolve(result);
-            })
+            }
+          )
         ),
       ];
 
-      Promise.all(dataPromises).then(
-        ([
-          customers,
-          filterOptions,
-        ]) => {
-          res.json({
-            status: true,
-            message: "Billing SPOCs fetched successfully",
-            data: {
-              customers,
-              filterOptions,
-            },
-            totalResults: {
-              customers: customers.length,
-              filterOptions: filterOptions.length,
-            },
-            token: newToken,
-          });
-        }
-      );
+      Promise.all(dataPromises).then(([customers, filterOptions]) => {
+        res.json({
+          status: true,
+          message: "Billing SPOCs fetched successfully",
+          data: {
+            customers,
+            filterOptions,
+          },
+          totalResults: {
+            customers: customers.length,
+            filterOptions: filterOptions.length,
+          },
+          token: newToken,
+        });
+      });
     });
   });
 };
@@ -332,7 +323,7 @@ exports.applicationByID = (req, res) => {
     });
   }
 
-  const action = JSON.stringify({ cmt_application: "view" });
+  const action = "cmt_application";
   AdminCommon.isAdminAuthorizedForAction(admin_id, action, (result) => {
     if (!result.status) {
       return res.status(403).json({
@@ -500,7 +491,7 @@ exports.annexureData = (req, res) => {
     });
   }
 
-  const action = JSON.stringify({ cmt_application: "view" });
+  const action = "cmt_application";
   AdminCommon.isAdminAuthorizedForAction(admin_id, action, (result) => {
     if (!result.status) {
       return res.status(403).json({
@@ -582,7 +573,7 @@ exports.filterOptions = (req, res) => {
     });
   }
 
-  const action = JSON.stringify({ cmt_application: "view" });
+  const action = "cmt_application";
   AdminCommon.isAdminAuthorizedForAction(admin_id, action, (result) => {
     if (!result.status) {
       return res.status(403).json({
@@ -670,7 +661,7 @@ exports.filterOptionsForBranch = (req, res) => {
     });
   }
 
-  const action = JSON.stringify({ cmt_application: "view" });
+  const action = "cmt_application";
   AdminCommon.isAdminAuthorizedForAction(admin_id, action, (result) => {
     if (!result.status) {
       return res.status(403).json({
@@ -758,7 +749,7 @@ exports.reportFormJsonByServiceID = (req, res) => {
     });
   }
 
-  const action = JSON.stringify({ cmt_application: "view" });
+  const action = "cmt_application";
   AdminCommon.isAdminAuthorizedForAction(admin_id, action, (result) => {
     if (!result.status) {
       return res.status(403).json({
@@ -882,8 +873,7 @@ exports.generateReport = (req, res) => {
     return { mainJson: result, annexureRawJson: annexureResult };
   }
 
-  const action = JSON.stringify({ cmt_application: "generate_report" });
-
+  const action = "cmt_application";
   AdminCommon.isAdminAuthorizedForAction(admin_id, action, (AuthResult) => {
     if (!AuthResult.status) {
       return res.status(403).json({
@@ -1007,7 +997,7 @@ exports.generateReport = (req, res) => {
 
                     const logData =
                       currentCMTApplication &&
-                        Object.keys(currentCMTApplication).length > 0
+                      Object.keys(currentCMTApplication).length > 0
                         ? JSON.stringify({ application_id, ...changes }) // changes is defined here
                         : JSON.stringify(mainJson);
 
@@ -1018,7 +1008,7 @@ exports.generateReport = (req, res) => {
                       "0",
                       logData,
                       err,
-                      () => { }
+                      () => {}
                     );
 
                     return res.status(500).json({
@@ -1030,7 +1020,7 @@ exports.generateReport = (req, res) => {
 
                   const logDataSuccess =
                     currentCMTApplication &&
-                      Object.keys(currentCMTApplication).length > 0
+                    Object.keys(currentCMTApplication).length > 0
                       ? JSON.stringify({ application_id, ...changes }) // changes is defined here
                       : JSON.stringify(mainJson);
 
@@ -1041,7 +1031,7 @@ exports.generateReport = (req, res) => {
                     "1",
                     logDataSuccess,
                     err,
-                    () => { }
+                    () => {}
                   );
 
                   if (typeof annexure === "object" && annexure !== null) {
@@ -1067,7 +1057,7 @@ exports.generateReport = (req, res) => {
 
                             let annexureLogStatus =
                               currentCMTAnnexure &&
-                                Object.keys(currentCMTAnnexure).length > 0
+                              Object.keys(currentCMTAnnexure).length > 0
                                 ? "update"
                                 : "create";
 
@@ -1093,11 +1083,11 @@ exports.generateReport = (req, res) => {
 
                                   const annexureLogData =
                                     currentCMTAnnexure &&
-                                      Object.keys(currentCMTAnnexure).length > 0
+                                    Object.keys(currentCMTAnnexure).length > 0
                                       ? JSON.stringify({
-                                        application_id,
-                                        ...changes,
-                                      })
+                                          application_id,
+                                          ...changes,
+                                        })
                                       : JSON.stringify(mainJson);
 
                                   AdminCommon.adminActivityLog(
@@ -1107,7 +1097,7 @@ exports.generateReport = (req, res) => {
                                     "0",
                                     annexureLogData,
                                     err,
-                                    () => { }
+                                    () => {}
                                   );
 
                                   return reject(err); // Reject the promise on error
@@ -1120,7 +1110,7 @@ exports.generateReport = (req, res) => {
                                   "1",
                                   logDataSuccess,
                                   err,
-                                  () => { }
+                                  () => {}
                                 );
 
                                 resolve(); // Resolve the promise when successful
@@ -1246,13 +1236,14 @@ exports.generateReport = (req, res) => {
                                               if (send_mail == 0) {
                                                 return res.status(200).json({
                                                   status: true,
-                                                  message: `CMT Application ${currentCMTApplication &&
+                                                  message: `CMT Application ${
+                                                    currentCMTApplication &&
                                                     Object.keys(
                                                       currentCMTApplication
                                                     ).length > 0
-                                                    ? "updated"
-                                                    : "created"
-                                                    } successfully`,
+                                                      ? "updated"
+                                                      : "created"
+                                                  } successfully`,
                                                   email_status: 1,
                                                   token: newToken,
                                                 });
@@ -1272,13 +1263,14 @@ exports.generateReport = (req, res) => {
                                                 .then(() => {
                                                   return res.status(200).json({
                                                     status: true,
-                                                    message: `CMT Application ${currentCMTApplication &&
+                                                    message: `CMT Application ${
+                                                      currentCMTApplication &&
                                                       Object.keys(
                                                         currentCMTApplication
                                                       ).length > 0
-                                                      ? "updated"
-                                                      : "created"
-                                                      } successfully and mail sent.`,
+                                                        ? "updated"
+                                                        : "created"
+                                                    } successfully and mail sent.`,
                                                     token: newToken,
                                                   });
                                                 })
@@ -1290,13 +1282,14 @@ exports.generateReport = (req, res) => {
 
                                                   return res.status(200).json({
                                                     status: true,
-                                                    message: `CMT Application ${currentCMTApplication &&
+                                                    message: `CMT Application ${
+                                                      currentCMTApplication &&
                                                       Object.keys(
                                                         currentCMTApplication
                                                       ).length > 0
-                                                      ? "updated"
-                                                      : "created"
-                                                      } successfully but failed to send mail.`,
+                                                        ? "updated"
+                                                        : "created"
+                                                    } successfully but failed to send mail.`,
                                                     token: newToken,
                                                   });
                                                 });
@@ -1304,13 +1297,14 @@ exports.generateReport = (req, res) => {
                                               if (send_mail == 0) {
                                                 return res.status(200).json({
                                                   status: true,
-                                                  message: `CMT Application ${currentCMTApplication &&
+                                                  message: `CMT Application ${
+                                                    currentCMTApplication &&
                                                     Object.keys(
                                                       currentCMTApplication
                                                     ).length > 0
-                                                    ? "updated"
-                                                    : "created"
-                                                    } successfully`,
+                                                      ? "updated"
+                                                      : "created"
+                                                  } successfully`,
                                                   email_status: 2,
                                                   token: newToken,
                                                 });
@@ -1328,13 +1322,14 @@ exports.generateReport = (req, res) => {
                                                 .then(() => {
                                                   return res.status(200).json({
                                                     status: true,
-                                                    message: `CMT Application ${currentCMTApplication &&
+                                                    message: `CMT Application ${
+                                                      currentCMTApplication &&
                                                       Object.keys(
                                                         currentCMTApplication
                                                       ).length > 0
-                                                      ? "updated"
-                                                      : "created"
-                                                      } successfully and mail sent.`,
+                                                        ? "updated"
+                                                        : "created"
+                                                    } successfully and mail sent.`,
                                                     token: newToken,
                                                   });
                                                 })
@@ -1346,26 +1341,28 @@ exports.generateReport = (req, res) => {
 
                                                   return res.status(200).json({
                                                     status: true,
-                                                    message: `CMT Application ${currentCMTApplication &&
+                                                    message: `CMT Application ${
+                                                      currentCMTApplication &&
                                                       Object.keys(
                                                         currentCMTApplication
                                                       ).length > 0
-                                                      ? "updated"
-                                                      : "created"
-                                                      } successfully but failed to send mail.`,
+                                                        ? "updated"
+                                                        : "created"
+                                                    } successfully but failed to send mail.`,
                                                     token: newToken,
                                                   });
                                                 });
                                             } else {
                                               return res.status(200).json({
                                                 status: true,
-                                                message: `CMT Application ${currentCMTApplication &&
+                                                message: `CMT Application ${
+                                                  currentCMTApplication &&
                                                   Object.keys(
                                                     currentCMTApplication
                                                   ).length > 0
-                                                  ? "updated"
-                                                  : "created"
-                                                  } successfully.`,
+                                                    ? "updated"
+                                                    : "created"
+                                                } successfully.`,
                                                 token: newToken,
                                               });
                                             }
@@ -1399,10 +1396,10 @@ exports.generateReport = (req, res) => {
                                                   ) {
                                                     const colorStatusValue =
                                                       typeof subJson[prop] ===
-                                                        "string"
+                                                      "string"
                                                         ? subJson[
-                                                          prop
-                                                        ].toLowerCase()
+                                                            prop
+                                                          ].toLowerCase()
                                                         : null;
 
                                                     if (
@@ -1426,13 +1423,14 @@ exports.generateReport = (req, res) => {
                                               if (send_mail == 0) {
                                                 return res.status(200).json({
                                                   status: true,
-                                                  message: `CMT Application ${currentCMTApplication &&
+                                                  message: `CMT Application ${
+                                                    currentCMTApplication &&
                                                     Object.keys(
                                                       currentCMTApplication
                                                     ).length > 0
-                                                    ? "updated"
-                                                    : "created"
-                                                    } successfully`,
+                                                      ? "updated"
+                                                      : "created"
+                                                  } successfully`,
                                                   email_status: 2,
                                                   token: newToken,
                                                 });
@@ -1447,13 +1445,14 @@ exports.generateReport = (req, res) => {
                                                 .then(() => {
                                                   return res.status(200).json({
                                                     status: true,
-                                                    message: `CMT Application ${currentCMTApplication &&
+                                                    message: `CMT Application ${
+                                                      currentCMTApplication &&
                                                       Object.keys(
                                                         currentCMTApplication
                                                       ).length > 0
-                                                      ? "updated"
-                                                      : "created"
-                                                      } successfully and mail sent.`,
+                                                        ? "updated"
+                                                        : "created"
+                                                    } successfully and mail sent.`,
                                                     token: newToken,
                                                   });
                                                 })
@@ -1465,26 +1464,28 @@ exports.generateReport = (req, res) => {
 
                                                   return res.status(200).json({
                                                     status: true,
-                                                    message: `CMT Application ${currentCMTApplication &&
+                                                    message: `CMT Application ${
+                                                      currentCMTApplication &&
                                                       Object.keys(
                                                         currentCMTApplication
                                                       ).length > 0
-                                                      ? "updated"
-                                                      : "created"
-                                                      } successfully but failed to send mail.`,
+                                                        ? "updated"
+                                                        : "created"
+                                                    } successfully but failed to send mail.`,
                                                     token: newToken,
                                                   });
                                                 });
                                             } else {
                                               return res.status(200).json({
                                                 status: true,
-                                                message: `CMT Application ${currentCMTApplication &&
+                                                message: `CMT Application ${
+                                                  currentCMTApplication &&
                                                   Object.keys(
                                                     currentCMTApplication
                                                   ).length > 0
-                                                  ? "updated"
-                                                  : "created"
-                                                  } successfully.`,
+                                                    ? "updated"
+                                                    : "created"
+                                                } successfully.`,
                                                 token: newToken,
                                               });
                                             }
@@ -1510,11 +1511,12 @@ exports.generateReport = (req, res) => {
                     // If there are no annexures, send the response directly
                     return res.status(200).json({
                       status: true,
-                      message: `CMT Application ${currentCMTApplication &&
+                      message: `CMT Application ${
+                        currentCMTApplication &&
                         Object.keys(currentCMTApplication).length > 0
-                        ? "updated"
-                        : "created"
-                        } successfully.`,
+                          ? "updated"
+                          : "created"
+                      } successfully.`,
                       token: newToken,
                     });
                   }
@@ -1561,7 +1563,7 @@ exports.customerBasicInfoWithAdminAuth = (req, res) => {
     });
   }
 
-  const action = JSON.stringify({ cmt_application: "view" });
+  const action = "cmt_application";
   AdminCommon.isAdminAuthorizedForAction(admin_id, action, (result) => {
     if (!result.status) {
       return res.status(403).json({
@@ -1648,7 +1650,7 @@ exports.annexureDataByServiceIdofApplication = (req, res) => {
     });
   }
 
-  const action = JSON.stringify({ cmt_application: "view" });
+  const action = "cmt_application";
   AdminCommon.isAdminAuthorizedForAction(admin_id, action, (result) => {
     if (!result.status) {
       return res.status(403).json({
@@ -1795,7 +1797,7 @@ exports.upload = async (req, res) => {
       });
     }
 
-    const action = JSON.stringify({ cmt_application: "generate_report" });
+    const action = "cmt_application";
     AdminCommon.isAdminAuthorizedForAction(adminId, action, (result) => {
       if (!result.status) {
         return res.status(403).json({
@@ -2110,7 +2112,7 @@ exports.annexureDataByServiceIds = (req, res) => {
     });
   }
 
-  const action = JSON.stringify({ cmt_application: "view" });
+  const action = "cmt_application";
   AdminCommon.isAdminAuthorizedForAction(admin_id, action, (result) => {
     if (!result.status) {
       return res.status(403).json({

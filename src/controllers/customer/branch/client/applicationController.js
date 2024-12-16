@@ -65,8 +65,7 @@ exports.create = (req, res) => {
     });
   }
 
-  const action = JSON.stringify({ client_application: "create" });
-
+  const action = "client_application";
   // Check branch authorization
   BranchCommon.isBranchAuthorizedForAction(branch_id, action, (result) => {
     if (!result.status) {
@@ -353,8 +352,7 @@ exports.bulkCreate = (req, res) => {
     });
   }
 
-  const action = JSON.stringify({ client_application: "view" });
-
+  const action = "client_application";
   // Check branch authorization
   BranchCommon.isBranchAuthorizedForAction(branch_id, action, (result) => {
     if (!result.status) {
@@ -745,7 +743,7 @@ exports.list = (req, res) => {
     });
   }
 
-  const action = JSON.stringify({ client_application: "view" });
+  const action = "client_application";
   BranchCommon.isBranchAuthorizedForAction(branch_id, action, (result) => {
     if (!result.status) {
       return res.status(403).json({
@@ -849,7 +847,7 @@ exports.update = (req, res) => {
     });
   }
 
-  const action = JSON.stringify({ client_application: "update" });
+  const action = "client_application";
   BranchCommon.isBranchAuthorizedForAction(branch_id, action, (result) => {
     if (!result.status) {
       return res.status(403).json({
@@ -1103,7 +1101,7 @@ exports.upload = async (req, res) => {
       });
     }
 
-    const action = JSON.stringify({ client_application: "update" });
+    const action = "client_application";
     BranchCommon.isBranchAuthorizedForAction(branchId, action, (result) => {
       if (!result.status) {
         return res.status(403).json({
@@ -1469,8 +1467,7 @@ exports.delete = (req, res) => {
     });
   }
 
-  const action = JSON.stringify({ client_application: "delete" });
-
+  const action = "client_application";
   // Check branch authorization
   BranchCommon.isBranchAuthorizedForAction(branch_id, action, (result) => {
     if (!result.status) {
