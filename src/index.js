@@ -14,6 +14,7 @@ const externalLoginCredentials = require("./routes/admin/externalLoginCredential
 const reportSummaryRoutes = require("./routes/admin/reportSummaryRoutes");
 const customerRoutes = require("./routes/customer/indexRoutes");
 const branchRoutes = require("./routes/customer/branch/indexRoutes");
+const databaseRoutes = require("./routes/admin/databaseRoutes");
 const packageRoutes = require("./routes/admin/packageRoutes");
 const serviceRoutes = require("./routes/admin/serviceRoutes");
 const holidayRoutes = require("./routes/admin/holidayRoutes");
@@ -41,6 +42,7 @@ app.use("/external-login-credentials", externalLoginCredentials);
 app.use("/report-summary", reportSummaryRoutes);
 app.use("/customer", customerRoutes);
 app.use("/branch", branchRoutes);
+app.use("/database", databaseRoutes);
 app.use("/package", packageRoutes);
 app.use("/service", serviceRoutes);
 app.use("/holiday", holidayRoutes);
