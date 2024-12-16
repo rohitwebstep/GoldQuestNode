@@ -86,15 +86,18 @@ async function createMail(
     // Prepare recipient list based on whether the branch is a head branch
     let recipientList;
     if (is_head === 1) {
-      // Include all customers in the recipient list for head branches
-      recipientList = customerData.map(
-        (customer) => `"${customer.name}" <${customer.email}>`
-      );
+      recipientList =
+        customerData.length > 0
+          ? customerData.map(
+              (customer) => `"${customer.name}" <${customer.email}>`
+            )
+          : [];
     } else {
       // If not a head branch, only include the specific branches
-      recipientList = branches.map(
-        (branch) => `"${branch.name}" <${branch.email}>`
-      );
+      recipientList =
+        branches.length > 0
+          ? branches.map((branch) => `"${branch.name}" <${branch.email}>`)
+          : [];
     }
 
     // Send email to the prepared recipient list

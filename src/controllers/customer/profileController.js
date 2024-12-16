@@ -547,7 +547,6 @@ exports.create = (req, res) => {
                                                       email: email,
                                                     })
                                                   );
-
                                                 // Create email for head branch
                                                 createMail(
                                                   "customer",
@@ -873,9 +872,12 @@ exports.upload = async (req, res) => {
                                 currentCustomer.emails
                               );
                               // Create a recipient list
-                              const customerRecipientList = customerJsonArr
-                                .map((email) => `"${customerName}" <${email}>`)
-                                .join(", ");
+                              const customerRecipientList = customerJsonArr.map(
+                                (email) => ({
+                                  name: customerName,
+                                  email: email,
+                                })
+                              );
                               // Send email with all formatted branches
                               const emailPromise = createMail(
                                 "customer",
