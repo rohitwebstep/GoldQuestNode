@@ -413,18 +413,79 @@ const Customer = {
 
     startConnection((err, connection) => {
       if (err) {
+        console.error("Connection error:", err);
         return callback(
           { message: "Failed to connect to the database", error: err },
           null
         );
       }
+
       connection.query(sql, (err, results) => {
         connectionRelease(connection);
+
         if (err) {
           console.error("Database query error: 57", err);
           return callback(err, null);
         }
-        callback(null, results);
+
+        // Array to accumulate the updated customer data
+        const updatedCustomers = [];
+
+        const updateAllServiceTitles = async () => {
+          for (const customerData of results) {
+            let servicesData;
+            try {
+              servicesData = JSON.parse(customerData.services);
+            } catch (parseError) {
+              console.error(
+                "Error parsing services data for customer ID:",
+                customerData.main_id,
+                parseError
+              );
+              return callback(parseError, null);
+            }
+
+            try {
+              for (const group of servicesData) {
+                const serviceSql = `SELECT title FROM services WHERE id = ?`;
+                const [rows] = await new Promise((resolve, reject) => {
+                  connection.query(
+                    serviceSql,
+                    [group.serviceId],
+                    (err, results) => {
+                      if (err) {
+                        console.error(
+                          "Error querying service title for service ID:",
+                          group.serviceId,
+                          err
+                        );
+                        return reject(err);
+                      }
+                      resolve(results);
+                    }
+                  );
+                });
+
+                if (rows && rows.length > 0 && rows[0].title) {
+                  group.serviceTitle = rows[0].title;
+                }
+              }
+            } catch (err) {
+              console.error(
+                "Error updating service titles for customer ID:",
+                customerData.main_id,
+                err
+              );
+              return callback(err, null);
+            }
+
+            customerData.services = JSON.stringify(servicesData);
+            // Add the updated customer data to the array
+            updatedCustomers.push(customerData);
+          }
+          callback(null, updatedCustomers);
+        };
+        updateAllServiceTitles();
       });
     });
   },
@@ -477,7 +538,7 @@ const Customer = {
     });
   },
 
-  basicInfoByID: (customer_id, callback) => {
+  basicInfoByID: async (customer_id, callback) => {
     const sql = `
       SELECT 
         customers.client_unique_id,
@@ -486,7 +547,7 @@ const Customer = {
         customers.emails, 
         customers.mobile, 
         customers.services, 
-        customer_metas.single_point_of_contact,
+        customer_metas.client_spoc_id,
         customers.id, 
         customer_metas.address,
         customer_metas.gst_number,
@@ -501,22 +562,97 @@ const Customer = {
         customers.id = ?
     `;
 
-    startConnection((err, connection) => {
-      if (err) {
-        return callback(
-          { message: "Failed to connect to the database", error: err },
-          null
-        );
-      }
-      connection.query(sql, [customer_id], (err, results) => {
-        connectionRelease(connection);
-        if (err) {
-          console.error("Database query error: 59", err);
-          return callback(err, null);
-        }
-        callback(null, results);
+    try {
+      const connection = await new Promise((resolve, reject) => {
+        startConnection((err, conn) => {
+          if (err) reject(err);
+          resolve(conn);
+        });
       });
-    });
+
+      const results = await new Promise((resolve, reject) => {
+        connection.query(sql, [customer_id], (err, results) => {
+          if (err) reject(err);
+          resolve(results);
+        });
+      });
+
+      if (results.length === 0) {
+        connectionRelease(connection);
+        return callback(null, { message: "No customer data found" });
+      }
+
+      const customerData = results[0];
+      const spocIdString = customerData.client_spoc_id;
+      if (spocIdString) {
+        const spocIds = spocIdString
+          .toString()
+          .split(",")
+          .map((id) => id.trim());
+
+        const spocQuery = `
+          SELECT id, name 
+          FROM client_spocs
+          WHERE id IN (${spocIds.map(() => "?").join(",")});
+        `;
+
+        try {
+          const spocDetails = await new Promise((resolve, reject) => {
+            connection.query(spocQuery, spocIds, (spocErr, spocResults) => {
+              if (spocErr) return reject(spocErr);
+              resolve(spocResults); // Include the entire result (id and name)
+            });
+          });
+          customerData.client_spoc_details = spocDetails; // Assign id and name to the customer data
+        } catch (spocErr) {
+          console.error("Error fetching client_spoc details:", spocErr);
+          customerData.client_spoc_details = null;
+        }
+      } else {
+        customerData.client_spoc_details = null;
+      }
+
+      let servicesData;
+      try {
+        servicesData = JSON.parse(customerData.services);
+      } catch (parseError) {
+        connectionRelease(connection);
+        return callback(parseError, null);
+      }
+
+      const updateServiceTitles = async () => {
+        try {
+          for (const group of servicesData) {
+            const serviceSql = `SELECT title FROM services WHERE id = ?`;
+            const [rows] = await new Promise((resolve, reject) => {
+              connection.query(
+                serviceSql,
+                [group.serviceId],
+                (err, results) => {
+                  if (err) return reject(err);
+                  resolve(results);
+                }
+              );
+            });
+
+            if (rows && rows.title) {
+              group.serviceTitle = rows.title;
+            }
+          }
+        } catch (err) {
+          console.error("Error updating service titles:", err);
+        } finally {
+          connectionRelease(connection);
+          customerData.services = JSON.stringify(servicesData);
+          callback(null, customerData);
+        }
+      };
+
+      await updateServiceTitles();
+    } catch (err) {
+      console.error("Error:", err);
+      callback(err, null);
+    }
   },
 
   getCustomerById: (id, callback) => {
@@ -534,7 +670,53 @@ const Customer = {
           console.error("Database query error: 60", err);
           return callback(err, null);
         }
-        callback(null, results[0]);
+        if (results.length === 0) {
+          connectionRelease(connection);
+          return callback(null, { message: "No customer data found" });
+        }
+
+        const customerData = results[0];
+
+        let servicesData;
+        try {
+          servicesData = JSON.parse(customerData.services);
+        } catch (parseError) {
+          connectionRelease(connection);
+          return callback(parseError, null);
+        }
+
+        const updateServiceTitles = async () => {
+          try {
+            for (const group of servicesData) {
+              const serviceSql = `SELECT title FROM services WHERE id = ?`;
+              const [rows] = await new Promise((resolve, reject) => {
+                connection.query(
+                  serviceSql,
+                  [group.serviceId],
+                  (err, results) => {
+                    if (err) {
+                      console.error("Error querying service title:", err);
+                      return reject(err);
+                    }
+                    resolve(results);
+                  }
+                );
+              });
+
+              if (rows && rows.title) {
+                group.serviceTitle = rows.title;
+              }
+            }
+          } catch (err) {
+            console.error("Error updating service titles:", err);
+          } finally {
+            connectionRelease(connection);
+            customerData.services = JSON.stringify(servicesData);
+            callback(null, customerData);
+          }
+        };
+
+        updateServiceTitles();
       });
     });
   },
