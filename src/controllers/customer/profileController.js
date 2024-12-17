@@ -181,7 +181,6 @@ exports.create = (req, res) => {
     clientData,
     client_standard,
     custom_template,
-    additional_login,
     agreement_period,
   };
 
@@ -1139,7 +1138,6 @@ exports.update = (req, res) => {
     agreement_date,
     custom_template,
     client_standard,
-    additional_login,
     agreement_duration,
   };
 
