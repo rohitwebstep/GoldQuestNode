@@ -933,7 +933,7 @@ exports.list = (req, res) => {
           new Promise((resolve) =>
             Customer.basicInfoByID(customer_id, (err, result) => {
               if (err) return resolve([]);
-              resolve(result[0]);
+              resolve(result);
             })
           ),
         ];
