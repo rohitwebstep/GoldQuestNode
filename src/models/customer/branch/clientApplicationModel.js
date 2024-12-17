@@ -90,13 +90,14 @@ const clientApplication = {
                 } else {
                   const latest_application_id =
                     applicationResults[0].application_id;
-                  const parts = latest_application_id.split("-");
 
-                  if (parts.length === 3) {
-                    const numberPart = parseInt(parts[2], 10);
-                    new_application_id = `${parts[0]}-${parts[1]}-${
-                      numberPart + 1
-                    }`;
+                  const parts = latest_application_id.split("-");
+                  const lastIndex = parts.length - 1; // Get the last index of the parts array
+
+                  if (!isNaN(parts[lastIndex])) {
+                    const numberPart = parseInt(parts[lastIndex], 10);
+                    parts[lastIndex] = (numberPart + 1).toString(); // Increment the number part at the last index
+                    new_application_id = parts.join("-"); // Reassemble the application_id
                   } else {
                     new_application_id = `${client_unique_id}-1`;
                   }
@@ -115,7 +116,7 @@ const clientApplication = {
     const {
       name,
       employee_id,
-      client_spoc,
+      spoc,
       batch_number,
       sub_client,
       location,
@@ -181,7 +182,7 @@ const clientApplication = {
             new_application_id,
             name,
             employee_id,
-            client_spoc,
+            spoc,
             batch_number,
             sub_client,
             location,
