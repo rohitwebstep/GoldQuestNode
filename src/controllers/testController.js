@@ -1,6 +1,6 @@
 const fs = require("fs");
 const path = require("path");
-const { upload, saveImage, saveImages } = require("../utils/imageSave");
+const { upload, saveImage, saveImages } = require("../utils/cloudImageSave");
 
 exports.uploadImage = (req, res) => {
   // Define the target directory to move files to
