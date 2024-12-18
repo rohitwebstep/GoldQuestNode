@@ -174,15 +174,12 @@ async function addImageToPDF(
 }
 
 module.exports = {
-  generatePDF: async (id, pdfFileName, targetDirectory) => {
+  generatePDF: async (client_applicaton_id, branch_id, pdfFileName, targetDirectory) => {
     console.log(`targetDirectory - 1 - `, targetDirectory);
-    const application_id = 1;
-    const branch_id = 1;
-
     return new Promise((resolve, reject) => {
       // Fetch application data
       ClientMasterTrackerModel.applicationByID(
-        application_id,
+        client_applicaton_id,
         branch_id,
         async (err, application) => {
           if (err) {
@@ -195,7 +192,7 @@ module.exports = {
           }
           // Fetch CMT Application Data
           ClientMasterTrackerModel.getCMTApplicationById(
-            application_id,
+            client_applicaton_id,
             async (err, CMTApplicationData) => {
               if (err) {
                 console.error("Database error:", err);
@@ -248,7 +245,7 @@ module.exports = {
                     const heading = parsedData.heading;
 
                     ClientMasterTrackerModel.annexureData(
-                      application_id,
+                      client_applicaton_id,
                       db_table,
                       (err, annexureData) => {
                         if (err) {

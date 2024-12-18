@@ -1334,6 +1334,7 @@ exports.generateReport = (req, res) => {
                                                 const pdfPath =
                                                   await generatePDF(
                                                     application_id,
+                                                    branch_id,
                                                     pdfFileName,
                                                     pdfTargetDirectory
                                                   );
