@@ -155,7 +155,7 @@ const savePdf = async (doc, pdfFileName, targetDir) => {
     await client.uploadFrom(pdfPath, pdfFileName);
 
     // After successful upload, remove the local file
-    fs.unlinkSync(pdfPath); // Delete the temporary local file
+    fs.unlinkSync(`${pdfPath}/${pdfFileName}`); // Delete the temporary local file
     return targetDir;
   } catch (err) {
     console.error("Error during FTP upload:", err);
