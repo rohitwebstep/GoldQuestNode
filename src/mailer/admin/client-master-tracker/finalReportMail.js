@@ -23,7 +23,7 @@ const createAttachments = async (attachments_url) => {
     if (trimmedUrl) {
       const exists = await checkFileExists(trimmedUrl);
       if (exists) {
-        const filename = trimmedUrl.split("/").pop(); // Extract the filename from the URL
+        const filename = path.basename(trimmedUrl); // Extract the filename from the URL
         attachments.push({
           filename: filename,
           path: trimmedUrl,

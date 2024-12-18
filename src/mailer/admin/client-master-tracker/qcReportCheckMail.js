@@ -13,25 +13,28 @@ const checkFileExists = async (url) => {
 };
 
 // Function to create attachments from URLs
+// Function to create attachments from URLs
 const createAttachments = async (attachments_url) => {
   const urls =
-    attachments_url && typeof attachments_url === "string"
-      ? attachments_url.split(",").map((url) => url.trim())
-      : [];
+    typeof attachments_url === "string" ? attachments_url.split(",") : []; // Default to an empty array if attachments_url is not valid
 
   const attachments = [];
 
   for (const url of urls) {
-    if (url) {
-      const exists = await checkFileExists(url);
+    const trimmedUrl = url.trim(); // Remove any extra whitespace
+    if (trimmedUrl) {
+      const exists = await checkFileExists(trimmedUrl);
       if (exists) {
-        const filename = url.split("/").pop();
-        attachments.push({ filename, path: url });
+        const filename = path.basename(trimmedUrl); // Extract the filename from the URL
+        attachments.push({
+          filename: filename,
+          path: trimmedUrl,
+        });
       } else {
-        console.warn(`File does not exist: ${url}`);
+        console.warn(`File does not exist: ${trimmedUrl}`); // Log warning for missing file
       }
     } else {
-      console.warn(`Empty or invalid URL: ${url}`);
+      console.warn(`Empty or invalid URL: ${url}`); // Log warning for invalid URL
     }
   }
 
