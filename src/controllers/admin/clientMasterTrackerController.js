@@ -1245,7 +1245,7 @@ exports.generateReport = (req, res) => {
                                                 .length > 0
                                                 ? "updated"
                                                 : "created"
-                                            } successfully.`,
+                                            } successfully 1.`,
                                             token: newToken,
                                           });
                                         }
@@ -1285,7 +1285,7 @@ exports.generateReport = (req, res) => {
                                                   ).length > 0
                                                     ? "updated"
                                                     : "created"
-                                                } successfully`,
+                                                } successfully 2`,
                                                 email_status: 1,
                                                 token: newToken,
                                               });
@@ -1359,7 +1359,7 @@ exports.generateReport = (req, res) => {
                                                   ).length > 0
                                                     ? "updated"
                                                     : "created"
-                                                } successfully`,
+                                                } successfully 3`,
                                                 email_status: 2,
                                                 token: newToken,
                                               });
@@ -1417,7 +1417,7 @@ exports.generateReport = (req, res) => {
                                                 ).length > 0
                                                   ? "updated"
                                                   : "created"
-                                              } successfully.`,
+                                              } successfully 4.`,
                                               token: newToken,
                                             });
                                           }
@@ -1484,7 +1484,7 @@ exports.generateReport = (req, res) => {
                                                   ).length > 0
                                                     ? "updated"
                                                     : "created"
-                                                } successfully`,
+                                                } successfully 5`,
                                                 email_status: 2,
                                                 token: newToken,
                                               });
@@ -1539,7 +1539,7 @@ exports.generateReport = (req, res) => {
                                                 ).length > 0
                                                   ? "updated"
                                                   : "created"
-                                              } successfully.`,
+                                              } successfully 6.`,
                                               token: newToken,
                                             });
                                           }
@@ -1569,7 +1569,7 @@ exports.generateReport = (req, res) => {
                         Object.keys(currentCMTApplication).length > 0
                           ? "updated"
                           : "created"
-                      } successfully.`,
+                      } successfully 7.`,
                       token: newToken,
                     });
                   }
