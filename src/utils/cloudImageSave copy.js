@@ -99,12 +99,16 @@ const uploadToFtp = async (filePath) => {
 
     const targetDir = path.dirname(filePath); // Get the directory path (e.g., "uploads/rohit")
     const filename = path.basename(filePath); // Get the filename (e.g., "1734421514518_5912.png")
-
+    console.log(`targetDir - `, targetDir);
     const dirs = targetDir.split(path.sep);
+    console.log(`dirs - `, dirs);
+
     for (const dir of dirs) {
+      console.log(`dir - `, dir);
       await client.ensureDir(dir); // Ensure each directory exists
     }
-
+    console.log(`filePath - `, filePath);
+    console.log(`filename - `, filename);
     // Upload the image file to Hostinger's public_html folder
     await client.uploadFrom(filePath, filename);
   } catch (err) {
@@ -126,43 +130,40 @@ const saveImages = async (files, targetDir) => {
 };
 
 const savePdf = async (doc, pdfFileName, targetDir) => {
-  // Create the target directory on the FTP server first
-  const dirs = targetDir.split(path.sep); // Split targetDir into directory parts
-  const client = new ftp.Client();
-  client.ftp.verbose = true; // Enable verbose logging for FTP connection
+  // Define the full path for the PDF file
+  const pdfPath = path.join(targetDir, pdfFileName);
+  console.log("PDF file path:", pdfPath); // Log the full path for the PDF
 
-  try {
-    // Connect to FTP server using previously fetched app information
-    await client.access({
-      host: cloudImageFTPHost,
-      user: cloudImageFTPUser,
-      password: cloudImageFTPPassword,
-      secure: cloudImageFTPSecure,
-    });
-
-    // Ensure the directories exist on the FTP server
-    for (const dir of dirs) {
-      await client.ensureDir(dir); // Ensure each directory exists on FTP
-    }
-
-    // Create a temporary path to save the PDF file locally
-    const pdfPath = path.join(__dirname, pdfFileName);
-
-    // Save the document (PDF) to a temporary local path
-    await doc.save(pdfPath); // You can adjust this to directly generate the file
-
-    // Upload the file directly to the FTP server
-    await client.uploadFrom(pdfPath, pdfFileName);
-
-    // After successful upload, remove the local file
-    fs.unlinkSync(pdfPath); // Delete the temporary local file
-    return targetDir;
-  } catch (err) {
-    console.error("Error during FTP upload:", err);
-    throw err; // Rethrow the error if upload fails
-  } finally {
-    client.close(); // Close the FTP connection
+  // Ensure the target directory exists
+  if (!fs.existsSync(targetDir)) {
+    console.log(`Directory ${targetDir} does not exist. Creating it...`);
+    fs.mkdirSync(targetDir, { recursive: true });
+    console.log(`Directory ${targetDir} created.`);
+  } else {
+    console.log(`Directory ${targetDir} already exists.`);
   }
+
+  return new Promise(async (resolve, reject) => {
+    /*
+    doc.save(pdfPath, async (err) => {
+      if (err) {
+        console.error("Error saving PDF to filesystem:", err);
+        return reject(err);
+      }
+    */
+    try {
+      console.log("Starting FTP upload for the PDF...");
+      // Simulating the upload to FTP
+      await uploadToFtp(pdfPath);
+      console.log("PDF uploaded successfully to FTP.");
+
+      resolve(pdfPath); // Resolve the promise after upload is successful
+    } catch (err) {
+      console.error("Error during FTP upload:", err); // Log any error during the upload process
+      reject(err); // Reject the promise if there's an error
+    }
+    // });
+  });
 };
 
 // Exporting the upload middleware and saving functions

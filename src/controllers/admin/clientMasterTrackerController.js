@@ -112,7 +112,10 @@ exports.test = async (req, res) => {
 
     // Generate the PDF
     const pdfTargetDirectory = `uploads/customers/${client_unique_id}/client-applications/${application_id}/final-reports`;
-    const pdfFileName = `${name}_${formattedDate}.pdf`;
+
+    const pdfFileName = `${name}_${formattedDate}.pdf`
+      .replace(/\s+/g, "-")
+      .toLowerCase();
     const pdfPath = await generatePDF(
       application_id,
       pdfFileName,
