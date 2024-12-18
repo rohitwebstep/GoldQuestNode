@@ -4,6 +4,14 @@ require("jspdf-autotable");
 const fs = require("fs");
 const path = require("path");
 const axios = require("axios");
+
+const {
+  upload,
+  saveImage,
+  saveImages,
+  savePdf,
+} = require("../utils/cloudImageSave");
+
 const getImageFormat = (url) => {
   const ext = url.split(".").pop().toLowerCase();
   if (ext === "png") return "PNG";
@@ -103,7 +111,8 @@ function addFooter(doc) {
 }
 
 module.exports = {
-  generatePDF: async (id, pdfFileName) => {
+  generatePDF: async (id, pdfFileName, targetDirectory) => {
+    console.log(`targetDirectory - 1 - `, targetDirectory);
     const application_id = 1;
     const branch_id = 1;
 
@@ -226,10 +235,9 @@ module.exports = {
               async function finalizeRequest() {
                 pendingRequests -= 1;
                 if (pendingRequests === 0) {
+                  console.log(`targetDirectory - `, targetDirectory);
                   // Define the directory where the PDF will be saved
-                  const directoryPath = path.join(
-                    "uploads/customers/GQ-INDV/client-applications/GQ-INDV-1/final-reports"
-                  );
+                  const directoryPath = path.join(targetDirectory);
                   const pdfPath = path.join(directoryPath, pdfFileName);
 
                   // Check if directory exists, and create it if not
@@ -1107,19 +1115,6 @@ module.exports = {
                     const disclaimerButtonXPosition =
                       (doc.internal.pageSize.width - disclaimerButtonWidth) / 2;
 
-                    console.log(
-                      "disclaimerButtonXPosition:",
-                      disclaimerButtonXPosition
-                    );
-                    console.log("disclaimerY:", disclaimerY);
-                    console.log(
-                      "disclaimerButtonWidth:",
-                      disclaimerButtonWidth
-                    );
-                    console.log(
-                      "disclaimerButtonHeight:",
-                      disclaimerButtonHeight
-                    );
                     console.log(`Step - 24`);
                     if (
                       disclaimerButtonWidth > 0 &&
@@ -1201,7 +1196,7 @@ module.exports = {
                         url: "mailto:compliance@screeningstar.com",
                       }
                     );
-
+                    console.log(`Step - 27`);
                     doc.setTextColor(0, 0, 0);
                     disclaimerLinesPart2.forEach((line) => {
                       doc.text(line, 10, currentY);
@@ -1217,6 +1212,7 @@ module.exports = {
                       doc.addPage();
                       endOfDetailY = 20;
                     }
+                    console.log(`Step - 28`);
 
                     const endButtonXPosition =
                       (doc.internal.pageSize.width - disclaimerButtonWidth) / 2; // Centering horizontally
@@ -1252,6 +1248,7 @@ module.exports = {
                         disclaimerButtonHeight
                       );
                     }
+                    console.log(`Step - 29`);
 
                     doc.setTextColor(0, 0, 0);
                     doc.setFont("helvetica", "bold");
@@ -1260,6 +1257,7 @@ module.exports = {
                       "END OF DETAIL REPORT"
                     );
                     const endButtonTextHeight = doc.getFontSize();
+                    console.log(`Step - 30`);
 
                     const endButtonTextXPosition =
                       endButtonXPosition +
@@ -1277,11 +1275,16 @@ module.exports = {
                       endButtonTextXPosition,
                       endButtonTextYPosition
                     );
+                    console.log(`Step - 31`);
 
                     addFooter(doc);
-                    console.log(`SAVED`);
-                    doc.save(pdfPath);
-                    resolve(pdfPath);
+                    const pdfPathCloud = await savePdf(
+                      doc,
+                      pdfFileName,
+                      targetDirectory
+                    );
+                    // doc.save(pdfPath);
+                    resolve(pdfPathCloud);
                   } catch (error) {
                     console.error("PDF generation error:", error);
                     reject(new Error("Error generating PDF"));

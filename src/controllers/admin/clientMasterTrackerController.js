@@ -100,13 +100,23 @@ exports.list = (req, res) => {
 exports.test = async (req, res) => {
   try {
     const id = 1;
+    const client_unique_id = "GQ-INDV";
+    const application_id = "GQ-INDV-1";
+    const name = "Rohit Sisodia";
+
     const today = new Date();
-    const formattedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+    const formattedDate = `${today.getFullYear()}-${String(
+      today.getMonth() + 1
+    ).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
 
     // Generate the PDF
-    const pdfFileName = `Report_${id}_${formattedDate}.pdf`;
-    const pdfPath = await generatePDF(id, pdfFileName);
-
+    const pdfTargetDirectory = `uploads/customers/${client_unique_id}/client-applications/${application_id}/final-reports`;
+    const pdfFileName = `${name}_${formattedDate}.pdf`;
+    const pdfPath = await generatePDF(
+      application_id,
+      pdfFileName,
+      pdfTargetDirectory
+    );
     // If successful, return the result
     res.json({
       status: true,
@@ -1211,7 +1221,7 @@ exports.generateReport = (req, res) => {
                                     ClientApplication.updateStatus(
                                       mainJson.overall_status,
                                       application_id,
-                                      (err, result) => {
+                                      async (err, result) => {
                                         if (err) {
                                           console.error(
                                             "Database error during client application status update:",
@@ -1280,6 +1290,19 @@ exports.generateReport = (req, res) => {
                                                 token: newToken,
                                               });
                                             }
+                                            const pdfTargetDirectory = `uploads/customers/${currentCustomer.client_unique_id}/client-applications/${application.application_id}/final-reports`;
+                                            const pdfFileName =
+                                              `${application.name}_${formattedDate}.pdf`
+                                                .replace(/\s+/g, "-")
+                                                .toLowerCase();
+                                            const pdfPath = await generatePDF(
+                                              application_id,
+                                              pdfFileName,
+                                              pdfTargetDirectory
+                                            );
+                                            attachments +=
+                                              (attachments ? "," : "") +
+                                              pdfPath;
                                             // Send email notification
                                             finalReportMail(
                                               "cmt",
@@ -1865,7 +1888,7 @@ exports.upload = async (req, res) => {
           let imageHost = "www.example.in";
 
           if (appInfo) {
-            imageHost = appInfo.cloud_image_host || "www.example.in";
+            imageHost = appInfo.cloud_host || "www.example.in";
           }
           // Define the target directory for uploads
           const targetDirectory = `uploads/customers/${customerCode}/client-applications/${appCode}/annexures/${dbTable}`;

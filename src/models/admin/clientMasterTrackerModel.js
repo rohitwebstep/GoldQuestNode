@@ -1148,7 +1148,7 @@ const Customer = {
               // When all services have been processed
               if (completedQueries === services.length) {
                 // Fetch the host from the database
-                const hostSql = `SELECT \`host\` FROM \`app_info\` WHERE \`status\` = 1 AND \`interface_type\` = ? ORDER BY \`updated_at\` DESC LIMIT 1`;
+                const hostSql = `SELECT \`cloud_host\` FROM \`app_info\` WHERE \`status\` = 1 AND \`interface_type\` = ? ORDER BY \`updated_at\` DESC LIMIT 1`;
                 connection.query(hostSql, ["backend"], (err, hostResults) => {
                   if (err) {
                     console.error("Database query error: 27", err);
@@ -1159,7 +1159,7 @@ const Customer = {
                   // Check if an entry was found for the host
                   const host =
                     hostResults.length > 0
-                      ? hostResults[0].host
+                      ? hostResults[0].cloud_host
                       : "www.example.com"; // Fallback host
 
                   let finalAttachments = [];

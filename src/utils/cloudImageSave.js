@@ -15,10 +15,10 @@ App.appInfo("backend", (err, appInfo) => {
     console.error("Database error:", err);
     return;
   }
-  cloudImageFTPHost = appInfo.cloud_image_ftp_host;
-  cloudImageFTPUser = appInfo.cloud_image_ftp_user;
-  cloudImageFTPPassword = appInfo.cloud_image_ftp_password;
-  cloudImageFTPSecure = appInfo.cloud_image_ftp_secure;
+  cloudImageFTPHost = appInfo.cloud_ftp_host;
+  cloudImageFTPUser = appInfo.cloud_ftp_user;
+  cloudImageFTPPassword = appInfo.cloud_ftp_password;
+  cloudImageFTPSecure = appInfo.cloud_ftp_secure;
   // Check if any FTP details are missing and handle the error
   if (!cloudImageFTPHost || !cloudImageFTPUser || !cloudImageFTPPassword) {
     console.error("FTP configuration missing required details.");
@@ -125,6 +125,34 @@ const saveImages = async (files, targetDir) => {
   return savedImagePaths; // Return an array of saved image paths
 };
 
+// Function to save a jsPDF-generated PDF
+const savePdf = async (doc, pdfFileName, targetDir) => {
+  // Define the full path for the PDF file
+  const pdfPath = path.join(targetDir, pdfFileName);
+
+  // Ensure the target directory exists
+  if (!fs.existsSync(targetDir)) {
+    fs.mkdirSync(targetDir, { recursive: true });
+  }
+
+  return new Promise(async (resolve, reject) => {
+    /*
+    doc.save(pdfPath, async (err) => {
+      if (err) {
+        console.error("Error saving PDF to filesystem:", err);
+        return reject(err);
+      }
+    */
+    try {
+      await uploadToFtp(pdfPath);
+      resolve(pdfPath);
+    } catch (err) {
+      reject(err);
+    }
+    // });
+  });
+};
+
 // Exporting the upload middleware and saving functions
 module.exports = {
   upload: upload.fields([
@@ -133,4 +161,5 @@ module.exports = {
   ]),
   saveImage,
   saveImages,
+  savePdf,
 };
