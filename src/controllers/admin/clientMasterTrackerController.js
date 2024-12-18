@@ -100,9 +100,10 @@ exports.list = (req, res) => {
 
 exports.test = async (req, res) => {
   try {
-    const id = 1;
+    const clietn_application_id = 1;
     const client_unique_id = "GQ-INDV";
     const application_id = "GQ-INDV-1";
+    const branch_id = "1";
     const name = "Rohit Sisodia";
 
     const today = new Date();
@@ -117,7 +118,8 @@ exports.test = async (req, res) => {
       .replace(/\s+/g, "-")
       .toLowerCase();
     const pdfPath = await generatePDF(
-      application_id,
+      clietn_application_id,
+      branch_id,
       pdfFileName,
       pdfTargetDirectory
     );
@@ -2083,6 +2085,7 @@ exports.upload = async (req, res) => {
                                 .toLowerCase();
                             const pdfPath = await generatePDF(
                               appId,
+                              branchId,
                               pdfFileName,
                               pdfTargetDirectory
                             );
