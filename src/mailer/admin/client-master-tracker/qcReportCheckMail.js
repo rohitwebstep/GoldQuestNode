@@ -14,7 +14,6 @@ const checkFileExists = async (url) => {
 };
 
 // Function to create attachments from URLs
-// Function to create attachments from URLs
 const createAttachments = async (attachments_url) => {
   const urls =
     typeof attachments_url === "string" ? attachments_url.split(",") : []; // Default to an empty array if attachments_url is not valid
