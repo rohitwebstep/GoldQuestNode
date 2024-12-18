@@ -1291,6 +1291,13 @@ exports.generateReport = (req, res) => {
                                                 token: newToken,
                                               });
                                             }
+
+                                            const today = new Date();
+                                            const formattedDate = `${today.getFullYear()}-${String(
+                                              today.getMonth() + 1
+                                            ).padStart(2, "0")}-${String(
+                                              today.getDate()
+                                            ).padStart(2, "0")}`;
                                             const pdfTargetDirectory = `uploads/customers/${currentCustomer.client_unique_id}/client-applications/${application.application_id}/final-reports`;
                                             const pdfFileName =
                                               `${application.name}_${formattedDate}.pdf`
@@ -2018,6 +2025,12 @@ exports.upload = async (req, res) => {
                               genderTitle =
                                 maritalStatus === "married" ? "Mrs." : "Ms.";
                             }
+                            const today = new Date();
+                            const formattedDate = `${today.getFullYear()}-${String(
+                              today.getMonth() + 1
+                            ).padStart(2, "0")}-${String(
+                              today.getDate()
+                            ).padStart(2, "0")}`;
                             const pdfTargetDirectory = `uploads/customers/${customerCode}/client-applications/${application.application_id}/final-reports`;
                             const pdfFileName =
                               `${application.name}_${formattedDate}.pdf`
