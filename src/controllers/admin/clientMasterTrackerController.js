@@ -1966,7 +1966,7 @@ exports.upload = async (req, res) => {
               req.files.image[0],
               targetDirectory
             );
-            savedImagePaths.push(`${uploadedImage}`);
+            savedImagePaths.push(`${imageHost}${uploadedImage}`);
           }
           const modifiedDbTable = dbTable.replace(/-/g, "_").toLowerCase();
           const cleanDBColumnForQry = cleanDBColumn
