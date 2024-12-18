@@ -59,6 +59,49 @@ async function fetchImageAsBase64(imageUrl) {
   }
 }
 
+function addFooter(doc) {
+  // Define the height of the footer and its position
+  const footerHeight = 15; // Footer height
+  const pageHeight = doc.internal.pageSize.height; // Get the total page height
+  const footerYPosition = pageHeight - footerHeight + 10; // Position footer closer to the bottom
+
+  // Define page width and margins
+  const pageWidth = doc.internal.pageSize.width;
+  const margin = 10; // Margins on the left and right
+
+  // Space between sections (adjust dynamically based on page width)
+  const availableWidth = pageWidth - 2 * margin; // Usable width excluding margins
+  const centerX = pageWidth / 2; // Center of the page
+
+  // Insert text into the center column (centered)
+  const footerText =
+    "No 293/154/172, 4th Floor, Outer Ring Road, Kadubeesanahalli, Marathahalli, Bangalore-560103 | www.goldquestglobal.in";
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(0, 0, 0); // Set text color to black (RGB: 0, 0, 0)
+  doc.setFontSize(7);
+  doc.text(footerText, centerX, footerYPosition - 3, { align: "center" }); // Adjusted vertical position
+
+  // Insert page number into the right column (right-aligned)
+  const pageCount = doc.internal.getNumberOfPages(); // Get total number of pages
+  const currentPage = doc.internal.getCurrentPageInfo().pageNumber; // Get current page number
+  const pageNumberText = `Page ${currentPage} / ${pageCount}`;
+  const pageNumberWidth = doc.getTextWidth(pageNumberText); // Calculate text width
+
+  // Right-align page number with respect to the page width
+  const pageNumberX = pageWidth - margin - pageNumberWidth;
+  doc.text(pageNumberText, pageNumberX, footerYPosition - 3); // Adjusted vertical position
+
+  // Draw a line above the footer
+  doc.setLineWidth(0.3);
+  doc.setDrawColor(0, 0, 0); // Set line color to black (RGB: 0, 0, 0)
+  doc.line(
+    margin,
+    footerYPosition - 7,
+    pageWidth - margin,
+    footerYPosition - 7
+  ); // Line above the footer
+}
+
 module.exports = {
   generatePDF: async (id, pdfFileName) => {
     const application_id = 1;
@@ -217,7 +260,9 @@ module.exports = {
                     console.log(`Step - 3`);
 
                     doc.addImage(
-                      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSjDtQL92lFVchI1eVL0Gpb7xrNnkqW1J7c1A&s",
+                      await fetchImageAsBase64(
+                        "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSjDtQL92lFVchI1eVL0Gpb7xrNnkqW1J7c1A&s"
+                      ),
                       "PNG",
                       rightImageX,
                       yPosition,
@@ -282,8 +327,10 @@ module.exports = {
                           styles: { fontStyle: "bold" },
                         },
                         {
-                          content: application.dob
-                            ? new Date(applicationInfo.dob).toLocaleDateString()
+                          content: CMTApplicationData.dob
+                            ? new Date(
+                                CMTApplicationData.dob
+                              ).toLocaleDateString()
                             : "N/A",
                         },
                         {
@@ -293,7 +340,7 @@ module.exports = {
                         {
                           content: application.updated_at
                             ? new Date(
-                                applicationInfo.updated_at
+                                application.updated_at
                               ).toLocaleDateString()
                             : "N/A",
                         },
@@ -327,9 +374,9 @@ module.exports = {
                           styles: { fontStyle: "bold" },
                         },
                         {
-                          content: application.report_date
+                          content: CMTApplicationData.report_date
                             ? new Date(
-                                applicationInfo.report_date
+                                CMTApplicationData.report_date
                               ).toLocaleDateString()
                             : "N/A",
                         },
@@ -377,7 +424,9 @@ module.exports = {
                         ? Object.keys(item.annexureData).find(
                             (key) =>
                               key.startsWith("info_source") ||
-                              key.startsWith("information_source")
+                              key.startsWith("information_source") ||
+                              key.endsWith("info_source") ||
+                              key.endsWith("information_source")
                           )
                         : undefined;
                       const dateKey =
@@ -778,7 +827,7 @@ module.exports = {
                           }
                         })
                         .filter(Boolean);
-                        console.log(`Step - 17`);
+                      console.log(`Step - 17`);
                       console.log("Final tableData:", tableData);
 
                       const pageWidth = doc.internal.pageSize.width;
@@ -1230,8 +1279,7 @@ module.exports = {
                     );
 
                     addFooter(doc);
-
-                    doc.save("report.pdf");
+                    console.log(`SAVED`);
                     doc.save(pdfPath);
                     resolve(pdfPath);
                   } catch (error) {
