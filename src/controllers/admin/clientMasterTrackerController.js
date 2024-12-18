@@ -1956,7 +1956,7 @@ exports.upload = async (req, res) => {
               targetDirectory
             );
             uploadedImages.forEach((imagePath) => {
-              savedImagePaths.push(`${imagePath}`);
+              savedImagePaths.push(`${imageHost}/${imagePath}`);
             });
           }
 

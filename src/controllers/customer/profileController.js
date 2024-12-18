@@ -787,7 +787,7 @@ exports.upload = async (req, res) => {
                   targetDirectory
                 );
                 uploadedImages.forEach((imagePath) => {
-                  savedImagePaths.push(`${imagePath}`);
+                  savedImagePaths.push(`${imageHost}/${imagePath}`);
                 });
               }
 
@@ -797,7 +797,7 @@ exports.upload = async (req, res) => {
                   req.files.image[0],
                   targetDirectory
                 );
-                savedImagePaths.push(`${uploadedImage}`);
+                savedImagePaths.push(`${imageHost}/${uploadedImage}`);
               }
 
               Customer.documentUpload(

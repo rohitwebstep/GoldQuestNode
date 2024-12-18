@@ -681,7 +681,7 @@ exports.upload = async (req, res) => {
                       targetDirectory
                     );
                     uploadedImages.forEach((imagePath) => {
-                      savedImagePaths.push(`${imagePath}`);
+                      savedImagePaths.push(`${imageHost}/${imagePath}`);
                     });
                   }
 
@@ -691,7 +691,7 @@ exports.upload = async (req, res) => {
                       req.files.image[0],
                       targetDirectory
                     );
-                    savedImagePaths.push(`${uploadedImage}`);
+                    savedImagePaths.push(`${imageHost}/${uploadedImage}`);
                   }
 
                   // Save images and update Admin
@@ -708,7 +708,7 @@ exports.upload = async (req, res) => {
                     if (result && result.affectedRows > 0) {
                       if (send_mail == 1) {
                         const newAttachedDocsString = savedImagePaths
-                          .map((doc) => `${doc.trim()}`)
+                          .map((doc) => `${imageHost}/${doc.trim()}`)
                           .join("");
 
                         const toArr = [
