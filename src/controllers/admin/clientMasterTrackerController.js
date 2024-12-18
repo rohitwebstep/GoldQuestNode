@@ -1993,7 +1993,7 @@ exports.upload = async (req, res) => {
 
                         ClientMasterTrackerModel.getAttachmentsByClientAppID(
                           appId,
-                          (err, attachments) => {
+                          async (err, attachments) => {
                             if (err) {
                               console.error(
                                 "Database error while fetching attachments:",
@@ -2018,8 +2018,17 @@ exports.upload = async (req, res) => {
                               genderTitle =
                                 maritalStatus === "married" ? "Mrs." : "Ms.";
                             }
-
-                            // Prepare and send email based on application status
+                            const pdfTargetDirectory = `uploads/customers/${customerCode}/client-applications/${application.application_id}/final-reports`;
+                            const pdfFileName =
+                              `${application.name}_${formattedDate}.pdf`
+                                .replace(/\s+/g, "-")
+                                .toLowerCase();
+                            const pdfPath = await generatePDF(
+                              appId,
+                              pdfFileName,
+                              pdfTargetDirectory
+                            );
+                            attachments += (attachments ? "," : "") + pdfPath;
                             // Final report email
                             if (emailStatus == 1) {
                               finalReportMail(
