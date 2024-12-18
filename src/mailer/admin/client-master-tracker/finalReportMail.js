@@ -20,8 +20,7 @@ const createAttachments = async (attachments_url) => {
   const attachments = [];
 
   for (const url of urls) {
-    const trimmedUrl = url.trim(); // Remove any extra whitespace
-    console.log(`trimmedUrl - `, trimmedUrl);
+    const trimmedUrl = url.trim();
     if (trimmedUrl) {
       const exists = await checkFileExists(trimmedUrl);
       if (exists) {

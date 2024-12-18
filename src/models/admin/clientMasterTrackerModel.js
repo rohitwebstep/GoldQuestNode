@@ -863,7 +863,7 @@ const Customer = {
 
                 if (missingColumns.length > 0) {
                   const alterQueries = missingColumns.map((column) => {
-                    return `ALTER TABLE \`${db_table}\` ADD COLUMN \`${column}\` VARCHAR(255)`; // Adjust data type as necessary
+                    return `ALTER TABLE \`${db_table}\` ADD COLUMN \`${column}\` LONGTEXT`; // Adjust data type as necessary
                   });
 
                   const alterPromises = alterQueries.map(

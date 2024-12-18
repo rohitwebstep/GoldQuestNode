@@ -171,7 +171,7 @@ const cef = {
 
         if (missingColumns.length > 0) {
           const alterQueries = missingColumns.map((column) => {
-            return `ALTER TABLE cef_applications ADD COLUMN ${column} VARCHAR(255)`;
+            return `ALTER TABLE cef_applications ADD COLUMN ${column} LONGTEXT`;
           });
 
           const alterPromises = alterQueries.map(
@@ -379,7 +379,7 @@ const cef = {
                 // 4. Add missing columns
                 if (missingColumns.length > 0) {
                   const alterQueries = missingColumns.map((column) => {
-                    return `ALTER TABLE \`${db_table}\` ADD COLUMN \`${column}\` VARCHAR(255)`; // Adjust data type as necessary
+                    return `ALTER TABLE \`${db_table}\` ADD COLUMN \`${column}\` LONGTEXT`; // Adjust data type as necessary
                   });
 
                   // Run all ALTER statements in sequence
