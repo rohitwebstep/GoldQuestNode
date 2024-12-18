@@ -651,7 +651,7 @@ exports.upload = async (req, res) => {
                 }
 
                 const newToken = tokenResult.newToken;
-                const targetDirectory = `uploads/admin/${currentAdmin.emp_id}`;
+                const targetDirectory = `uploads/admins/${currentAdmin.emp_id}`;
 
                 // Create directory for uploads
                 await fs.promises.mkdir(targetDirectory, { recursive: true });

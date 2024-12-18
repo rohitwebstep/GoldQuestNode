@@ -99,11 +99,12 @@ exports.list = (req, res) => {
 
 exports.test = async (req, res) => {
   try {
-    // Replace 1 with the appropriate client application ID you need to pass
-    const id = req.params.id || 1; // Assuming `id` is passed via route params
-    const pdfFileName = `Report_${id}.pdf`;
+    const id = 1;
+    const today = new Date();
+    const formattedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
 
     // Generate the PDF
+    const pdfFileName = `Report_${id}_${formattedDate}.pdf`;
     const pdfPath = await generatePDF(id, pdfFileName);
 
     // If successful, return the result
@@ -1867,7 +1868,7 @@ exports.upload = async (req, res) => {
             imageHost = appInfo.cloud_image_host || "www.example.in";
           }
           // Define the target directory for uploads
-          const targetDirectory = `uploads/customer/${customerCode}/application/${appCode}/${dbTable}`;
+          const targetDirectory = `uploads/customers/${customerCode}/client-applications/${appCode}/annexures/${dbTable}`;
           // Create the target directory for uploads
           await fs.promises.mkdir(targetDirectory, { recursive: true });
 
