@@ -146,7 +146,7 @@ const savePdf = async (doc, pdfFileName, targetDir) => {
     }
 
     // Create a temporary path to save the PDF file locally
-    const pdfPath = path.join(__dirname, pdfFileName);
+    const pdfPath = path.join(targetDir, pdfFileName);
 
     // Save the document (PDF) to a temporary local path
     await doc.save(pdfPath); // You can adjust this to directly generate the file
@@ -155,8 +155,8 @@ const savePdf = async (doc, pdfFileName, targetDir) => {
     await client.uploadFrom(pdfPath, pdfFileName);
 
     // After successful upload, remove the local file
-    fs.unlinkSync(`${pdfPath}/${pdfFileName}`); // Delete the temporary local file
-    return targetDir;
+    fs.unlinkSync(pdfPath); // Delete the temporary local file
+    return pdfPath;
   } catch (err) {
     console.error("Error during FTP upload:", err);
     throw err; // Rethrow the error if upload fails
