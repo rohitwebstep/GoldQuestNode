@@ -24,10 +24,11 @@ const createAttachments = async (attachments_url) => {
     if (trimmedUrl) {
       const exists = await checkFileExists(trimmedUrl);
       if (exists) {
+        const trimmedSenitizedUrl = trimmedUrl.replace(/\\/g, "/");
         const filename = path.basename(trimmedUrl); // Extract the filename from the URL
         attachments.push({
           filename: filename,
-          path: trimmedUrl,
+          path: trimmedSenitizedUrl,
         });
       } else {
         console.warn(`File does not exist: ${trimmedUrl}`); // Log warning for missing file

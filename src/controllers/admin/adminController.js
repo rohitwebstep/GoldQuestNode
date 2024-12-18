@@ -708,7 +708,7 @@ exports.upload = async (req, res) => {
                     if (result && result.affectedRows > 0) {
                       if (send_mail == 1) {
                         const newAttachedDocsString = savedImagePaths
-                          .map((doc) => `${imageHost}/${doc.trim()}`)
+                          .map((doc) => `${doc.trim()}`)
                           .join("");
 
                         const toArr = [

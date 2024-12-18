@@ -59,6 +59,7 @@ async function createMail(
 
     let profile_picture_tr = '';
     if (profile_url) {
+      profile_url = profile_url.replace(/\\/g, "/");
       profile_picture_tr = `<tr>
         <td><strong>Profile</strong></td>
         <td><img src="${profile_url}" alt="Profile Picture"></td>
