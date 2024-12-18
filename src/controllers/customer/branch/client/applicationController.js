@@ -1192,7 +1192,7 @@ exports.upload = async (req, res) => {
                 targetDirectory
               );
               uploadedImages.forEach((imagePath) => {
-                savedImagePaths.push(`${imageHost}/${imagePath}`);
+                savedImagePaths.push(`${imagePath}`);
               });
             }
 
@@ -1202,7 +1202,7 @@ exports.upload = async (req, res) => {
                 req.files.image[0],
                 targetDirectory
               );
-              savedImagePaths.push(`${imageHost}/${uploadedImage}`);
+              savedImagePaths.push(`${uploadedImage}`);
             }
             ClientApplication.upload(
               clientAppId,

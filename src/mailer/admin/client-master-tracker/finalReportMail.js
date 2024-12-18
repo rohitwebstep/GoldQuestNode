@@ -1,4 +1,5 @@
 const nodemailer = require("nodemailer");
+const path = require("path");
 const { startConnection, connectionRelease } = require("../../../config/db");
 
 // Function to check if a file exists
@@ -20,10 +21,11 @@ const createAttachments = async (attachments_url) => {
 
   for (const url of urls) {
     const trimmedUrl = url.trim(); // Remove any extra whitespace
+    console.log(`trimmedUrl - `, trimmedUrl);
     if (trimmedUrl) {
       const exists = await checkFileExists(trimmedUrl);
       if (exists) {
-        const filename = trimmedUrl.basename(trimmedUrl); // Extract the filename from the URL
+        const filename = path.basename(trimmedUrl); // Extract the filename from the URL
         attachments.push({
           filename: filename,
           path: trimmedUrl,

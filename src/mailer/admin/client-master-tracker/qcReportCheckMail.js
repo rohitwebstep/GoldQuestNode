@@ -1,4 +1,5 @@
 const nodemailer = require("nodemailer");
+const path = require("path");
 const { startConnection, connectionRelease } = require("../../../config/db");
 
 // Function to check if a file exists
