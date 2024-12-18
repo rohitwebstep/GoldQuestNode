@@ -4,7 +4,7 @@ require("jspdf-autotable");
 const fs = require("fs");
 const path = require("path");
 const axios = require("axios");
-
+const sharp = require("sharp");
 const {
   upload,
   saveImage,
@@ -32,22 +32,35 @@ async function checkImageExists(url) {
 
 async function validateImage(url) {
   try {
-    const response = await fetch(url);
-    if (!response.ok) {
-      console.warn(`Image fetch failed for URL: ${url}`);
+    // Use axios to fetch the image as a binary buffer
+    const response = await axios.get(url, { responseType: "arraybuffer" });
+    // Check if the image was fetched successfully
+    if (response.status !== 200) {
+      console.warn(
+        `Image fetch failed for URL: ${url} with status: ${response.status}`
+      );
       return null;
     }
 
-    const blob = await response.blob();
-    const img = new Image();
-    img.src = URL.createObjectURL(blob);
+    // Check if the response data is valid
+    if (!response.data) {
+      console.warn(`No data found in the response for URL: ${url}`);
+      return null;
+    }
 
-    await new Promise((resolve, reject) => {
-      img.onload = resolve;
-      img.onerror = reject;
-    });
+    // Convert the response data to a Buffer
+    const buffer = Buffer.from(response.data);
 
-    return img; // Return the validated image
+    // Use sharp to extract image metadata
+    const metadata = await sharp(buffer).metadata();
+
+    // If the metadata is invalid or not retrieved, return null
+    if (!metadata) {
+      console.warn(`Unable to fetch metadata for image from URL: ${url}`);
+      return null;
+    }
+    // Return the image URL, width, and height in an array
+    return { src: url, width: metadata.width, height: metadata.height };
   } catch (error) {
     console.error(`Error validating image from ${url}:`, error);
     return null;
@@ -108,6 +121,56 @@ function addFooter(doc) {
     pageWidth - margin,
     footerYPosition - 7
   ); // Line above the footer
+}
+function scaleImage(img, maxWidth, maxHeight) {
+  const imgWidth = img.width;
+  const imgHeight = img.height;
+
+  let width = imgWidth;
+  let height = imgHeight;
+
+  // Scale image to fit within maxWidth and maxHeight
+  if (imgWidth > maxWidth) {
+    width = maxWidth;
+    height = (imgHeight * maxWidth) / imgWidth;
+  }
+
+  if (height > maxHeight) {
+    height = maxHeight;
+    width = (imgWidth * maxHeight) / imgHeight;
+  }
+
+  return { width, height };
+}
+
+async function addImageToPDF(
+  doc,
+  imageUrl,
+  imageFormat,
+  centerXImage,
+  yPosition
+) {
+  const img = await validateImage(imageUrl);
+
+  if (img) {
+    try {
+      // Check if the image format is correct (PNG, JPEG, etc.)
+      if (img.src && imageFormat) {
+        doc.addImage(
+          img.src,
+          imageFormat,
+          centerXImage,
+          yPosition,
+          img.width,
+          img.height
+        );
+      }
+    } catch (error) {
+      console.error(`Failed to add image to PDF: ${imageUrl}`, error);
+    }
+  } else {
+    console.warn(`Image validation failed for ${imageUrl}`);
+  }
 }
 
 module.exports = {
@@ -677,39 +740,26 @@ module.exports = {
                       );
                       const rows = reportFormJson.rows || [];
                       const serviceData = [];
-                      console.log("rows", rows);
 
                       rows.forEach((row) => {
-                        console.log("Processing row:", row);
-
                         const inputLabel =
                           row.inputs.length > 0
                             ? row.inputs[0].label || "Unnamed Label"
                             : "Unnamed Label";
-                        console.log("Input label:", inputLabel);
 
                         const valuesObj = {};
-                        console.log("Initializing valuesObj:", valuesObj);
 
                         row.inputs.forEach((input) => {
                           const inputName = input.name;
-                          console.log("Processing input:", input);
-
                           let reportDetailsInputName = inputName.includes(
                             "report_details_"
                           )
                             ? inputName
                             : `report_details_${inputName}`;
-                          console.log(
-                            "Generated reportDetailsInputName:",
-                            reportDetailsInputName
-                          );
 
                           if (input.label && typeof input.label === "string") {
                             input.label = input.label.replace(/:/g, "");
                           }
-                          console.log("Cleaned label:", input.label);
-
                           if (service.annexureData) {
                             const value =
                               service.annexureData[inputName] !== undefined &&
@@ -724,14 +774,6 @@ module.exports = {
                                 null
                                 ? service.annexureData[reportDetailsInputName]
                                 : "";
-
-                            console.log(
-                              "Fetched value:",
-                              value,
-                              "Fetched reportDetailsValue:",
-                              reportDetailsValue
-                            );
-
                             valuesObj[inputName] = value;
                             valuesObj["isReportDetailsExist"] =
                               !!reportDetailsValue;
@@ -740,28 +782,14 @@ module.exports = {
                                 reportDetailsValue;
                             }
 
-                            console.log("Updated valuesObj:", valuesObj);
-
                             valuesObj["name"] = inputName.replace(
                               "report_details_",
                               ""
                             );
-                            console.log(
-                              "Simplified name stored:",
-                              valuesObj["name"]
-                            );
                           } else {
-                            console.error(
-                              "service.annexureData is not available for input:",
-                              inputName
-                            );
                             valuesObj[inputName] = "";
                             valuesObj["isReportDetailsExist"] = false;
                             valuesObj[reportDetailsInputName] = "";
-                            console.log(
-                              "service.annexureData is missing, using fallback values:",
-                              valuesObj
-                            );
                           }
                         });
 
@@ -773,8 +801,6 @@ module.exports = {
                       console.log(`Step - 16`);
                       const tableData = serviceData
                         .map((data) => {
-                          console.log("Processing data for table:", data);
-
                           if (!data || !data.values) {
                             console.log(
                               "Skipping invalid data (empty values)."
@@ -783,13 +809,7 @@ module.exports = {
                           }
 
                           const name = data.values.name;
-                          console.log("Processing name:", name);
-
                           if (!name || name.startsWith("annexure")) {
-                            console.log(
-                              "Skipping annexure data for name:",
-                              name
-                            );
                             return null;
                           }
 
@@ -798,15 +818,6 @@ module.exports = {
                           const value = data.values[name];
                           const reportDetails =
                             data.values[`report_details_${name}`];
-
-                          console.log(
-                            "isReportDetailsExist:",
-                            isReportDetailsExist,
-                            "value:",
-                            value,
-                            "reportDetails:",
-                            reportDetails
-                          );
 
                           if (
                             value === undefined ||
@@ -820,24 +831,13 @@ module.exports = {
                           }
 
                           if (isReportDetailsExist && reportDetails) {
-                            console.log("Row with reportDetails:", [
-                              data.label,
-                              value,
-                              reportDetails,
-                            ]);
                             return [data.label, value, reportDetails];
                           } else {
-                            console.log("Row without reportDetails:", [
-                              data.label,
-                              value,
-                            ]);
                             return [data.label, value];
                           }
                         })
                         .filter(Boolean);
                       console.log(`Step - 17`);
-                      console.log("Final tableData:", tableData);
-
                       const pageWidth = doc.internal.pageSize.width;
 
                       const headingText = reportFormJson.heading.toUpperCase();
@@ -991,12 +991,14 @@ module.exports = {
                           ] of annexureImagesSplitArr.entries()) {
                             const imageUrlFull = imageUrl.trim();
                             const imageFormat = getImageFormat(imageUrlFull);
-
                             if (!(await checkImageExists(imageUrlFull)))
                               continue;
 
                             const img = await validateImage(imageUrlFull);
-                            if (!img) continue;
+                            if (!img) {
+                              console.warn(`Invalid image: ${imageUrlFull}`);
+                              continue;
+                            }
 
                             try {
                               const { width, height } = scaleImage(
@@ -1027,8 +1029,21 @@ module.exports = {
 
                               const centerXImage =
                                 (doc.internal.pageSize.width - width) / 2;
+                              if (
+                                centerXImage < 0 ||
+                                yPosition < 0 ||
+                                width <= 0 ||
+                                height <= 0
+                              ) {
+                                console.error(
+                                  "Invalid coordinates or dimensions for image:",
+                                  { centerXImage, yPosition, width, height }
+                                );
+                                continue;
+                              }
+
                               doc.addImage(
-                                img.src,
+                                await fetchImageAsBase64(img.src),
                                 imageFormat,
                                 centerXImage,
                                 yPosition,

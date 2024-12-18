@@ -99,12 +99,16 @@ const uploadToFtp = async (filePath) => {
 
     const targetDir = path.dirname(filePath); // Get the directory path (e.g., "uploads/rohit")
     const filename = path.basename(filePath); // Get the filename (e.g., "1734421514518_5912.png")
-
+    console.log(`targetDir - `, targetDir);
     const dirs = targetDir.split(path.sep);
+    console.log(`dirs - `, dirs);
+
     for (const dir of dirs) {
+      console.log(`dir - `, dir);
       await client.ensureDir(dir); // Ensure each directory exists
     }
-
+    console.log(`filePath - `, filePath);
+    console.log(`filename - `, filename);
     // Upload the image file to Hostinger's public_html folder
     await client.uploadFrom(filePath, filename);
   } catch (err) {
@@ -125,14 +129,18 @@ const saveImages = async (files, targetDir) => {
   return savedImagePaths; // Return an array of saved image paths
 };
 
-// Function to save a jsPDF-generated PDF
 const savePdf = async (doc, pdfFileName, targetDir) => {
   // Define the full path for the PDF file
   const pdfPath = path.join(targetDir, pdfFileName);
+  console.log("PDF file path:", pdfPath); // Log the full path for the PDF
 
   // Ensure the target directory exists
   if (!fs.existsSync(targetDir)) {
+    console.log(`Directory ${targetDir} does not exist. Creating it...`);
     fs.mkdirSync(targetDir, { recursive: true });
+    console.log(`Directory ${targetDir} created.`);
+  } else {
+    console.log(`Directory ${targetDir} already exists.`);
   }
 
   return new Promise(async (resolve, reject) => {
@@ -144,10 +152,15 @@ const savePdf = async (doc, pdfFileName, targetDir) => {
       }
     */
     try {
+      console.log("Starting FTP upload for the PDF...");
+      // Simulating the upload to FTP
       await uploadToFtp(pdfPath);
-      resolve(pdfPath);
+      console.log("PDF uploaded successfully to FTP.");
+
+      resolve(pdfPath); // Resolve the promise after upload is successful
     } catch (err) {
-      reject(err);
+      console.error("Error during FTP upload:", err); // Log any error during the upload process
+      reject(err); // Reject the promise if there's an error
     }
     // });
   });
