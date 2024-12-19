@@ -472,5 +472,144 @@ const cef = {
       );
     });
   },
+
+  upload: (
+    cef_id,
+    candidate_application_id,
+    db_table,
+    db_column,
+    savedImagePaths,
+    callback
+  ) => {
+    startConnection((err, connection) => {
+      if (err) {
+        console.error("Error starting connection:", err);
+        return callback(false, {
+          error: "Error starting database connection.",
+          details: err,
+        });
+      }
+
+      const checkTableSql = `
+        SELECT COUNT(*) AS count 
+        FROM information_schema.tables 
+        WHERE table_schema = DATABASE() 
+        AND table_name = ?`;
+
+      connection.query(checkTableSql, [db_table], (tableErr, tableResults) => {
+        if (tableErr) {
+          connectionRelease(connection);
+          console.error("Error checking table existence:", tableErr);
+          return callback(false, {
+            error: "Error checking table existence.",
+            details: tableErr,
+          });
+        }
+
+        if (tableResults[0].count === 0) {
+          const createTableSql = `
+            CREATE TABLE \`${db_table}\` (
+              \`id\` bigint(20) NOT NULL AUTO_INCREMENT,
+              \`cef_id\` bigint(20) NOT NULL,
+              \`candidate_application_id\` bigint(20) NOT NULL,
+              \`branch_id\` int(11) NOT NULL,
+              \`customer_id\` int(11) NOT NULL,
+              \`status\` VARCHAR(100) NOT NULL,
+              \`created_at\` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+              \`updated_at\` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+              PRIMARY KEY (\`id\`),
+              KEY \`candidate_application_id\` (\`candidate_application_id\`),
+              KEY \`cmt_application_customer_id\` (\`customer_id\`),
+              KEY \`cmt_application_cmt_id\` (\`cmt_id\`),
+              CONSTRAINT \`fk_${db_table}_candidate_application_id\` FOREIGN KEY (\`candidate_application_id\`) REFERENCES \`candidate_applications\` (\`id\`) ON DELETE CASCADE,
+              CONSTRAINT \`fk_${db_table}_customer_id\` FOREIGN KEY (\`customer_id\`) REFERENCES \`customers\` (\`id\`) ON DELETE CASCADE,
+              CONSTRAINT \`fk_${db_table}_cmt_id\` FOREIGN KEY (\`cmt_id\`) REFERENCES \`cmt_applications\` (\`id\`) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`;
+
+          connection.query(createTableSql, (createErr) => {
+            if (createErr) {
+              connectionRelease(connection);
+              console.error("Error creating table:", createErr);
+              return callback(false, {
+                error: "Error creating table.",
+                details: createErr,
+              });
+            }
+            proceedToCheckColumns();
+          });
+        } else {
+          proceedToCheckColumns();
+        }
+
+        function proceedToCheckColumns() {
+          const currentColumnsSql = `
+            SELECT COLUMN_NAME 
+            FROM information_schema.columns 
+            WHERE table_schema = DATABASE() 
+            AND table_name = ?`;
+
+          connection.query(currentColumnsSql, [db_table], (err, results) => {
+            if (err) {
+              connectionRelease(connection);
+              return callback(false, {
+                error: "Error fetching current columns.",
+                details: err,
+              });
+            }
+
+            const existingColumns = results.map((row) => row.COLUMN_NAME);
+            const expectedColumns = [db_column];
+            const missingColumns = expectedColumns.filter(
+              (column) => !existingColumns.includes(column)
+            );
+
+            const addColumnPromises = missingColumns.map((column) => {
+              return new Promise((resolve, reject) => {
+                const alterTableSql = `ALTER TABLE \`${db_table}\` ADD COLUMN \`${column}\` LONGTEXT`;
+                connection.query(alterTableSql, (alterErr) => {
+                  if (alterErr) {
+                    reject(alterErr);
+                  } else {
+                    resolve();
+                  }
+                });
+              });
+            });
+
+            Promise.all(addColumnPromises)
+              .then(() => {
+                const insertSql = `UPDATE \`${db_table}\` SET \`${db_column}\` = ? WHERE \`candidate_application_id\` = ?`;
+                const joinedPaths = savedImagePaths.join(", ");
+                console.log(insertSql, [joinedPaths, candidate_application_id]);
+                connection.query(
+                  insertSql,
+                  [joinedPaths, candidate_application_id],
+                  (queryErr, results) => {
+                    connectionRelease(connection);
+
+                    if (queryErr) {
+                      console.error("Error updating records:", queryErr);
+                      return callback(false, {
+                        error: "Error updating records.",
+                        details: queryErr,
+                      });
+                    }
+                    callback(true, results);
+                  }
+                );
+              })
+              .catch((columnErr) => {
+                connectionRelease(connection);
+                console.error("Error adding columns:", columnErr);
+                callback(false, {
+                  error: "Error adding columns.",
+                  details: columnErr,
+                });
+              });
+          });
+        }
+      });
+    });
+  },
 };
 module.exports = cef;

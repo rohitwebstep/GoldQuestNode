@@ -1945,8 +1945,12 @@ exports.upload = async (req, res) => {
           if (appInfo) {
             imageHost = appInfo.cloud_host || "www.example.in";
           }
+          const modifiedDbTable = dbTable.replace(/-/g, "_").toLowerCase();
+          const cleanDBColumnForQry = cleanDBColumn
+            .replace(/-/g, "_")
+            .toLowerCase();
           // Define the target directory for uploads
-          const targetDirectory = `uploads/customers/${customerCode}/client-applications/${appCode}/annexures/${dbTable}`;
+          const targetDirectory = `uploads/customers/${customerCode}/client-applications/${appCode}/annexures/${modifiedDbTable}`;
           // Create the target directory for uploads
           await fs.promises.mkdir(targetDirectory, { recursive: true });
 
@@ -1971,10 +1975,7 @@ exports.upload = async (req, res) => {
             );
             savedImagePaths.push(`${imageHost}${uploadedImage}`);
           }
-          const modifiedDbTable = dbTable.replace(/-/g, "_").toLowerCase();
-          const cleanDBColumnForQry = cleanDBColumn
-            .replace(/-/g, "_")
-            .toLowerCase();
+          
           // Call the model to upload images
           ClientMasterTrackerModel.upload(
             appId,
