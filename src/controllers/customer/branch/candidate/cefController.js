@@ -546,7 +546,10 @@ exports.upload = async (req, res) => {
                 const cleanDBColumnForQry = dbColumn
                   .replace(/-/g, "_")
                   .toLowerCase();
-
+                const modifiedDbTableForDbQuery = `cef_${dbTable.replace(
+                  /-/g,
+                  "_"
+                )}`;
                 const targetDirectory = `uploads/customers/${currentCustomer.client_unique_id}/candidate-applications/CD-${currentCustomer.client_unique_id}-${candidateAppId}/annexures/${modifiedDbTable}`;
 
                 // Create the target directory for uploads
@@ -592,7 +595,7 @@ exports.upload = async (req, res) => {
                   CEF.upload(
                     CefID,
                     candidateAppId,
-                    modifiedDbTable,
+                    modifiedDbTableForDbQuery,
                     cleanDBColumnForQry,
                     savedImagePaths,
                     (success, result) => {
