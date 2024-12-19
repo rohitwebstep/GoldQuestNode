@@ -101,10 +101,11 @@ exports.list = (req, res) => {
 
 exports.test = async (req, res) => {
   try {
-    const clietn_application_id = 1;
+    const client_application_id = 3;
     const client_unique_id = "GQ-INDV";
     const application_id = "GQ-INDV-1";
-    const branch_id = "1";
+    const branch_id = 3;
+    const customer_id = 2;
     const name = "Rohit Sisodia";
 
     const today = new Date();
@@ -119,16 +120,18 @@ exports.test = async (req, res) => {
       .replace(/\s+/g, "-")
       .toLowerCase();
     const pdfPath = await cdfDataPDF(
-      clietn_application_id,
+      client_application_id,
       branch_id,
+      customer_id,
       pdfFileName,
       pdfTargetDirectory
     );
+    console.log("PDF generated at:", pdfPath);
     // If successful, return the result
     res.json({
       status: true,
       message: "PDF generated successfully",
-      pdfPath, // Include the path to the generated PDF in the response
+      pdfPath,
     });
   } catch (error) {
     console.error("Error:", error.message);
@@ -1976,7 +1979,7 @@ exports.upload = async (req, res) => {
             );
             savedImagePaths.push(`${imageHost}${uploadedImage}`);
           }
-          
+
           // Call the model to upload images
           ClientMasterTrackerModel.upload(
             appId,

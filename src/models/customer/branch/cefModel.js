@@ -624,5 +624,126 @@ const cef = {
       });
     });
   },
+
+  getAttachmentsByClientAppID: (candidate_application_id, callback) => {
+    startConnection((err, connection) => {
+      if (err) {
+        console.error("Error starting connection:", err);
+        return callback(err, null);
+      }
+
+      const sql =
+        "SELECT `services` FROM `candidate_applications` WHERE `id` = ?";
+      connection.query(sql, [candidate_application_id], (err, results) => {
+        if (err) {
+          console.error("Database query error: 26", err);
+          connectionRelease(connection);
+          return callback(err, null);
+        }
+        if (results.length > 0) {
+          const services = results[0].services.split(","); // Split services by comma
+          const dbTableFileInputs = {}; // Object to store db_table and its file inputs
+          let completedQueries = 0;
+          // Step 1: Loop through each service and perform actions
+          services.forEach((service) => {
+            const query =
+              "SELECT `json` FROM `cef_service_forms` WHERE `service_id` = ?";
+            connection.query(query, [service], (err, result) => {
+              completedQueries++;
+              if (err) {
+                console.error("Error fetching JSON for service:", service, err);
+              } else if (result.length > 0) {
+                try {
+                  // Parse the JSON data
+                  const jsonData = JSON.parse(result[0].json);
+                  const dbTable = jsonData.db_table;
+                  // Initialize an array for the dbTable if not already present
+                  if (!dbTableFileInputs[dbTable]) {
+                    dbTableFileInputs[dbTable] = [];
+                  }
+                  // Extract inputs with type 'file' and add to the db_table array
+                  jsonData.inputs.forEach((row) => {
+                    if (row.type === "file") {
+                      dbTableFileInputs[dbTable].push(row.name);
+                    }
+                  });
+                } catch (parseErr) {
+                  console.error(
+                    "Error parsing JSON for service:",
+                    service,
+                    parseErr
+                  );
+                }
+              }
+              // When all services have been processed
+              if (completedQueries === services.length) {
+                // Fetch the host from the database
+                const hostSql = `SELECT \`cloud_host\` FROM \`app_info\` WHERE \`status\` = 1 AND \`interface_type\` = ? ORDER BY \`updated_at\` DESC LIMIT 1`;
+                connection.query(hostSql, ["backend"], (err, hostResults) => {
+                  if (err) {
+                    console.error("Database query error: 27", err);
+                    connectionRelease(connection);
+                    return callback(err, null);
+                  }
+                  // Check if an entry was found for the host
+                  const host =
+                    hostResults.length > 0
+                      ? hostResults[0].cloud_host
+                      : "www.example.com"; // Fallback host
+
+                  let finalAttachments = [];
+                  let tableQueries = 0;
+                  const totalTables = Object.keys(dbTableFileInputs).length;
+                  // Loop through each db_table and perform a query
+                  for (const [dbTable, fileInputNames] of Object.entries(
+                    dbTableFileInputs
+                  )) {
+                    const selectQuery = `SELECT ${
+                      fileInputNames && fileInputNames.length > 0
+                        ? fileInputNames.join(", ")
+                        : "*"
+                    } FROM cef_${dbTable} WHERE candidate_application_id = ?`;
+                    connection.query(
+                      selectQuery,
+                      [candidate_application_id],
+                      (err, rows) => {
+                        tableQueries++;
+                        if (err) {
+                          console.error(
+                            `Error querying table ${dbTable}:`,
+                            err
+                          );
+                        } else {
+                          // Combine values from each row into a single string
+                          rows.forEach((row) => {
+                            const attachments = Object.values(row)
+                              .filter((value) => value) // Remove any falsy values
+                              .join(","); // Join values by comma
+
+                            // Split and concatenate the URL with each attachment
+                            attachments.split(",").forEach((attachment) => {
+                              finalAttachments.push(`${attachment}`);
+                            });
+                          });
+                        }
+                        // Step 3: When all db_table queries are completed, return finalAttachments
+                        if (tableQueries === totalTables) {
+                          connectionRelease(connection); // Release connection before callback
+                          callback(null, finalAttachments.join(", "));
+                        }
+                      }
+                    );
+                  }
+                });
+              }
+            });
+          });
+        } else {
+          connectionRelease(connection); // Release connection if no results found
+          callback(null, []); // Return an empty array if no results found
+        }
+      });
+    });
+  },
 };
 module.exports = cef;

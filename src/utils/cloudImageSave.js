@@ -143,12 +143,15 @@ const savePdf = async (doc, pdfFileName, targetDir) => {
 
     // Ensure the directories exist on the FTP server
     for (const dir of dirs) {
-      await client.ensureDir(dir); // Ensure each directory exists on FTP
+      await client.ensureDir(dir);
     }
 
     // Create a temporary path to save the PDF file locally
     const pdfPath = path.join(targetDir, pdfFileName);
 
+    if (!fs.existsSync(targetDir)) {
+      fs.mkdirSync(targetDir, { recursive: true }); // Create directory if it doesn't exist
+    }
     // Save the document (PDF) to a temporary local path
     await doc.save(pdfPath); // You can adjust this to directly generate the file
 

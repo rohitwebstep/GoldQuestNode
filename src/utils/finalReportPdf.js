@@ -76,7 +76,8 @@ async function fetchImageAsBase64(imageUrl) {
     ).toString("base64")}`;
   } catch (error) {
     console.error("Error fetching or converting image:", error.message);
-    throw new Error("Failed to fetch image");
+    // throw new Error("Failed to fetch image");
+    return null;
   }
 }
 
@@ -122,6 +123,7 @@ function addFooter(doc) {
     footerYPosition - 7
   ); // Line above the footer
 }
+
 function scaleImage(img, maxWidth, maxHeight) {
   const imgWidth = img.width;
   const imgHeight = img.height;
@@ -988,8 +990,9 @@ module.exports = {
                           ] of annexureImagesSplitArr.entries()) {
                             const imageUrlFull = imageUrl.trim();
                             const imageFormat = getImageFormat(imageUrlFull);
-                            if (!(await checkImageExists(imageUrlFull)))
+                            if (!(await checkImageExists(imageUrlFull))){
                               continue;
+                            }
 
                             const img = await validateImage(imageUrlFull);
                             if (!img) {

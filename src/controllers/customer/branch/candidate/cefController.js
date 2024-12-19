@@ -13,6 +13,11 @@ const {
   saveImage,
   saveImages,
 } = require("../../../../utils/cloudImageSave");
+
+const {
+  cefSubmitMail,
+} = require("../../../../mailer/customer/branch/candidate/cefSubmitMail");
+
 exports.formJson = (req, res) => {
   const { service_id } = req.query;
 
@@ -138,6 +143,23 @@ exports.isApplicationExist = (req, res) => {
       }
     }
   );
+};
+
+exports.test = (req, res) => {
+  CEF.getAttachmentsByClientAppID(3, async (err, attachments) => {
+    if (err) {
+      console.error("Database error:", err);
+      return res.status(500).json({
+        status: false,
+        message: "Database error occurred",
+      });
+    }
+
+    return res.status(200).json({
+      status: false,
+      attachments,
+    });
+  });
 };
 
 exports.submit = (req, res) => {
@@ -369,9 +391,13 @@ exports.submit = (req, res) => {
                       .then(() => {
                         if (parseInt(send_mail) === 1) {
                           sendNotificationEmails(
+                            application_id,
                             cefResult.insertId,
+                            currentCandidateApplication.name,
                             branch_id,
                             customer_id,
+                            currentCustomer.client_unique_id,
+                            currentCustomer.name,
                             res
                           );
                         } else {
@@ -406,10 +432,19 @@ exports.submit = (req, res) => {
 };
 
 // Helper function to send notification emails
-const sendNotificationEmails = (cefID, branch_id, customer_id, res) => {
+const sendNotificationEmails = (
+  candidateAppId,
+  cefID,
+  name,
+  branch_id,
+  customer_id,
+  client_unique_id,
+  customer_name,
+  res
+) => {
   BranchCommon.getBranchandCustomerEmailsForNotification(
     branch_id,
-    (err, emailData) => {
+    async (err, emailData) => {
       if (err) {
         console.error("Error fetching emails:", err);
         return res.status(500).json({
@@ -417,21 +452,90 @@ const sendNotificationEmails = (cefID, branch_id, customer_id, res) => {
           message: "Failed to retrieve email addresses.",
         });
       }
+      CEF.getAttachmentsByClientAppID(
+        candidateAppId,
+        async (err, attachments) => {
+          if (err) {
+            console.error("Database error:", err);
+            return res.status(500).json({
+              status: false,
+              message: "Database error occurred",
+            });
+          }
 
-      const { branch, customer } = emailData;
-      const toArr = [{ name: branch.name, email: branch.email }];
-      const ccArr = JSON.parse(customer.emails).map((email) => ({
-        name: customer.name,
-        email: email.trim(),
-      }));
+          App.appInfo("backend", async (err, appInfo) => {
+            if (err) {
+              console.error("Database error:", err);
+              return res.status(500).json({
+                status: false,
+                err,
+                message: err.message,
+              });
+            }
 
-      // Placeholder for sending email logic
-      return res.status(200).json({
-        status: true,
-        cef_id: cefID,
-        message:
-          "CEF Application submitted successfully and notifications sent.",
-      });
+            let imageHost = "www.example.in";
+
+            if (appInfo) {
+              imageHost = appInfo.cloud_host || "www.example.in";
+            }
+
+            const today = new Date();
+            const formattedDate = `${today.getFullYear()}-${String(
+              today.getMonth() + 1
+            ).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+
+            // Generate the PDF
+            const pdfTargetDirectory = `uploads/customers/${client_unique_id}/candidate-applications/CD-${client_unique_id}-${candidateAppId}/background-reports`;
+
+            const pdfFileName = `${name}_${formattedDate}.pdf`
+              .replace(/\s+/g, "-")
+              .toLowerCase();
+            const pdfPath = await cdfDataPDF(
+              client_application_id,
+              branch_id,
+              customer_id,
+              pdfFileName,
+              pdfTargetDirectory
+            );
+            attachments += (attachments ? "," : "") + `${imageHost}/${pdfPath}`;
+            const { branch, customer } = emailData;
+            const toArr = [{ name: branch.name, email: branch.email }];
+            const ccArr = JSON.parse(customer.emails).map((email) => ({
+              name: customer.name,
+              email: email.trim(),
+            }));
+
+            // Send application creation email
+            cefSubmitMail(
+              "Candidate Background Form",
+              "submit",
+              name,
+              customer_name,
+              attachments,
+              toArr || [],
+              ccArr || []
+            )
+              .then(() => {
+                return res.status(201).json({
+                  status: true,
+                  message:
+                    "CEF Application submitted successfully and notifications sent.",
+                });
+              })
+              .catch((emailError) => {
+                console.error(
+                  "Error sending application creation email:",
+                  emailError
+                );
+                return res.status(201).json({
+                  status: true,
+                  message:
+                    "CEF Application submitted successfully, but email failed to send.",
+                });
+              });
+          });
+        }
+      );
     }
   );
 };
@@ -464,9 +568,6 @@ exports.upload = async (req, res) => {
       dbTable,
       dbColumn,
     };
-
-    if (parseInt(send_mail) === 1) {
-    }
 
     // Check for missing fields
     const missingFields = Object.keys(requiredFields)
@@ -598,7 +699,7 @@ exports.upload = async (req, res) => {
                     modifiedDbTableForDbQuery,
                     cleanDBColumnForQry,
                     savedImagePaths,
-                    (success, result) => {
+                    async (success, result) => {
                       if (!success) {
                         // If an error occurred, return the error details in the response
                         return res.status(500).json({
@@ -613,23 +714,36 @@ exports.upload = async (req, res) => {
                         });
                       }
 
-                      // Handle the case where the upload was successful
-                      if (result && result.affectedRows > 0) {
-                        return res.status(201).json({
-                          status: true,
-                          message:
-                            "Candidate background Form submitted successfully.",
-                          savedImagePaths,
-                        });
+                      if (parseInt(send_mail) === 1) {
+                        sendNotificationEmails(
+                          candidateAppId,
+                          CefID,
+                          currentCandidateApplication.name,
+                          branchId,
+                          customerID,
+                          currentCustomer.client_unique_id,
+                          currentCustomer.name,
+                          res
+                        );
                       } else {
-                        // If no rows were affected, indicate that no changes were made
-                        return res.status(400).json({
-                          status: false,
-                          message:
-                            "Candidate background Form submitted successfully.",
-                          result,
-                          savedImagePaths,
-                        });
+                        // Handle the case where the upload was successful
+                        if (result && result.affectedRows > 0) {
+                          return res.status(201).json({
+                            status: true,
+                            message:
+                              "Candidate background Form submitted successfully.",
+                            savedImagePaths,
+                          });
+                        } else {
+                          // If no rows were affected, indicate that no changes were made
+                          return res.status(400).json({
+                            status: false,
+                            message:
+                              "Candidate background Form submitted successfully.",
+                            result,
+                            savedImagePaths,
+                          });
+                        }
                       }
                     }
                   );
