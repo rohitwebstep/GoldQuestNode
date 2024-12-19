@@ -6,6 +6,6 @@ const cefController = require("../../../../controllers/customer/branch/candidate
 router.get("/service-form-json", cefController.formJson);
 router.get("/is-application-exist", cefController.isApplicationExist);
 router.put("/submit", cefController.submit);
-
+router.post("/upload", cefController.upload);
 
 module.exports = router;
