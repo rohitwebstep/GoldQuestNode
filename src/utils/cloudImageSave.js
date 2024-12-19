@@ -71,6 +71,7 @@ const saveImage = async (file, targetDir) => {
         // Upload the image to FTP after saving locally
         try {
           await uploadToFtp(newPath); // FTP upload after saving locally
+          fs.unlinkSync(newPath);
           resolve(newPath); // Return the new file path
         } catch (err) {
           console.error("Error uploading to FTP:", err);
