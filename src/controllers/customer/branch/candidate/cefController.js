@@ -433,7 +433,6 @@ exports.upload = async (req, res) => {
     const {
       cef_id: CefID,
       branch_id: branchId,
-      _token: token,
       customer_id: customerID,
       candidate_application_id: candidateAppId,
       db_table: dbTable,
@@ -444,7 +443,6 @@ exports.upload = async (req, res) => {
     // Validate required fields and collect missing ones
     const requiredFields = {
       branchId,
-      token,
       customerID,
       candidateAppId,
       dbTable,
@@ -574,7 +572,6 @@ exports.upload = async (req, res) => {
                           status: false,
                           err,
                           message: err.message,
-                          token: newToken,
                         });
                       }
 
@@ -617,8 +614,7 @@ exports.upload = async (req, res) => {
                               status: false,
                               message:
                                 result ||
-                                "An error occurred while saving the image.", // Use detailed error message if available
-                              token: newToken,
+                                "An error occurred while saving the image.",
                               savedImagePaths,
                               // details: result.details,
                               // query: result.query,
@@ -631,8 +627,7 @@ exports.upload = async (req, res) => {
                             return res.status(201).json({
                               status: true,
                               message:
-                                "Client application created successfully.",
-                              token: newToken,
+                                "Candidate application created successfully.",
                               savedImagePaths,
                             });
                           } else {
@@ -640,8 +635,7 @@ exports.upload = async (req, res) => {
                             return res.status(400).json({
                               status: false,
                               message:
-                                "No changes were made. Please check the client application ID.",
-                              token: newToken,
+                                "No changes were made. Please check the candidate application ID.",
                               result,
                               savedImagePaths,
                             });
