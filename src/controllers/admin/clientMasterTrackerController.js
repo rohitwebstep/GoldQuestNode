@@ -20,6 +20,7 @@ const {
 const fs = require("fs");
 const path = require("path");
 const { generatePDF } = require("../../utils/finalReportPdf");
+const { cdfDataPDF } = require("../../utils/cdfDataPDF");
 const { upload, saveImage, saveImages } = require("../../utils/cloudImageSave");
 
 // Controller to list all customers
@@ -117,7 +118,7 @@ exports.test = async (req, res) => {
     const pdfFileName = `${name}_${formattedDate}.pdf`
       .replace(/\s+/g, "-")
       .toLowerCase();
-    const pdfPath = await generatePDF(
+    const pdfPath = await cdfDataPDF(
       clietn_application_id,
       branch_id,
       pdfFileName,
