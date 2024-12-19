@@ -491,7 +491,7 @@ const sendNotificationEmails = (
               .replace(/\s+/g, "-")
               .toLowerCase();
             const pdfPath = await cdfDataPDF(
-              client_application_id,
+              candidateAppId,
               branch_id,
               customer_id,
               pdfFileName,
