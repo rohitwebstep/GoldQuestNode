@@ -146,6 +146,7 @@ exports.submit = (req, res) => {
     application_id,
     personal_information,
     annexure,
+    send_mail,
   } = req.body;
 
   // Define required fields and check for missing values
@@ -288,7 +289,7 @@ exports.submit = (req, res) => {
                 application_id,
                 branch_id,
                 customer_id,
-                (err, cmeResult) => {
+                (err, cefResult) => {
                   if (err) {
                     console.error(
                       "Database error during CEF application creation:",
@@ -337,7 +338,7 @@ exports.submit = (req, res) => {
                               }
 
                               CEF.createOrUpdateAnnexure(
-                                cmeResult.insertId,
+                                cefResult.insertId,
                                 application_id,
                                 branch_id,
                                 customer_id,
@@ -365,7 +366,20 @@ exports.submit = (req, res) => {
                     // Process all annexure promises
                     Promise.all(annexurePromises)
                       .then(() => {
-                        sendNotificationEmails(branch_id, customer_id, res);
+                        if (parseInt(send_mail) === 1) {
+                          sendNotificationEmails(
+                            cefResult.insertId,
+                            branch_id,
+                            customer_id,
+                            res
+                          );
+                        } else {
+                          return res.status(200).json({
+                            status: true,
+                            cef_id: cefResult.insertId,
+                            message: "CEF Application submitted successfully.",
+                          });
+                        }
                       })
                       .catch((error) => {
                         return res.status(400).json({
@@ -391,7 +405,7 @@ exports.submit = (req, res) => {
 };
 
 // Helper function to send notification emails
-const sendNotificationEmails = (branch_id, customer_id, res) => {
+const sendNotificationEmails = (cefID, branch_id, customer_id, res) => {
   BranchCommon.getBranchandCustomerEmailsForNotification(
     branch_id,
     (err, emailData) => {
@@ -413,6 +427,7 @@ const sendNotificationEmails = (branch_id, customer_id, res) => {
       // Placeholder for sending email logic
       return res.status(200).json({
         status: true,
+        cef_id: cefID,
         message:
           "CEF Application submitted successfully and notifications sent.",
       });
@@ -449,7 +464,7 @@ exports.upload = async (req, res) => {
       dbColumn,
     };
 
-    if (send_mail == 1) {
+    if (parseInt(send_mail) === 1) {
     }
 
     // Check for missing fields
