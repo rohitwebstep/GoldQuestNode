@@ -177,7 +177,6 @@ async function addImageToPDF(
 
 module.exports = {
   generatePDF: async (client_applicaton_id, branch_id, pdfFileName, targetDirectory) => {
-    console.log(`targetDirectory - 1 - `, targetDirectory);
     return new Promise((resolve, reject) => {
       // Fetch application data
       ClientMasterTrackerModel.applicationByID(
@@ -297,7 +296,6 @@ module.exports = {
               async function finalizeRequest() {
                 pendingRequests -= 1;
                 if (pendingRequests === 0) {
-                  console.log(`targetDirectory - `, targetDirectory);
                   // Define the directory where the PDF will be saved
                   const directoryPath = path.join(targetDirectory);
                   const pdfPath = path.join(directoryPath, pdfFileName);
@@ -305,7 +303,6 @@ module.exports = {
                   // Check if directory exists, and create it if not
                   if (!fs.existsSync(directoryPath)) {
                     fs.mkdirSync(directoryPath, { recursive: true });
-                    console.log(`Directory created: ${directoryPath}`);
                   }
 
                   try {
@@ -321,13 +318,10 @@ module.exports = {
                     const base64Logo = await fetchImageAsBase64(
                       "https://i0.wp.com/goldquestglobal.in/wp-content/uploads/2024/03/goldquestglobal.png"
                     );
-                    console.log(`Step - 1`);
                     // Add the image to the PDF
                     doc.addImage(base64Logo, "PNG", 10, yPosition, 50, 20);
-                    console.log(`Step - 2`);
 
-                    const rightImageX = pageWidth - 10 - 50; // Page width minus margin (10) and image width (50)
-                    console.log(`Step - 3`);
+                    const rightImageX = pageWidth - 10 - 50;
 
                     doc.addImage(
                       await fetchImageAsBase64(
@@ -352,7 +346,6 @@ module.exports = {
                         align: "center",
                       }
                     );
-                    console.log(`Step - 4`);
                     // First Table
                     const firstTableData = [
                       [
@@ -466,7 +459,6 @@ module.exports = {
                         { content: application.status || "N/A" },
                       ],
                     ];
-                    console.log(`Step - 5`);
                     doc.autoTable({
                       head: [], // Remove the header by setting it to an empty array
                       body: firstTableData,
@@ -487,7 +479,6 @@ module.exports = {
                       theme: "grid",
                       margin: { top: 50 },
                     });
-                    console.log(`Step - 6`);
                     addFooter(doc);
                     const secondTableData = servicesData.map((item) => {
                       const sourceKey = item.annexureData
@@ -524,7 +515,6 @@ module.exports = {
                             : "NIL",
                       };
                     });
-                    console.log(`Step - 7`);
                     // Generate the Second Table
                     doc.autoTable({
                       head: [
@@ -602,7 +592,6 @@ module.exports = {
                         3: { halign: "center" }, // Center alignment for the status column
                       },
                     });
-                    console.log(`Step - 8`);
                     addFooter(doc);
 
                     const tableStartX = 15; // Adjusted X position for full-width table
@@ -617,7 +606,6 @@ module.exports = {
                     const boxWidth = 5; // Width of the color box
                     const boxHeight = 9; // Height of the color box
                     const textBoxGap = 1; // Gap between text and box
-                    console.log(`Step - 9`);
                     // Data for the columns
                     const columns = [
                       { label: "Legend:", color: null, description: "" },
@@ -647,7 +635,6 @@ module.exports = {
                         description: "-All clear",
                       },
                     ];
-                    console.log(`Step - 10`);
                     // Set the border color
                     doc.setDrawColor("#3e76a5");
 
@@ -659,7 +646,6 @@ module.exports = {
                       totalTableWidth,
                       tableHeight
                     );
-                    console.log(`Step - 11`);
                     // Draw columns
                     columns.forEach((col, index) => {
                       const columnStartX =
@@ -681,7 +667,6 @@ module.exports = {
                           tableStartY + tableHeight
                         );
                       }
-                      console.log(`Step - 12`);
                       // Add label text (for Legend)
                       if (col.label) {
                         doc.setFont("helvetica", "bold");
@@ -693,7 +678,6 @@ module.exports = {
                           { baseline: "middle" }
                         );
                       }
-                      console.log(`Step - 13`);
                       // Add color box
                       if (col.color) {
                         const boxX = columnStartX + 3; // Adjusted padding for color box
@@ -714,7 +698,6 @@ module.exports = {
                         });
                       }
                     });
-                    console.log(`Step - 14`);
                     doc.setFont("helvetica", "bold");
                     doc.setFontSize(12);
                     doc.text(
@@ -725,7 +708,6 @@ module.exports = {
                     );
 
                     addFooter(doc);
-                    console.log(`Step - 15`);
                     yPosition = 20;
                     let annexureIndex = 1;
                     for (const service of servicesData) {
@@ -797,7 +779,6 @@ module.exports = {
                           values: valuesObj,
                         });
                       });
-                      console.log(`Step - 16`);
                       const tableData = serviceData
                         .map((data) => {
                           if (!data || !data.values) {
@@ -836,7 +817,6 @@ module.exports = {
                           }
                         })
                         .filter(Boolean);
-                      console.log(`Step - 17`);
                       const pageWidth = doc.internal.pageSize.width;
 
                       const headingText = reportFormJson.heading.toUpperCase();
@@ -855,7 +835,6 @@ module.exports = {
                         rectHeight,
                         "FD"
                       );
-                      console.log(`Step - 18`);
                       doc.setFontSize(12);
                       doc.setFont("helvetica", "bold");
 
@@ -869,7 +848,6 @@ module.exports = {
                       });
 
                       yPosition += rectHeight;
-                      console.log(`Step - 19`);
                       doc.autoTable({
                         head: [
                           [
@@ -965,7 +943,6 @@ module.exports = {
                           !key.includes("[") &&
                           !key.includes("]")
                       );
-                      console.log(`Step - 20`);
                       if (annexureImagesKey) {
                         const annexureImagesStr =
                           annexureData[annexureImagesKey];
@@ -1059,7 +1036,6 @@ module.exports = {
                             }
                           }
                         }
-                        console.log(`Step - 21`);
                       } else {
                         doc.setFont("helvetica", "italic");
                         doc.setFontSize(10);
@@ -1076,7 +1052,6 @@ module.exports = {
                       annexureIndex++;
                       yPosition += 20;
                     }
-                    console.log(`Step - 22`);
                     doc.addPage();
                     addFooter(doc);
 
@@ -1105,7 +1080,6 @@ module.exports = {
                       disclaimerTextPart2,
                       disclaimerButtonWidth
                     );
-                    console.log(`Step - 23`);
                     const lineHeight = 7;
                     const disclaimerTextHeight =
                       disclaimerLinesPart1.length * lineHeight +
@@ -1126,11 +1100,9 @@ module.exports = {
                       addFooter(doc);
                       disclaimerY = 20;
                     }
-                    console.log(`Step - 24`);
                     const disclaimerButtonXPosition =
                       (doc.internal.pageSize.width - disclaimerButtonWidth) / 2;
 
-                    console.log(`Step - 24`);
                     if (
                       disclaimerButtonWidth > 0 &&
                       disclaimerButtonHeight > 0 &&
@@ -1162,7 +1134,6 @@ module.exports = {
                         disclaimerButtonHeight
                       );
                     }
-                    console.log(`Step - 25`);
                     doc.setTextColor(0, 0, 0);
                     doc.setFont("helvetica", "bold");
 
@@ -1198,7 +1169,6 @@ module.exports = {
                       doc.text(line, 10, currentY);
                       currentY += lineHeight;
                     });
-                    console.log(`Step - 26`);
                     doc.setTextColor(0, 0, 255);
                     doc.textWithLink(
                       anchorText,
@@ -1211,7 +1181,6 @@ module.exports = {
                         url: "mailto:compliance@screeningstar.com",
                       }
                     );
-                    console.log(`Step - 27`);
                     doc.setTextColor(0, 0, 0);
                     disclaimerLinesPart2.forEach((line) => {
                       doc.text(line, 10, currentY);
@@ -1227,7 +1196,6 @@ module.exports = {
                       doc.addPage();
                       endOfDetailY = 20;
                     }
-                    console.log(`Step - 28`);
 
                     const endButtonXPosition =
                       (doc.internal.pageSize.width - disclaimerButtonWidth) / 2; // Centering horizontally
@@ -1263,7 +1231,6 @@ module.exports = {
                         disclaimerButtonHeight
                       );
                     }
-                    console.log(`Step - 29`);
 
                     doc.setTextColor(0, 0, 0);
                     doc.setFont("helvetica", "bold");
@@ -1272,8 +1239,6 @@ module.exports = {
                       "END OF DETAIL REPORT"
                     );
                     const endButtonTextHeight = doc.getFontSize();
-                    console.log(`Step - 30`);
-
                     const endButtonTextXPosition =
                       endButtonXPosition +
                       disclaimerButtonWidth / 2 -
@@ -1290,7 +1255,6 @@ module.exports = {
                       endButtonTextXPosition,
                       endButtonTextYPosition
                     );
-                    console.log(`Step - 31`);
 
                     addFooter(doc);
                     const pdfPathCloud = await savePdf(
