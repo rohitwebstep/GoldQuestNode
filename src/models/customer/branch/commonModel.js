@@ -14,19 +14,24 @@ const getTokenExpiry = () => new Date(Date.now() + 3600000).toISOString();
 const common = {
   isBranchTokenValid: (_token, sub_user_id, branch_id, callback) => {
     if (typeof callback !== "function") {
-      console.error("Callback is not a function 4");
+      console.error("Callback is not a function");
       return;
     }
+
     let sql;
-    if (sub_user_id) {
-      sql = `SELECT \`login_token\`, \`token_expiry\`
-      FROM \`branch_sub_users\`
-      WHERE \`id\` = ?`;
+    let queryParams;
+    let currentRole;
+
+    // If sub_user_id is provided, query the `branch_sub_users` table
+    if (sub_user_id != null && sub_user_id.trim() !== "") {
+      sql = `SELECT \`login_token\`, \`token_expiry\` FROM \`branch_sub_users\` WHERE \`id\` = ?`;
+      queryParams = [sub_user_id]; // Querying by sub_user_id
+      currentRole = "Sub User";
     } else {
-      sql = `SELECT \`login_token\`, \`token_expiry\`
-      FROM \`branches\`
-      WHERE \`id\` = ?
-    `;
+      // If no sub_user_id, query the `branches` table
+      sql = `SELECT \`login_token\`, \`token_expiry\` FROM \`branches\` WHERE \`id\` = ?`;
+      queryParams = [branch_id]; // Querying by branch_id
+      currentRole = "Branch";
     }
 
     startConnection((err, connection) => {
@@ -35,22 +40,27 @@ const common = {
         return callback({ status: false, message: "Connection error" }, null);
       }
 
-      connection.query(sql, [branch_id], (err, results) => {
+      connection.query(sql, queryParams, (err, results) => {
         if (err) {
           connectionRelease(connection);
-          console.error("Database query error: 117", err);
+          console.error("Database query error:", err);
           return callback({ status: false, message: "Database error" }, null);
         }
 
+        // If no results are found, the branch or sub-user doesn't exist
         if (results.length === 0) {
           connectionRelease(connection);
-          return callback({ status: false, message: "Branch not found" }, null);
+          return callback(
+            { status: false, message: `${currentRole} not found` },
+            null
+          );
         }
 
         const currentToken = results[0].login_token;
         const tokenExpiry = new Date(results[0].token_expiry);
         const currentTime = new Date();
 
+        // Check if the provided token matches the stored token
         if (_token !== currentToken) {
           connectionRelease(connection);
           return callback(
@@ -59,25 +69,25 @@ const common = {
           );
         }
 
+        // If the token hasn't expired
         if (tokenExpiry > currentTime) {
           connectionRelease(connection);
-          callback(null, { status: true, message: "Token is valid" });
-        } else {
           return callback(null, { status: true, message: "Token is valid" });
+        } else {
+          // If the token has expired, refresh it
           const newToken = generateToken();
           const newTokenExpiry = getTokenExpiry();
 
-          const updateSql = `
-            UPDATE \`branches\`
-            SET \`login_token\` = ?, \`token_expiry\` = ?
-            WHERE \`id\` = ?
-          `;
+          // Use the correct table depending on whether it's a sub-user or branch
+          const updateSql = sub_user_id
+            ? `UPDATE \`branch_sub_users\` SET \`login_token\` = ?, \`token_expiry\` = ? WHERE \`id\` = ?`
+            : `UPDATE \`branches\` SET \`login_token\` = ?, \`token_expiry\` = ? WHERE \`id\` = ?`;
 
           connection.query(
             updateSql,
-            [newToken, newTokenExpiry, branch_id],
+            [newToken, newTokenExpiry, sub_user_id || branch_id],
             (updateErr) => {
-              connectionRelease(connection); // Release connection
+              connectionRelease(connection); // Release connection after updating
 
               if (updateErr) {
                 console.error("Error updating token:", updateErr);
