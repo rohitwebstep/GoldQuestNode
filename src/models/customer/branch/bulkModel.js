@@ -59,7 +59,6 @@ const subUser = {
               KEY \`branch_id\` (\`branch_id\`),
               KEY \`sub_user_id\` (\`sub_user_id\`),
               KEY \`customer_id\` (\`customer_id\`),
-              KEY \`client_spoc\` (\`client_spoc\`),
               CONSTRAINT \`fk_branch_bulk_uploads_branch_id\` FOREIGN KEY (\`branch_id\`) REFERENCES \`branches\` (\`id\`) ON DELETE CASCADE,
               CONSTRAINT \`fk_branch_bulk_uploads_sub_user_id\` FOREIGN KEY (\`sub_user_id\`) REFERENCES \`branch_sub_users\` (\`id\`) ON DELETE CASCADE,
               CONSTRAINT \`fk_branch_bulk_uploads_customer_id\` FOREIGN KEY (\`customer_id\`) REFERENCES \`customers\` (\`id\`) ON DELETE CASCADE
@@ -160,7 +159,7 @@ const subUser = {
 
       // SQL query to fetch sub-user details for a specific branch
       const sqlClient = `
-          SELECT id, client_spoc, zip, remarks
+          SELECT id, client_spoc, zip, remarks, created_at
           FROM branch_bulk_uploads
           WHERE branch_id = ?
         `;
@@ -176,7 +175,6 @@ const subUser = {
             null
           );
         }
-
         // Return the list of bulk entries
         return callback(null, bulkResults);
       });
