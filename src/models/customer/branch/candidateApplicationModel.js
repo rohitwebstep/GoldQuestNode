@@ -74,8 +74,8 @@ const candidateApplication = {
       employee_id,
       mobile_number,
       email,
-      services || "",
-      package || "",
+      services || null,
+      package || null,
       customer_id,
     ];
 
