@@ -1146,6 +1146,7 @@ exports.update = (req, res) => {
     client_unique_id,
     agreement_duration,
     custom_bgv,
+    industry_classification,
   } = req.body;
 
   // Define required fields
@@ -1474,6 +1475,7 @@ exports.update = (req, res) => {
                             state,
                             state_code,
                             client_standard,
+                            industry_classification: industry_classification|| null,
                           },
                           (err, metaResult) => {
                             if (err) {

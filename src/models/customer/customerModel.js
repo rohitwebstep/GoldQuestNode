@@ -139,7 +139,7 @@ const Customer = {
         );
       }
       const sqlCustomers = `
-        INSERT INTO \`customers\` (\`client_unique_id\`, \`name\`, \`additional_login\`, \`username\`, \`profile_picture\`, \`emails\`, \`mobile\`, \`services\`, \`admin_id\`, \`is_custom_bgv\`
+        INSERT INTO \`customers\` (\`client_unique_id\`, \`name\`, \`additional_login\`, \`username\`, \`profile_picture\`, \`emails\`, \`mobile\`, \`services\`, \`admin_id\`, \`custom_bgv\`
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
 
@@ -334,7 +334,8 @@ const Customer = {
         \`custom_address\` = ?, 
         \`state\` = ?, 
         \`state_code\` = ?, 
-        \`client_standard\` = ?
+        \`client_standard\` = ?,
+        \`industry_classification\` = ?
       WHERE \`customer_id\` = ?
     `;
 
@@ -352,6 +353,7 @@ const Customer = {
       metaData.state,
       metaData.state_code,
       metaData.client_standard,
+      metaData.industry_classification,
       customerId,
     ];
 
