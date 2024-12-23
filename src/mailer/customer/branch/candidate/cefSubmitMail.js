@@ -41,6 +41,76 @@ const createAttachments = async (attachments_url) => {
   return attachments;
 };
 
+function generateHtmlTable(data) {
+  const selectedFields = [
+    { key: "full_name", label: "Full Name" },
+    { key: "former_name", label: "Former Name" },
+    { key: "mb_no", label: "Mobile Number" },
+    { key: "father_name", label: "Father's Name" },
+    { key: "husband_name", label: "Husband's Name" },
+    { key: "dob", label: "Date of Birth" },
+    { key: "gender", label: "Gender" },
+    { key: "pan", label: "PAN" },
+    { key: "blood_group", label: "Blood Group" },
+    { key: "pan_card_name", label: "PAN Card Name" },
+    { key: "aadhar", label: "Aadhar Number" },
+    { key: "aadhar_card_name", label: "Aadhar Card Name" },
+    { key: "social_security_number", label: "Social Security Number" },
+    { key: "nationality", label: "Nationality" },
+    { key: "marital_status", label: "Marital Status" },
+    { key: "name_declaration", label: "Name Declaration" },
+    { key: "declaration_date", label: "Declaration Date" },
+    { key: "food_cuppon", label: "Food Coupon" },
+    { key: "emergency_details_name", label: "Emergency Contact Name" },
+    { key: "emergency_details_relation", label: "Emergency Relation" },
+    {
+      key: "emergency_details_contact_number",
+      label: "Emergency Contact Number",
+    },
+    { key: "pf_details_pf_number", label: "PF Number" },
+    { key: "pf_details_pf_type", label: "PF Type" },
+    { key: "pf_details_pg_nominee", label: "PF Nominee" },
+    { key: "nps_details_details_pran_number", label: "NPS PRAN Number" },
+    {
+      key: "nps_details_details_nominee_details",
+      label: "NPS Nominee Details",
+    },
+    { key: "nps_details_details_nps_contribution", label: "NPS Contribution" },
+    { key: "bank_details_account_number", label: "Bank Account Number" },
+    { key: "bank_details_bank_name", label: "Bank Name" },
+    { key: "bank_details_branch_name", label: "Bank Branch Name" },
+    { key: "bank_details_ifsc_code", label: "IFSC Code" },
+    { key: "insurance_details_name", label: "Insurance Name" },
+    {
+      key: "insurance_details_nominee_relation",
+      label: "Insurance Nominee Relation",
+    },
+    { key: "insurance_details_nominee_dob", label: "Insurance Nominee DOB" },
+    {
+      key: "insurance_details_contact_number",
+      label: "Insurance Contact Number",
+    },
+  ];
+
+  let htmlTable = '<table border="1"><thead><tr>';
+
+  // Create table headers dynamically based on selected fields
+  selectedFields.forEach((field) => {
+    htmlTable += `<th>${field.label}</th>`;
+  });
+
+  htmlTable += "</tr></thead><tbody><tr>";
+
+  // Create table rows with corresponding values from the input data
+  selectedFields.forEach((field) => {
+    htmlTable += `<td>${data[field.key] || ""}</td>`;
+  });
+
+  htmlTable += "</tr></tbody></table>";
+
+  return htmlTable;
+}
+
 // Function to send email
 async function cefSubmitMail(
   module,
@@ -49,10 +119,10 @@ async function cefSubmitMail(
   customer_name,
   attachments_url,
   toArr,
-  ccArr
+  ccArr,
+  currentCEFApplication
 ) {
   let connection;
-
   try {
     // Establish database connection
     connection = await new Promise((resolve, reject) => {
@@ -101,10 +171,13 @@ async function cefSubmitMail(
       console.warn("No valid attachments to send.");
     }
 
+    const dataHtmlTable = generateHtmlTable(currentCEFApplication);
+
     // Replace placeholders in the email template
     let template = email.template
       .replace(/{{candidate_applicant_name}}/g, candidate_applicant_name)
-      .replace(/{{customer_name}}/g, customer_name);
+      .replace(/{{customer_name}}/g, customer_name)
+      .replace(/{{data_table}}/g, dataHtmlTable);
 
     // Prepare CC list
     const ccList = ccArr
