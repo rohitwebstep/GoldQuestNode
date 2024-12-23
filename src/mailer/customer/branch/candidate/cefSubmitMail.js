@@ -18,7 +18,6 @@ const createAttachments = async (attachments_url) => {
     typeof attachments_url === "string" ? attachments_url.split(",") : []; // Default to an empty array if attachments_url is not valid
 
   const attachments = [];
-
   for (const url of urls) {
     const trimmedUrl = url.trim();
     if (trimmedUrl) {
