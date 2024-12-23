@@ -335,7 +335,7 @@ const candidateApplication = {
   },
 
   isApplicationExist: (app_id, branch_id, customer_id, callback) => {
-    const sql = `SELECT CA.*, C.is_custom_bgv AS is_custom_bgv
+    const sql = `SELECT CA.*, C.is_custom_bgv AS is_custom_bgv, C.name AS customer_name
       FROM candidate_applications AS CA 
       INNER JOIN customers AS C ON C.id = ?
       WHERE CA.id = ? 
