@@ -191,7 +191,9 @@ const common = {
    */
   isAdminAuthorizedForAction: (admin_id, action, callback) => {
     const adminSQL = `SELECT \`role\` FROM \`admins\` WHERE \`id\` = ?`;
+    const permissionsJsonByRoleSQL = `SELECT \`json\` FROM \`permissions\` WHERE \`role\` = ?`;
 
+    // Start the database connection
     startConnection((err, connection) => {
       if (err) {
         console.error("Connection error:", err);
@@ -224,7 +226,6 @@ const common = {
         }
 
         const role = results[0].role;
-        const permissionsJsonByRoleSQL = `SELECT \`json\` FROM \`permissions\` WHERE \`role\` = ?`;
 
         // Second query: Get permissions for the admin's role
         connection.query(permissionsJsonByRoleSQL, [role], (err, results) => {
@@ -252,6 +253,7 @@ const common = {
           }
 
           try {
+            // Parse permissions and check for the specific action
             const permissionsJson = JSON.parse(permissionsRaw);
             const permissions =
               typeof permissionsJson === "string"
@@ -260,11 +262,12 @@ const common = {
 
             if (!permissions[action]) {
               console.error("Action type not found in permissions");
-              connectionRelease(connection);
               return callback({ status: false, message: "Access Denied" });
             }
 
             console.log(`Authorization successful for action: ${action}`);
+
+            // Final step: Release the connection and send success response
             connectionRelease(connection);
             return callback({
               status: true,
