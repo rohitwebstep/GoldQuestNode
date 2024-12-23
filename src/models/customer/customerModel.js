@@ -265,25 +265,26 @@ const Customer = {
         \`gst_number\`, \`tat_days\`, 
         \`agreement_date\`, \`agreement_duration\`, \`custom_template\`,
         \`custom_address\`, \`state\`, \`state_code\`, 
-        \`client_standard\`
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        \`client_standard\`, \`industry_classification\`
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     const valuesCustomerMetas = [
       metaData.customer_id,
-      metaData.address,
-      metaData.client_spoc,
-      metaData.name_of_escalation,
-      metaData.contact_person,
-      metaData.gst_number,
-      metaData.tat_days,
-      metaData.agreement_date,
-      metaData.agreement_duration,
+      metaData.address || null,
+      metaData.client_spoc || null,
+      metaData.name_of_escalation || null,
+      metaData.contact_person || null,
+      metaData.gst_number || null,
+      metaData.tat_days || null,
+      metaData.agreement_date || null,
+      metaData.agreement_duration || null,
       metaData.custom_template || "no",
       metaData.custom_address || null,
-      metaData.state,
-      metaData.state_code,
-      metaData.client_standard,
+      metaData.state || null,
+      metaData.state_code || null,
+      metaData.client_standard || null,
+      metaData.industry_classification || null,
     ];
 
     startConnection((err, connection) => {

@@ -157,6 +157,7 @@ exports.create = (req, res) => {
     clientData,
     additional_login,
     agreement_period,
+    industry_classification,
     custom_bgv,
     send_mail,
   } = req.body;
@@ -183,6 +184,7 @@ exports.create = (req, res) => {
     client_standard,
     custom_template,
     agreement_period,
+    industry_classification,
   };
 
   let additional_login_int = 0;
@@ -382,6 +384,7 @@ exports.create = (req, res) => {
                     state,
                     state_code,
                     client_standard,
+                    industry_classification
                   },
                   (err, metaResult) => {
                     if (err) {

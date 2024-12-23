@@ -119,8 +119,8 @@ exports.create = (req, res) => {
                 employee_id,
                 mobile_number,
                 email,
-                services: services || "",
-                package: package || "",
+                services: services || null,
+                package: package || null,
                 customer_id,
               },
               (err, result) => {
@@ -1119,8 +1119,8 @@ exports.update = (req, res) => {
                     employee_id,
                     mobile_number,
                     email,
-                    services: services || "",
-                    package: package || "",
+                    services: services || null,
+                    package: package || null,
                   },
                   candidate_application_id,
                   (err, result) => {
