@@ -605,8 +605,6 @@ const Admin = {
       }
 
       connection.query(sql, [id], (queryErr, results) => {
-        connectionRelease(connection); // Release the connection
-
         if (queryErr) {
           console.error("Database query error: 13", queryErr);
           return callback(
@@ -618,7 +616,7 @@ const Admin = {
         if (results.length === 0) {
           return callback({ message: "Admin not found" }, null);
         }
-
+        connectionRelease(connection);
         callback(null, results[0]); // Return the first result (should be one result if ID is unique)
       });
     });
