@@ -384,7 +384,7 @@ exports.create = (req, res) => {
                     state,
                     state_code,
                     client_standard,
-                    industry_classification
+                    industry_classification,
                   },
                   (err, metaResult) => {
                     if (err) {
@@ -1145,6 +1145,7 @@ exports.update = (req, res) => {
     additional_login,
     client_unique_id,
     agreement_duration,
+    custom_bgv,
   } = req.body;
 
   // Define required fields
@@ -1424,6 +1425,7 @@ exports.update = (req, res) => {
                         additional_login_int && additional_login_int === 1
                           ? username
                           : null,
+                      custom_bgv: custom_bgv || 0,
                     },
                     (err, result) => {
                       if (err) {

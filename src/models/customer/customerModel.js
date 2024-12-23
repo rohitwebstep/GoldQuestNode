@@ -222,7 +222,8 @@ const Customer = {
           \`emails\` = ?, 
           \`mobile\` = ?, 
           \`services\` = ?, 
-          \`admin_id\` = ?
+          \`admin_id\` = ?,
+          \`custom_bgv\` = ?
         WHERE \`id\` = ?
       `;
 
@@ -235,6 +236,7 @@ const Customer = {
         customerData.mobile,
         JSON.stringify(customerData.services),
         customerData.admin_id,
+        customerData.custom_bgv,
         customerId,
       ];
 
