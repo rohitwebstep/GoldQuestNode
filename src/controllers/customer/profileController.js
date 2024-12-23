@@ -1221,11 +1221,12 @@ exports.update = (req, res) => {
       }
 
       const newToken = result.newToken;
+      const filterEmails = Array.isArray(emails) ? emails : JSON.parse(emails);
 
       // Find duplicate emails
-      const duplicateEmails = emails.filter(
-        (email, index, self) => self.indexOf(email) !== index
-      );
+      const duplicateEmails = (
+        Array.isArray(filterEmails) ? filterEmails : JSON.parse(filterEmails)
+      ).filter((email, index, self) => self.indexOf(email) !== index);
 
       // Get unique duplicates
       if (duplicateEmails.length > 0) {
@@ -1242,7 +1243,7 @@ exports.update = (req, res) => {
         });
       }
 
-      areEmailsUsedForUpdate(emails, customer_id)
+      areEmailsUsedForUpdate(filterEmails, customer_id)
         .then(({ areAnyUsed, message }) => {
           if (areAnyUsed) {
             return res.status(400).json({
@@ -1281,7 +1282,7 @@ exports.update = (req, res) => {
             };
 
             compareAndAddChanges("name", name);
-            compareAndAddChanges("emails_json", JSON.stringify(emails));
+            compareAndAddChanges("emails_json", JSON.stringify(filterEmails));
             compareAndAddChanges("additional_login", additional_login_int);
 
             if (additional_login_int && additional_login_int === 1) {
@@ -1409,7 +1410,7 @@ exports.update = (req, res) => {
                       name,
                       address,
                       profile_picture: currentCustomer.profile_picture,
-                      emails_json: JSON.stringify(emails),
+                      emails_json: JSON.stringify(filterEmails),
                       mobile,
                       services:
                         typeof services === "string"
@@ -1484,7 +1485,7 @@ exports.update = (req, res) => {
                             }
 
                             if (metaResult) {
-                              const headBranchEmail = emails[0];
+                              const headBranchEmail = filterEmails[0];
                               Branch.updateHeadBranchEmail(
                                 customer_id,
                                 name,
