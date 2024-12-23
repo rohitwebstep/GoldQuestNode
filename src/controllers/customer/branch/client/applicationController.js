@@ -1280,7 +1280,7 @@ exports.upload = async (req, res) => {
 
                               // Loop through each document
                               documentsArray.forEach((doc, index) => {
-                                newAttachedDocsString += `${appHost}/${doc}`;
+                                newAttachedDocsString += `${doc}`;
                               });
                             }
                           });
@@ -1379,6 +1379,10 @@ exports.upload = async (req, res) => {
                                     // Function to fetch service names
                                     const fetchServiceNames = (index = 0) => {
                                       if (index >= serviceIds.length) {
+                                        console.log(
+                                          `serviceNames - `,
+                                          serviceNames
+                                        );
                                         // Once all services have been processed, send email notification
                                         createMail(
                                           "client application",
