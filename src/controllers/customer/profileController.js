@@ -1171,6 +1171,7 @@ exports.update = (req, res) => {
     custom_template,
     client_standard,
     agreement_duration,
+    industry_classification,
   };
 
   let additional_login_int = 0;
