@@ -1066,7 +1066,7 @@ module.exports = {
                       disclaimerButtonHeight + buttonBottomPadding;
 
                     const disclaimerTextPart1 = `This report is confidential and is meant for the exclusive use of the Client. This report has been prepared solely for the purpose set out pursuant to our letter of engagement (LoE)/Agreement signed with you and is not to be used for any other purpose. The Client recognizes that we are not the source of the data gathered and our reports are based on the information provided. The Client is responsible for employment decisions based on the information provided in this report.You can mail us at `;
-                    const anchorText = "compliance@screeningstar.com";
+                    const anchorText = "compliance@goldquestglobal.com";
                     const disclaimerTextPart2 = " for any clarifications.";
 
                     doc.setFont("helvetica", "normal");
@@ -1178,7 +1178,7 @@ module.exports = {
                         ),
                       currentY - lineHeight,
                       {
-                        url: "mailto:compliance@screeningstar.com",
+                        url: "mailto:compliance@goldquestglobal.com",
                       }
                     );
                     doc.setTextColor(0, 0, 0);

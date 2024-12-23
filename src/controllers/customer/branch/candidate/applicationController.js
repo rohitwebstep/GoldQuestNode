@@ -742,7 +742,7 @@ function sendNotificationEmails(
                   }
 
                   if (appInfo) {
-                    const appHost = appInfo.host || "www.screeningstar.in";
+                    const appHost = appInfo.host || "www.goldquestglobal.com";
 
                     // Initialize counters for tracking email success/failure
                     let processedApplications = 0;
