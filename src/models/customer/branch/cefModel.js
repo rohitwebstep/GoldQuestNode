@@ -642,7 +642,7 @@ const cef = {
         }
         if (results.length > 0) {
           const sqlCEF =
-            "SELECT `signature`, `resume_file`, `passport_photo` FROM `cef_applications` WHERE `candidate_application_id` = ? LIMIT 1";
+            "SELECT `govt_id`, `aadhar_card_image`, `pan_card_image`, `signature`, `resume_file`, `passport_photo` FROM `cef_applications` WHERE `candidate_application_id` = ? LIMIT 1";
           connection.query(
             sqlCEF,
             [candidate_application_id],
