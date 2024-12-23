@@ -146,16 +146,16 @@ exports.isApplicationExist = (req, res) => {
 };
 
 exports.test = (req, res) => {
-  sendNotificationEmails(
-    18,
-    1,
-    "adsfdsb",
-    17,
-    8,
-    "65",
-    "Test 2",
-    res
-  );
+  CEF.getAttachmentsByClientAppID(18, async (err, attachments) => {
+    if (err) {
+      console.error("Database error:", err);
+      return res.status(500).json({
+        status: false,
+        message: "Database error occurred",
+      });
+    }
+    sendNotificationEmails(18, 1, "adsfdsb", 17, 8, "65", "Test 2", res);
+  });
 };
 
 exports.submit = (req, res) => {
@@ -516,7 +516,6 @@ const sendNotificationEmails = (
                   name: customer.name,
                   email: email.trim(),
                 }));
-                console.log(`currentCEFApplication - `, currentCEFApplication);
                 // Send application creation email
                 cefSubmitMail(
                   "Candidate Background Form",
