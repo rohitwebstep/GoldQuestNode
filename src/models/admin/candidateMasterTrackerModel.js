@@ -540,7 +540,7 @@ const Customer = {
           if (cefResults.length === 0) {
             connectionRelease(connection); // Release the connection
             return callback(
-              { message: "Candidate BGV form is not submitted yet" },
+              { message: "Candidate DAV form is not submitted yet" },
               null
             );
           }
