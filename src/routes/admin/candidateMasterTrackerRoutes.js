@@ -18,7 +18,6 @@ router.get("/dav-application-by-id", candidateMasterTrackerController.davApplica
 router.get("/filter-options", candidateMasterTrackerController.filterOptions);
 router.get("/branch-filter-options", candidateMasterTrackerController.filterOptionsForBranch);
 router.get("/annexure-data", candidateMasterTrackerController.annexureData);
-router.put("/generate-report", candidateMasterTrackerController.generateReport);
 router.get(
   "/report-form-json-by-service-id",
   candidateMasterTrackerController.reportFormJsonByServiceID

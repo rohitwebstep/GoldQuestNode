@@ -110,51 +110,64 @@ const Customer = {
       } else {
         // If no filter_status is provided, proceed with the final SQL query without filters
         const finalSql = `
-          WITH BranchesCTE AS (
-              SELECT 
-                  b.id AS branch_id,
-                  b.customer_id
-              FROM 
-                  branches b
-          )
-          SELECT 
-              customers.client_unique_id,
-              customers.name,
-              customer_metas.tat_days,
-              customer_metas.single_point_of_contact,
-              customers.id AS main_id,
-              COALESCE(branch_counts.branch_count, 0) AS branch_count,
-              COALESCE(application_counts.application_count, 0) AS application_count
-          FROM 
-              customers
-          LEFT JOIN 
-              customer_metas ON customers.id = customer_metas.customer_id
-          LEFT JOIN (
-              SELECT 
-                  customer_id, 
-                  COUNT(*) AS branch_count
-              FROM 
-                  branches
-              GROUP BY 
-                  customer_id
-          ) AS branch_counts ON customers.id = branch_counts.customer_id
-          LEFT JOIN (
-              SELECT 
-                  b.customer_id, 
-                  COUNT(ca.id) AS application_count,
-                  MAX(ca.created_at) AS latest_application_date
-              FROM 
-                  BranchesCTE b
-              INNER JOIN 
-                  candidate_applications ca ON b.branch_id = ca.branch_id
-              /* WHERE ca.status != 'closed' */
-              GROUP BY 
-                  b.customer_id
-          ) AS application_counts ON customers.id = application_counts.customer_id
-          WHERE 
-              COALESCE(application_counts.application_count, 0) > 0
-          ORDER BY 
-              application_counts.latest_application_date DESC;
+                          WITH BranchesCTE AS (
+                    SELECT 
+                        b.id AS branch_id,
+                        b.customer_id
+                    FROM 
+                        branches b
+                    WHERE 
+                        EXISTS (
+                            SELECT 1 
+                            FROM candidate_applications ca 
+                            WHERE ca.branch_id = b.id
+                        )
+                ),
+                ApplicationCounts AS (
+                    SELECT 
+                        b.customer_id, 
+                        COUNT(ca.id) AS application_count,
+                        MAX(ca.created_at) AS latest_application_date
+                    FROM 
+                        BranchesCTE b
+                    INNER JOIN 
+                        candidate_applications ca ON b.branch_id = ca.branch_id
+                    GROUP BY 
+                        b.customer_id
+                )
+                SELECT 
+                    customers.client_unique_id,
+                    customers.name,
+                    customer_metas.tat_days,
+                    customer_metas.single_point_of_contact,
+                    customers.id AS main_id,
+                    COALESCE(branch_counts.branch_count, 0) AS branch_count,
+                    COALESCE(application_counts.application_count, 0) AS application_count
+                FROM 
+                    customers
+                LEFT JOIN 
+                    customer_metas ON customers.id = customer_metas.customer_id
+                LEFT JOIN (
+                    SELECT 
+                        b.customer_id, 
+                        COUNT(*) AS branch_count
+                    FROM 
+                        branches b
+                    WHERE 
+                        EXISTS (
+                            SELECT 1 
+                            FROM candidate_applications ca 
+                            WHERE ca.branch_id = b.id
+                        )
+                    GROUP BY 
+                        b.customer_id
+                ) AS branch_counts ON customers.id = branch_counts.customer_id
+                LEFT JOIN 
+                    ApplicationCounts application_counts ON customers.id = application_counts.customer_id
+                WHERE 
+                    COALESCE(application_counts.application_count, 0) > 0
+                ORDER BY 
+                    application_counts.latest_application_date DESC;
         `;
 
         connection.query(finalSql, (err, results) => {
@@ -211,60 +224,158 @@ const Customer = {
   },
 
   applicationListByBranch: (filter_status, branch_id, status, callback) => {
-    // Start a connection
     startConnection((err, connection) => {
       if (err) {
+        console.error("Error starting database connection:", err);
         return callback(err, null);
       }
 
-      // SQL query with conditional checks for cef_submitted and dav_submitted
       let sql = `
-        SELECT 
-          ca.*, 
-          ca.id AS main_id, 
-          cef.created_at AS cef_filled_date,
-          cef.id AS cef_id,
-          dav.created_at AS dav_filled_date,
-          dav.id AS dav_id,
-          CASE WHEN cef.id IS NOT NULL THEN 1 ELSE 0 END AS cef_submitted,
-          CASE WHEN dav.id IS NOT NULL THEN 1 ELSE 0 END AS dav_submitted
-        FROM 
-          \`candidate_applications\` ca
-        LEFT JOIN 
-          \`cef_applications\` cef 
-        ON 
-          ca.id = cef.candidate_application_id
-        LEFT JOIN 
-          \`dav_applications\` dav 
-        ON 
-          ca.id = dav.candidate_application_id
-        WHERE 
-          ca.\`branch_id\` = ?`;
+            SELECT 
+                ca.*, 
+                ca.id AS main_id, 
+                cef.created_at AS cef_filled_date,
+                cef.id AS cef_id,
+                dav.created_at AS dav_filled_date,
+                dav.id AS dav_id,
+                CASE WHEN cef.id IS NOT NULL THEN 1 ELSE 0 END AS cef_submitted,
+                CASE WHEN dav.id IS NOT NULL THEN 1 ELSE 0 END AS dav_submitted
+            FROM 
+                \`candidate_applications\` ca
+            LEFT JOIN 
+                \`cef_applications\` cef 
+            ON 
+                ca.id = cef.candidate_application_id
+            LEFT JOIN 
+                \`dav_applications\` dav 
+            ON 
+                ca.id = dav.candidate_application_id
+            WHERE 
+                ca.\`branch_id\` = ?`;
 
-      const params = [branch_id]; // Start with branch_id
-
-      // Check if filter_status is provided
+      const params = [branch_id];
       if (filter_status && filter_status.trim() !== "") {
-        sql += ` AND ca.\`status\` = ?`; // Add filter for filter_status
+        sql += ` AND ca.\`status\` = ?`;
         params.push(filter_status);
       }
 
-      // Check if status is provided and add the corresponding condition
       if (typeof status === "string" && status.trim() !== "") {
-        sql += ` AND ca.\`status\` = ?`; // Add filter for status
+        sql += ` AND ca.\`status\` = ?`;
         params.push(status);
       }
 
       sql += ` ORDER BY ca.\`created_at\` DESC;`;
 
-      // Execute the query using the connection
       connection.query(sql, params, (err, results) => {
-        connectionRelease(connection); // Release the connection
         if (err) {
-          console.error("Database query error: 18", err);
+          console.error("Database query error:", err);
+          connectionRelease(connection);
           return callback(err, null);
         }
-        callback(null, results);
+
+        const cmtPromises = results.map((candidateApp) => {
+          return new Promise((resolve, reject) => {
+            const servicesResult = { cef: {}, dav: {} };
+
+            if (candidateApp.cef_submitted === 1) {
+              const services = candidateApp.services.split(",");
+              const dbTableFileInputs = {};
+              let completedQueries = 0;
+              const dbTableWithHeadings = [];
+              services.forEach((service) => {
+                const query =
+                  "SELECT `json` FROM `cef_service_forms` WHERE `service_id` = ?";
+                connection.query(query, [service], (err, result) => {
+                  completedQueries++;
+                  if (!err && result.length > 0) {
+                    try {
+                      const jsonData = JSON.parse(result[0].json);
+                      const dbTable = jsonData.db_table;
+                      const heading = jsonData.heading;
+                      if (dbTable && heading) {
+                        dbTableWithHeadings[dbTable] = heading; // Use dbTable as the key
+                      }
+                      if (!dbTableFileInputs[dbTable]) {
+                        dbTableFileInputs[dbTable] = [];
+                      }
+                      jsonData.inputs.forEach((row) => {
+                        if (row.type === "file") {
+                          dbTableFileInputs[dbTable].push(row.name);
+                        }
+                      });
+                    } catch (parseErr) {
+                      console.error("Error parsing JSON:", parseErr);
+                    }
+                  }
+
+                  if (completedQueries === services.length) {
+                    const hostSql = `SELECT \`cloud_host\` FROM \`app_info\` WHERE \`status\` = 1 AND \`interface_type\` = ? ORDER BY \`updated_at\` DESC LIMIT 1`;
+                    connection.query(
+                      hostSql,
+                      ["backend"],
+                      (err, hostResults) => {
+                        const host =
+                          hostResults.length > 0
+                            ? hostResults[0].cloud_host
+                            : "www.example.com";
+
+                        let tableQueries = 0;
+                        const totalTables =
+                          Object.keys(dbTableFileInputs).length;
+
+                        for (const [dbTable, fileInputNames] of Object.entries(
+                          dbTableFileInputs
+                        )) {
+                          const selectQuery = `SELECT ${
+                            fileInputNames && fileInputNames.length > 0
+                              ? fileInputNames.join(", ")
+                              : "*"
+                          } FROM cef_${dbTable} WHERE candidate_application_id = ?`;
+
+                          connection.query(
+                            selectQuery,
+                            [candidateApp.main_id],
+                            (err, rows) => {
+                              tableQueries++;
+                              if (!err && rows.length > 0) {
+                                servicesResult.cef[
+                                  dbTableWithHeadings[dbTable]
+                                ] = rows;
+                              }
+
+                              if (tableQueries === totalTables) {
+                                candidateApp.services = servicesResult;
+                                resolve();
+                              }
+                            }
+                          );
+                        }
+                      }
+                    );
+                  }
+                });
+              });
+            } else {
+              resolve();
+            }
+
+            if (candidateApp.dav_submitted === 1) {
+              // Add DAV-specific processing logic here
+              resolve();
+            }
+          });
+        });
+
+        Promise.all(cmtPromises)
+          .then(() => {
+            connectionRelease(connection);
+            callback(null, results);
+          })
+          .catch((err) => {
+            console.error("Error processing candidate applications:", err);
+            connectionRelease(connection);
+            callback(err, null);
+          });
       });
     });
   },
