@@ -209,10 +209,11 @@ exports.submit = (req, res) => {
       if (currentCandidateApplication.is_custom_bgv !== 1) {
         if (personal_information) {
           [
+            "name_declaration",
+            "declaration_date",
             "blood_group",
             "pan_card_name",
             "aadhar_card_name",
-            "food_cuppon",
             "emergency_details_name",
             "emergency_details_relation",
             "emergency_details_contact_number",
@@ -230,6 +231,11 @@ exports.submit = (req, res) => {
             "insurance_details_nominee_relation",
             "insurance_details_nominee_dob",
             "insurance_details_contact_number",
+            "icc_bank_acc",
+            "food_coupon",
+            "passport_photo",
+            "aadhar_card_image",
+            "pan_card_image",
           ].forEach((key) => {
             if (key in personal_information) {
               delete personal_information[key];
