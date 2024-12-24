@@ -291,109 +291,136 @@ const Customer = {
           return callback(err, null);
         }
 
-        const cmtPromises = results.map((candidateApp) => {
-          return new Promise((resolve, reject) => {
-            const servicesResult = { cef: {}, dav: {} };
+        const davSql = `
+        SELECT * FROM \`services\`
+        WHERE LOWER(\`title\`) LIKE '%digital%'
+        AND (LOWER(\`title\`) LIKE '%verification%' OR LOWER(\`title\`) LIKE '%address%')
+        LIMIT 1
+      `;
+        connection.query(davSql, (queryErr, davResults) => {
+          if (queryErr) {
+            console.error("Database query error: 48", queryErr);
+            return callback(queryErr, null);
+          }
+          let digitalAddressID = null;
+          const singleEntry = davResults.length > 0 ? davResults[0] : null;
 
-            if (candidateApp.cef_submitted === 1) {
-              const services = candidateApp.services.split(",");
-              const dbTableFileInputs = {};
-              let completedQueries = 0;
-              const dbTableWithHeadings = [];
-              services.forEach((service) => {
-                const query =
-                  "SELECT `json` FROM `cef_service_forms` WHERE `service_id` = ?";
-                connection.query(query, [service], (err, result) => {
-                  completedQueries++;
-                  if (!err && result.length > 0) {
-                    try {
-                      const jsonData = JSON.parse(result[0].json);
-                      const dbTable = jsonData.db_table;
-                      const heading = jsonData.heading;
-                      if (dbTable && heading) {
-                        dbTableWithHeadings[dbTable] = heading; // Use dbTable as the key
-                      }
-                      if (!dbTableFileInputs[dbTable]) {
-                        dbTableFileInputs[dbTable] = [];
-                      }
-                      jsonData.inputs.forEach((row) => {
-                        if (row.type === "file") {
-                          dbTableFileInputs[dbTable].push(row.name);
+          if (singleEntry) {
+            digitalAddressID = parseInt(singleEntry.id, 10);
+          }
+
+          const cmtPromises = results.map((candidateApp) => {
+            return new Promise((resolve, reject) => {
+              const servicesResult = { cef: {}, dav: {} };
+
+              if (candidateApp.cef_submitted === 1) {
+                const services = candidateApp.services.split(",");
+
+                if (services.includes(digitalAddressID)) {
+                  candidateApp.dav_exist = 1;
+                } else {
+                  candidateApp.dav_exist = 0;
+                }
+
+                const dbTableFileInputs = {};
+                let completedQueries = 0;
+                const dbTableWithHeadings = [];
+                services.forEach((service) => {
+                  const query =
+                    "SELECT `json` FROM `cef_service_forms` WHERE `service_id` = ?";
+                  connection.query(query, [service], (err, result) => {
+                    completedQueries++;
+                    if (!err && result.length > 0) {
+                      try {
+                        const jsonData = JSON.parse(result[0].json);
+                        const dbTable = jsonData.db_table;
+                        const heading = jsonData.heading;
+                        if (dbTable && heading) {
+                          dbTableWithHeadings[dbTable] = heading; // Use dbTable as the key
                         }
-                      });
-                    } catch (parseErr) {
-                      console.error("Error parsing JSON:", parseErr);
+                        if (!dbTableFileInputs[dbTable]) {
+                          dbTableFileInputs[dbTable] = [];
+                        }
+                        jsonData.inputs.forEach((row) => {
+                          if (row.type === "file") {
+                            dbTableFileInputs[dbTable].push(row.name);
+                          }
+                        });
+                      } catch (parseErr) {
+                        console.error("Error parsing JSON:", parseErr);
+                      }
                     }
-                  }
 
-                  if (completedQueries === services.length) {
-                    const hostSql = `SELECT \`cloud_host\` FROM \`app_info\` WHERE \`status\` = 1 AND \`interface_type\` = ? ORDER BY \`updated_at\` DESC LIMIT 1`;
-                    connection.query(
-                      hostSql,
-                      ["backend"],
-                      (err, hostResults) => {
-                        const host =
-                          hostResults.length > 0
-                            ? hostResults[0].cloud_host
-                            : "www.example.com";
+                    if (completedQueries === services.length) {
+                      const hostSql = `SELECT \`cloud_host\` FROM \`app_info\` WHERE \`status\` = 1 AND \`interface_type\` = ? ORDER BY \`updated_at\` DESC LIMIT 1`;
+                      connection.query(
+                        hostSql,
+                        ["backend"],
+                        (err, hostResults) => {
+                          const host =
+                            hostResults.length > 0
+                              ? hostResults[0].cloud_host
+                              : "www.example.com";
 
-                        let tableQueries = 0;
-                        const totalTables =
-                          Object.keys(dbTableFileInputs).length;
+                          let tableQueries = 0;
+                          const totalTables =
+                            Object.keys(dbTableFileInputs).length;
 
-                        for (const [dbTable, fileInputNames] of Object.entries(
-                          dbTableFileInputs
-                        )) {
-                          const selectQuery = `SELECT ${
-                            fileInputNames && fileInputNames.length > 0
-                              ? fileInputNames.join(", ")
-                              : "*"
-                          } FROM cef_${dbTable} WHERE candidate_application_id = ?`;
+                          for (const [
+                            dbTable,
+                            fileInputNames,
+                          ] of Object.entries(dbTableFileInputs)) {
+                            const selectQuery = `SELECT ${
+                              fileInputNames && fileInputNames.length > 0
+                                ? fileInputNames.join(", ")
+                                : "*"
+                            } FROM cef_${dbTable} WHERE candidate_application_id = ?`;
 
-                          connection.query(
-                            selectQuery,
-                            [candidateApp.main_id],
-                            (err, rows) => {
-                              tableQueries++;
-                              if (!err && rows.length > 0) {
-                                servicesResult.cef[
-                                  dbTableWithHeadings[dbTable]
-                                ] = rows;
+                            connection.query(
+                              selectQuery,
+                              [candidateApp.main_id],
+                              (err, rows) => {
+                                tableQueries++;
+                                if (!err && rows.length > 0) {
+                                  servicesResult.cef[
+                                    dbTableWithHeadings[dbTable]
+                                  ] = rows;
+                                }
+
+                                if (tableQueries === totalTables) {
+                                  candidateApp.services = servicesResult;
+                                  resolve();
+                                }
                               }
-
-                              if (tableQueries === totalTables) {
-                                candidateApp.services = servicesResult;
-                                resolve();
-                              }
-                            }
-                          );
+                            );
+                          }
                         }
-                      }
-                    );
-                  }
+                      );
+                    }
+                  });
                 });
-              });
-            } else {
-              resolve();
-            }
+              } else {
+                resolve();
+              }
 
-            if (candidateApp.dav_submitted === 1) {
-              // Add DAV-specific processing logic here
-              resolve();
-            }
+              if (candidateApp.dav_submitted === 1) {
+                // Add DAV-specific processing logic here
+                resolve();
+              }
+            });
           });
+
+          Promise.all(cmtPromises)
+            .then(() => {
+              connectionRelease(connection);
+              callback(null, results);
+            })
+            .catch((err) => {
+              console.error("Error processing candidate applications:", err);
+              connectionRelease(connection);
+              callback(err, null);
+            });
         });
-
-        Promise.all(cmtPromises)
-          .then(() => {
-            connectionRelease(connection);
-            callback(null, results);
-          })
-          .catch((err) => {
-            console.error("Error processing candidate applications:", err);
-            connectionRelease(connection);
-            callback(err, null);
-          });
       });
     });
   },
@@ -687,771 +714,6 @@ const Customer = {
         if (err) {
           console.error("Database query error: 22", err);
           return callback(err, null);
-        }
-        callback(null, results);
-      });
-    });
-  },
-
-  getCMTApplicationById: (client_application_id, callback) => {
-    // Start a connection
-    startConnection((err, connection) => {
-      if (err) {
-        return callback(err, null);
-      }
-
-      const sql =
-        "SELECT * FROM `cmt_applications` WHERE `client_application_id` = ?";
-      connection.query(sql, [`${client_application_id}`], (err, results) => {
-        connectionRelease(connection); // Release connection
-        if (err) {
-          console.error("Database query error: 23", err);
-          return callback(err, null);
-        }
-        callback(null, results[0] || null); // Return the first result or null if not found
-      });
-    });
-  },
-
-  getCMTApplicationIDByClientApplicationId: (
-    client_application_id,
-    callback
-  ) => {
-    if (!client_application_id) {
-      return callback(null, false);
-    }
-
-    // Start a connection
-    startConnection((err, connection) => {
-      if (err) {
-        return callback(err, null);
-      }
-
-      const sql =
-        "SELECT `id` FROM `cmt_applications` WHERE `client_application_id` = ?";
-
-      connection.query(sql, [client_application_id], (err, results) => {
-        connectionRelease(connection); // Release connection
-        if (err) {
-          console.error("Database query error: 24", err);
-          return callback(err, null);
-        }
-
-        if (results.length > 0) {
-          return callback(null, results[0].id);
-        }
-        callback(null, false);
-      });
-    });
-  },
-
-  getCMTAnnexureByApplicationId: (
-    client_application_id,
-    db_table,
-    callback
-  ) => {
-    // Start a connection
-    startConnection((err, connection) => {
-      if (err) {
-        return callback(err);
-      }
-
-      // 1. Check if the table exists
-      const checkTableSql = `
-        SELECT COUNT(*) AS count 
-        FROM information_schema.tables 
-        WHERE table_schema = ? AND table_name = ?`;
-
-      connection.query(
-        checkTableSql,
-        [process.env.DB_NAME, db_table],
-        (tableErr, tableResults) => {
-          if (tableErr) {
-            console.error("Error checking table existence:", tableErr);
-            connectionRelease(connection); // Release connection
-            return callback(tableErr);
-          }
-          if (tableResults[0].count === 0) {
-            const createTableSql = `
-              CREATE TABLE \`${db_table}\` (
-                \`id\` bigint(20) NOT NULL AUTO_INCREMENT,
-                \`cmt_id\` bigint(20) NOT NULL,
-                \`client_application_id\` bigint(20) NOT NULL,
-                \`branch_id\` int(11) NOT NULL,
-                \`customer_id\` int(11) NOT NULL,
-                \`status\` VARCHAR(100) NOT NULL,
-                \`created_at\` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-                \`updated_at\` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                PRIMARY KEY (\`id\`),
-                KEY \`client_application_id\` (\`client_application_id\`),
-                KEY \`cmt_application_customer_id\` (\`customer_id\`),
-                KEY \`cmt_application_cmt_id\` (\`cmt_id\`),
-                CONSTRAINT \`fk_${db_table}_client_application_id\` FOREIGN KEY (\`client_application_id\`) REFERENCES \`client_applications\` (\`id\`) ON DELETE CASCADE,
-                CONSTRAINT \`fk_${db_table}_customer_id\` FOREIGN KEY (\`customer_id\`) REFERENCES \`customers\` (\`id\`) ON DELETE CASCADE,
-                CONSTRAINT \`fk_${db_table}_cmt_id\` FOREIGN KEY (\`cmt_id\`) REFERENCES \`cmt_applications\` (\`id\`) ON DELETE CASCADE
-              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`;
-
-            connection.query(createTableSql, (createErr) => {
-              if (createErr) {
-                console.error(`Error creating table "${db_table}":`, createErr);
-                connectionRelease(connection); // Release connection
-                return callback(createErr);
-              }
-              fetchData();
-            });
-          } else {
-            fetchData();
-          }
-
-          function fetchData() {
-            const sql = `SELECT * FROM \`${db_table}\` WHERE \`client_application_id\` = ?`;
-            connection.query(
-              sql,
-              [client_application_id],
-              (queryErr, results) => {
-                connectionRelease(connection); // Release connection
-                if (queryErr) {
-                  console.error("Error executing query:", queryErr);
-                  return callback(queryErr);
-                }
-                const response = results.length > 0 ? results[0] : null;
-                callback(null, response);
-              }
-            );
-          }
-        }
-      );
-    });
-  },
-
-  reportFormJsonByServiceID: (service_id, callback) => {
-    // Start a connection
-    startConnection((err, connection) => {
-      if (err) {
-        return callback(err, null);
-      }
-
-      // Use a parameterized query to prevent SQL injection
-      const sql = "SELECT `json` FROM `report_forms` WHERE `service_id` = ?";
-      connection.query(sql, [service_id], (err, results) => {
-        connectionRelease(connection); // Release connection
-        if (err) {
-          console.error("Database query error: 25", err);
-          return callback(err, null);
-        }
-        // Return single application or null if not found
-        callback(null, results[0] || null);
-      });
-    });
-  },
-
-  generateReport: (
-    mainJson,
-    client_application_id,
-    branch_id,
-    customer_id,
-    callback
-  ) => {
-    const fields = Object.keys(mainJson);
-
-    // Start a connection
-    startConnection((err, connection) => {
-      if (err) {
-        return callback(err, null);
-      }
-
-      // 1. Check for existing columns in cmt_applications
-      const checkColumnsSql = `
-        SELECT COLUMN_NAME 
-        FROM INFORMATION_SCHEMA.COLUMNS 
-        WHERE TABLE_NAME = 'cmt_applications' AND COLUMN_NAME IN (?)`;
-
-      connection.query(checkColumnsSql, [fields], (err, results) => {
-        if (err) {
-          console.error("Error checking columns:", err);
-          connectionRelease(connection); // Release connection
-          return callback(err, null);
-        }
-
-        const existingColumns = results.map((row) => row.COLUMN_NAME);
-        const missingColumns = fields.filter(
-          (field) => !existingColumns.includes(field)
-        );
-
-        // 2. Add missing columns if any
-        const addMissingColumns = () => {
-          if (missingColumns.length > 0) {
-            const alterQueries = missingColumns.map((column) => {
-              return `ALTER TABLE cmt_applications ADD COLUMN ${column} LONGTEXT`; // Adjust data type as needed
-            });
-
-            // Run all ALTER statements sequentially
-            const alterPromises = alterQueries.map(
-              (query) =>
-                new Promise((resolve, reject) => {
-                  connection.query(query, (alterErr) => {
-                    if (alterErr) {
-                      console.error("Error adding column:", alterErr);
-                      return reject(alterErr);
-                    }
-                    resolve();
-                  });
-                })
-            );
-
-            return Promise.all(alterPromises);
-          }
-          return Promise.resolve(); // No missing columns, resolve immediately
-        };
-
-        // 3. Check if entry exists by client_application_id and insert/update accordingly
-        const checkAndUpsertEntry = () => {
-          const checkEntrySql =
-            "SELECT * FROM cmt_applications WHERE client_application_id = ?";
-
-          connection.query(
-            checkEntrySql,
-            [client_application_id],
-            (entryErr, entryResults) => {
-              if (entryErr) {
-                console.error("Error checking entry existence:", entryErr);
-                connectionRelease(connection); // Release connection
-                return callback(entryErr, null);
-              }
-
-              // Add branch_id and customer_id to mainJson
-              mainJson.branch_id = branch_id;
-              mainJson.customer_id = customer_id;
-
-              if (entryResults.length > 0) {
-                // Update existing entry
-                const updateSql =
-                  "UPDATE cmt_applications SET ? WHERE client_application_id = ?";
-                connection.query(
-                  updateSql,
-                  [mainJson, client_application_id],
-                  (updateErr, updateResult) => {
-                    connectionRelease(connection); // Release connection
-                    if (updateErr) {
-                      console.error("Error updating application:", updateErr);
-                      return callback(updateErr, null);
-                    }
-                    callback(null, updateResult);
-                  }
-                );
-              } else {
-                // Insert new entry
-                const insertSql = "INSERT INTO cmt_applications SET ?";
-                connection.query(
-                  insertSql,
-                  {
-                    ...mainJson,
-                    client_application_id,
-                    branch_id,
-                    customer_id,
-                  },
-                  (insertErr, insertResult) => {
-                    connectionRelease(connection); // Release connection
-                    if (insertErr) {
-                      console.error("Error inserting application:", insertErr);
-                      return callback(insertErr, null);
-                    }
-                    callback(null, insertResult);
-                  }
-                );
-              }
-            }
-          );
-        };
-
-        // Execute the operations in sequence
-        addMissingColumns()
-          .then(() => checkAndUpsertEntry())
-          .catch((err) => {
-            console.error("Error during ALTER or entry check:", err);
-            connectionRelease(connection); // Release connection
-            callback(err, null);
-          });
-      });
-    });
-  },
-
-  createOrUpdateAnnexure: (
-    cmt_id,
-    client_application_id,
-    branch_id,
-    customer_id,
-    db_table,
-    mainJson,
-    callback
-  ) => {
-    const fields = Object.keys(mainJson);
-    startConnection((err, connection) => {
-      if (err) {
-        return callback(err, null);
-      }
-
-      const checkTableSql = `
-        SELECT COUNT(*) AS count 
-        FROM information_schema.tables 
-        WHERE table_schema = ? AND table_name = ?`;
-
-      connection.query(
-        checkTableSql,
-        [process.env.DB_NAME, db_table],
-        (tableErr, tableResults) => {
-          if (tableErr) {
-            connectionRelease(connection);
-            console.error("Error checking table existence:", tableErr);
-            return callback(tableErr, null);
-          }
-
-          if (tableResults[0].count === 0) {
-            const createTableSql = `
-              CREATE TABLE \`${db_table}\` (
-                \`id\` bigint(20) NOT NULL AUTO_INCREMENT,
-                \`cmt_id\` bigint(20) NOT NULL,
-                \`client_application_id\` bigint(20) NOT NULL,
-                \`branch_id\` int(11) NOT NULL,
-                \`customer_id\` int(11) NOT NULL,
-                \`status\` VARCHAR(100) NOT NULL,
-                \`created_at\` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-                \`updated_at\` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                PRIMARY KEY (\`id\`),
-                KEY \`client_application_id\` (\`client_application_id\`),
-                KEY \`cmt_application_customer_id\` (\`customer_id\`),
-                KEY \`cmt_application_cmt_id\` (\`cmt_id\`),
-                CONSTRAINT \`fk_${db_table}_client_application_id\` FOREIGN KEY (\`client_application_id\`) REFERENCES \`client_applications\` (\`id\`) ON DELETE CASCADE,
-                CONSTRAINT \`fk_${db_table}_customer_id\` FOREIGN KEY (\`customer_id\`) REFERENCES \`customers\` (\`id\`) ON DELETE CASCADE,
-                CONSTRAINT \`fk_${db_table}_cmt_id\` FOREIGN KEY (\`cmt_id\`) REFERENCES \`cmt_applications\` (\`id\`) ON DELETE CASCADE
-              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`;
-
-            connection.query(createTableSql, (createErr) => {
-              if (createErr) {
-                connectionRelease(connection);
-                console.error("Error creating table:", createErr);
-                return callback(createErr, null);
-              }
-              proceedToCheckColumns();
-            });
-          } else {
-            proceedToCheckColumns();
-          }
-
-          function proceedToCheckColumns() {
-            const checkColumnsSql = `
-              SELECT COLUMN_NAME 
-              FROM INFORMATION_SCHEMA.COLUMNS 
-              WHERE TABLE_NAME = ? AND COLUMN_NAME IN (?)`;
-
-            connection.query(
-              checkColumnsSql,
-              [db_table, fields],
-              (err, results) => {
-                if (err) {
-                  connectionRelease(connection);
-                  console.error("Error checking columns:", err);
-                  return callback(err, null);
-                }
-
-                const existingColumns = results.map((row) => row.COLUMN_NAME);
-                const missingColumns = fields.filter(
-                  (field) => !existingColumns.includes(field)
-                );
-
-                if (missingColumns.length > 0) {
-                  const alterQueries = missingColumns.map((column) => {
-                    return `ALTER TABLE \`${db_table}\` ADD COLUMN \`${column}\` LONGTEXT`; // Adjust data type as necessary
-                  });
-
-                  const alterPromises = alterQueries.map(
-                    (query) =>
-                      new Promise((resolve, reject) => {
-                        connection.query(query, (alterErr) => {
-                          if (alterErr) {
-                            console.error("Error adding column:", alterErr);
-                            return reject(alterErr);
-                          }
-                          resolve();
-                        });
-                      })
-                  );
-
-                  Promise.all(alterPromises)
-                    .then(() => checkAndUpdateEntry())
-                    .catch((err) => {
-                      connectionRelease(connection);
-                      console.error("Error executing ALTER statements:", err);
-                      callback(err, null);
-                    });
-                } else {
-                  checkAndUpdateEntry();
-                }
-              }
-            );
-          }
-
-          function checkAndUpdateEntry() {
-            const checkEntrySql = `SELECT * FROM \`${db_table}\` WHERE client_application_id = ?`;
-            connection.query(
-              checkEntrySql,
-              [client_application_id],
-              (entryErr, entryResults) => {
-                if (entryErr) {
-                  connectionRelease(connection);
-                  console.error("Error checking entry existence:", entryErr);
-                  return callback(entryErr, null);
-                }
-
-                if (entryResults.length > 0) {
-                  const updateSql = `UPDATE \`${db_table}\` SET ? WHERE client_application_id = ?`;
-                  connection.query(
-                    updateSql,
-                    [mainJson, client_application_id],
-                    (updateErr, updateResult) => {
-                      connectionRelease(connection);
-                      if (updateErr) {
-                        console.error("Error updating application:", updateErr);
-                        return callback(updateErr, null);
-                      }
-                      callback(null, updateResult);
-                    }
-                  );
-                } else {
-                  const insertSql = `INSERT INTO \`${db_table}\` SET ?`;
-                  connection.query(
-                    insertSql,
-                    {
-                      ...mainJson,
-                      client_application_id,
-                      branch_id,
-                      customer_id,
-                      cmt_id,
-                    },
-                    (insertErr, insertResult) => {
-                      connectionRelease(connection);
-                      if (insertErr) {
-                        console.error(
-                          "Error inserting application:",
-                          insertErr
-                        );
-                        return callback(insertErr, null);
-                      }
-                      callback(null, insertResult);
-                    }
-                  );
-                }
-              }
-            );
-          }
-        }
-      );
-    });
-  },
-
-  upload: (
-    client_application_id,
-    db_table,
-    db_column,
-    savedImagePaths,
-    callback
-  ) => {
-    startConnection((err, connection) => {
-      if (err) {
-        console.error("Error starting connection:", err);
-        return callback(false, {
-          error: "Error starting database connection.",
-          details: err,
-        });
-      }
-
-      const checkTableSql = `
-        SELECT COUNT(*) AS count 
-        FROM information_schema.tables 
-        WHERE table_schema = DATABASE() 
-        AND table_name = ?`;
-
-      connection.query(checkTableSql, [db_table], (tableErr, tableResults) => {
-        if (tableErr) {
-          connectionRelease(connection);
-          console.error("Error checking table existence:", tableErr);
-          return callback(false, {
-            error: "Error checking table existence.",
-            details: tableErr,
-          });
-        }
-
-        if (tableResults[0].count === 0) {
-          const createTableSql = `
-            CREATE TABLE \`${db_table}\` (
-              \`id\` bigint(20) NOT NULL AUTO_INCREMENT,
-              \`cmt_id\` bigint(20) NOT NULL,
-              \`client_application_id\` bigint(20) NOT NULL,
-              \`branch_id\` int(11) NOT NULL,
-              \`customer_id\` int(11) NOT NULL,
-              \`status\` VARCHAR(100) NOT NULL,
-              \`created_at\` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-              \`updated_at\` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-              PRIMARY KEY (\`id\`),
-              KEY \`client_application_id\` (\`client_application_id\`),
-              KEY \`cmt_application_customer_id\` (\`customer_id\`),
-              KEY \`cmt_application_cmt_id\` (\`cmt_id\`),
-              CONSTRAINT \`fk_${db_table}_client_application_id\` FOREIGN KEY (\`client_application_id\`) REFERENCES \`client_applications\` (\`id\`) ON DELETE CASCADE,
-              CONSTRAINT \`fk_${db_table}_customer_id\` FOREIGN KEY (\`customer_id\`) REFERENCES \`customers\` (\`id\`) ON DELETE CASCADE,
-              CONSTRAINT \`fk_${db_table}_cmt_id\` FOREIGN KEY (\`cmt_id\`) REFERENCES \`cmt_applications\` (\`id\`) ON DELETE CASCADE
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`;
-
-          connection.query(createTableSql, (createErr) => {
-            if (createErr) {
-              connectionRelease(connection);
-              console.error("Error creating table:", createErr);
-              return callback(false, {
-                error: "Error creating table.",
-                details: createErr,
-              });
-            }
-            proceedToCheckColumns();
-          });
-        } else {
-          proceedToCheckColumns();
-        }
-
-        function proceedToCheckColumns() {
-          const currentColumnsSql = `
-            SELECT COLUMN_NAME 
-            FROM information_schema.columns 
-            WHERE table_schema = DATABASE() 
-            AND table_name = ?`;
-
-          connection.query(currentColumnsSql, [db_table], (err, results) => {
-            if (err) {
-              connectionRelease(connection);
-              return callback(false, {
-                error: "Error fetching current columns.",
-                details: err,
-              });
-            }
-
-            const existingColumns = results.map((row) => row.COLUMN_NAME);
-            const expectedColumns = [db_column];
-            const missingColumns = expectedColumns.filter(
-              (column) => !existingColumns.includes(column)
-            );
-
-            const addColumnPromises = missingColumns.map((column) => {
-              return new Promise((resolve, reject) => {
-                const alterTableSql = `ALTER TABLE \`${db_table}\` ADD COLUMN \`${column}\` LONGTEXT`;
-                connection.query(alterTableSql, (alterErr) => {
-                  if (alterErr) {
-                    reject(alterErr);
-                  } else {
-                    resolve();
-                  }
-                });
-              });
-            });
-
-            Promise.all(addColumnPromises)
-              .then(() => {
-                const insertSql = `UPDATE \`${db_table}\` SET \`${db_column}\` = ? WHERE \`client_application_id\` = ?`;
-                const joinedPaths = savedImagePaths.join(", ");
-                console.log(insertSql, [joinedPaths, client_application_id]);
-                connection.query(
-                  insertSql,
-                  [joinedPaths, client_application_id],
-                  (queryErr, results) => {
-                    connectionRelease(connection);
-
-                    if (queryErr) {
-                      console.error("Error updating records:", queryErr);
-                      return callback(false, {
-                        error: "Error updating records.",
-                        details: queryErr,
-                      });
-                    }
-                    callback(true, results);
-                  }
-                );
-              })
-              .catch((columnErr) => {
-                connectionRelease(connection);
-                console.error("Error adding columns:", columnErr);
-                callback(false, {
-                  error: "Error adding columns.",
-                  details: columnErr,
-                });
-              });
-          });
-        }
-      });
-    });
-  },
-
-  getAttachmentsByClientAppID: (client_application_id, callback) => {
-    startConnection((err, connection) => {
-      if (err) {
-        console.error("Error starting connection:", err);
-        return callback(err, null);
-      }
-
-      const sql = "SELECT `services` FROM `client_applications` WHERE `id` = ?";
-      connection.query(sql, [client_application_id], (err, results) => {
-        if (err) {
-          console.error("Database query error: 26", err);
-          connectionRelease(connection);
-          return callback(err, null);
-        }
-
-        if (results.length > 0) {
-          const services = results[0].services.split(","); // Split services by comma
-          const dbTableFileInputs = {}; // Object to store db_table and its file inputs
-          let completedQueries = 0; // To track completed queries
-
-          // Step 1: Loop through each service and perform actions
-          services.forEach((service) => {
-            const query = "SELECT `json` FROM `report_forms` WHERE `id` = ?";
-            connection.query(query, [service], (err, result) => {
-              completedQueries++;
-
-              if (err) {
-                console.error("Error fetching JSON for service:", service, err);
-              } else if (result.length > 0) {
-                try {
-                  // Parse the JSON data
-                  const jsonData = JSON.parse(result[0].json);
-                  const dbTable = jsonData.db_table;
-
-                  // Initialize an array for the dbTable if not already present
-                  if (!dbTableFileInputs[dbTable]) {
-                    dbTableFileInputs[dbTable] = [];
-                  }
-
-                  // Extract inputs with type 'file' and add to the db_table array
-                  jsonData.rows.forEach((row) => {
-                    row.inputs.forEach((input) => {
-                      if (input.type === "file") {
-                        dbTableFileInputs[dbTable].push(input.name);
-                      }
-                    });
-                  });
-                } catch (parseErr) {
-                  console.error(
-                    "Error parsing JSON for service:",
-                    service,
-                    parseErr
-                  );
-                }
-              }
-
-              // When all services have been processed
-              if (completedQueries === services.length) {
-                // Fetch the host from the database
-                const hostSql = `SELECT \`cloud_host\` FROM \`app_info\` WHERE \`status\` = 1 AND \`interface_type\` = ? ORDER BY \`updated_at\` DESC LIMIT 1`;
-                connection.query(hostSql, ["backend"], (err, hostResults) => {
-                  if (err) {
-                    console.error("Database query error: 27", err);
-                    connectionRelease(connection);
-                    return callback(err, null);
-                  }
-
-                  // Check if an entry was found for the host
-                  const host =
-                    hostResults.length > 0
-                      ? hostResults[0].cloud_host
-                      : "www.example.com"; // Fallback host
-
-                  let finalAttachments = [];
-                  let tableQueries = 0;
-                  const totalTables = Object.keys(dbTableFileInputs).length;
-
-                  // Loop through each db_table and perform a query
-                  for (const [dbTable, fileInputNames] of Object.entries(
-                    dbTableFileInputs
-                  )) {
-                    const selectQuery = `SELECT ${
-                      fileInputNames && fileInputNames.length > 0
-                        ? fileInputNames.join(", ")
-                        : "*"
-                    } FROM ${dbTable} WHERE client_application_id = ?`;
-
-                    connection.query(
-                      selectQuery,
-                      [client_application_id],
-                      (err, rows) => {
-                        tableQueries++;
-
-                        if (err) {
-                          console.error(
-                            `Error querying table ${dbTable}:`,
-                            err
-                          );
-                        } else {
-                          // Combine values from each row into a single string
-                          rows.forEach((row) => {
-                            const attachments = Object.values(row)
-                              .filter((value) => value) // Remove any falsy values
-                              .join(","); // Join values by comma
-
-                            // Split and concatenate the URL with each attachment
-                            attachments.split(",").forEach((attachment) => {
-                              finalAttachments.push(`${attachment}`);
-                            });
-                          });
-                        }
-
-                        // Step 3: When all db_table queries are completed, return finalAttachments
-                        if (tableQueries === totalTables) {
-                          connectionRelease(connection); // Release connection before callback
-                          callback(null, finalAttachments.join(", "));
-                        }
-                      }
-                    );
-                  }
-                });
-              }
-            });
-          });
-        } else {
-          connectionRelease(connection); // Release connection if no results found
-          callback(null, []); // Return an empty array if no results found
-        }
-      });
-    });
-  },
-
-  updateReportDownloadStatus: (id, callback) => {
-    const sql = `
-      UPDATE client_applications
-      SET is_report_downloaded = 1
-      WHERE id = ?
-    `;
-
-    /*
-    const sql = `
-      UPDATE client_applications ca
-      JOIN cmt ON ca.id = cmt.client_application_id
-      SET ca.is_report_downloaded = 1
-      WHERE 
-        ca.id = ? 
-        AND cmt.report_date IS NOT NULL
-        AND TRIM(cmt.report_date) != '0000-00-00'
-        AND TRIM(cmt.report_date) != ''
-        AND cmt.overall_status IN ('complete', 'completed')
-        AND (cmt.is_verify = 'yes' OR cmt.is_verify = 1 OR cmt.is_verify = '1');
-    `;
-    */
-
-    startConnection((err, connection) => {
-      if (err) {
-        return callback(err, null);
-      }
-
-      connection.query(sql, [id], (queryErr, results) => {
-        connectionRelease(connection);
-
-        if (queryErr) {
-          console.error("Error in query execution:", queryErr);
-          return callback(queryErr, null);
         }
         callback(null, results);
       });
