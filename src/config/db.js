@@ -18,16 +18,28 @@ const pool = mysql.createPool({
   connectTimeout: 120000, // 2 minutes for individual connection attempts
 });
 
-// Function to start a connection
-const startConnection = (callback) => {
-  pool.getConnection((err, connection) => {
-    if (err) {
-      console.error("Error getting connection from pool:", err); // Log error for debugging
-      return callback(err, null); // Return error via callback
-    }
-    console.log("Connection established"); // Optional: Log successful connection
-    callback(null, connection); // Pass the connection to the callback
-  });
+// Function to start a connection with retry mechanism
+const startConnection = (callback, retries = 3) => {
+  const attemptConnection = (retriesLeft) => {
+    pool.getConnection((err, connection) => {
+      if (err) {
+        if (retriesLeft > 0) {
+          console.log(
+            `Connection attempt failed. Retrying... (${retriesLeft} attempts left)`
+          );
+          attemptConnection(retriesLeft - 1); // Retry if there are attempts left
+        } else {
+          console.error("Error getting connection from pool:", err); // Log error for debugging
+          return callback(err, null); // Return error after retries are exhausted
+        }
+      } else {
+        console.log("Connection established"); // Optional: Log successful connection
+        callback(null, connection); // Pass the connection to the callback
+      }
+    });
+  };
+
+  attemptConnection(retries); // Initial connection attempt
 };
 
 // Function to release a connection

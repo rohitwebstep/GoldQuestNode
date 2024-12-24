@@ -1143,7 +1143,7 @@ exports.update = (req, res) => {
     additional_login,
     client_unique_id,
     agreement_duration,
-    custom_bgv,
+    is_custom_bgv,
     industry_classification,
   } = req.body;
 
@@ -1339,6 +1339,7 @@ exports.update = (req, res) => {
                   );
                   compareAndAddChanges("state", state);
                   compareAndAddChanges("state_code", state_code);
+                  compareAndAddChanges("custom_bgv", is_custom_bgv);
                 }
 
                 if (client_unique_id !== currentCustomer.client_unique_id) {
@@ -1424,7 +1425,7 @@ exports.update = (req, res) => {
                         additional_login_int && additional_login_int === 1
                           ? username
                           : null,
-                      custom_bgv: custom_bgv || 0,
+                      custom_bgv: is_custom_bgv || 0,
                     },
                     (err, result) => {
                       if (err) {
@@ -1473,7 +1474,8 @@ exports.update = (req, res) => {
                             state,
                             state_code,
                             client_standard,
-                            industry_classification: industry_classification|| null,
+                            industry_classification:
+                              industry_classification || null,
                           },
                           (err, metaResult) => {
                             if (err) {
