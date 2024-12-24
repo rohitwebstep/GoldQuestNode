@@ -239,22 +239,18 @@ exports.applicationListByBranch = (req, res) => {
         message: result.message, // Return the message from the authorization function
       });
     }
-    console.log(`Step - 1`);
     // Verify admin token
     AdminCommon.isAdminTokenValid(_token, admin_id, (err, result) => {
       if (err) {
         console.error("Error checking token validity:", err);
         return res.status(500).json({ status: false, message: err.message });
       }
-      console.log(`Step - 2`);
 
       if (!result.status) {
         return res.status(401).json({ status: false, message: result.message });
       }
-      console.log(`Step - 3`);
 
       const newToken = result.newToken;
-      console.log(`Step - 4`);
 
       if (
         !status ||
@@ -264,7 +260,6 @@ exports.applicationListByBranch = (req, res) => {
       ) {
         let status = null;
       }
-      console.log(`Step - 5`);
 
       const dataPromises = [
         new Promise((resolve) =>
@@ -273,7 +268,6 @@ exports.applicationListByBranch = (req, res) => {
             branch_id,
             status,
             (err, result) => {
-              console.log(`Step - 6`);
               if (err) return resolve([]);
               resolve(result);
             }

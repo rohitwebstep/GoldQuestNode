@@ -367,7 +367,9 @@ const Customer = {
                           let tableQueries = 0;
                           const totalTables =
                             Object.keys(dbTableFileInputs).length;
-
+                          if (totalTables === 0) {
+                            resolve();
+                          }
                           for (const [
                             dbTable,
                             fileInputNames,
