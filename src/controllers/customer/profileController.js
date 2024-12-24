@@ -1142,6 +1142,7 @@ exports.update = (req, res) => {
     custom_template,
     additional_login,
     client_unique_id,
+    agreement_duration,
     custom_bgv,
     industry_classification,
   } = req.body;
@@ -1472,8 +1473,7 @@ exports.update = (req, res) => {
                             state,
                             state_code,
                             client_standard,
-                            industry_classification:
-                              industry_classification || null,
+                            industry_classification: industry_classification|| null,
                           },
                           (err, metaResult) => {
                             if (err) {
