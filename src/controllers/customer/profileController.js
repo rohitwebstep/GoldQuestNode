@@ -181,9 +181,7 @@ exports.create = (req, res) => {
     name_of_escalation,
     contact_person,
     clientData,
-    client_standard,
     custom_template,
-    agreement_period,
     industry_classification,
   };
 
