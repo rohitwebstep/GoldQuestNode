@@ -1,7 +1,7 @@
 const crypto = require("crypto");
-const ClientMasterTrackerModel = require("../../models/admin/clientMasterTrackerModel");
+const CandidateMasterTrackerModel = require("../../models/admin/candidateMasterTrackerModel");
 const Customer = require("../../models/customer/customerModel");
-const ClientApplication = require("../../models/customer/branch/clientApplicationModel");
+const CandidateApplication = require("../../models/customer/branch/candidateApplicationModel");
 const Branch = require("../../models/customer/branch/branchModel");
 const AdminCommon = require("../../models/admin/commonModel");
 const Admin = require("../../models/admin/adminModel");
@@ -67,13 +67,7 @@ exports.list = (req, res) => {
       // Fetch all required data
       const dataPromises = [
         new Promise((resolve) =>
-          ClientMasterTrackerModel.list(filter_status, (err, result) => {
-            if (err) return resolve([]);
-            resolve(result);
-          })
-        ),
-        new Promise((resolve) =>
-          ClientMasterTrackerModel.filterOptions((err, result) => {
+          CandidateMasterTrackerModel.list(filter_status, (err, result) => {
             if (err) return resolve([]);
             resolve(result);
           })
@@ -83,14 +77,12 @@ exports.list = (req, res) => {
       Promise.all(dataPromises).then(([customers, filterOptions]) => {
         res.json({
           status: true,
-          message: "Billing SPOCs fetched successfully",
+          message: "Clients fetched successfully",
           data: {
             customers,
-            filterOptions,
           },
           totalResults: {
             customers: customers.length,
-            filterOptions: filterOptions.length,
           },
           token: newToken,
         });
@@ -182,7 +174,7 @@ exports.listByCustomerId = (req, res) => {
 
       const newToken = result.newToken;
 
-      ClientMasterTrackerModel.listByCustomerID(
+      CandidateMasterTrackerModel.listByCustomerID(
         customer_id,
         filter_status,
         (err, result) => {
@@ -272,7 +264,7 @@ exports.applicationListByBranch = (req, res) => {
 
       const dataPromises = [
         new Promise((resolve) =>
-          ClientMasterTrackerModel.applicationListByBranch(
+          CandidateMasterTrackerModel.applicationListByBranch(
             filter_status,
             branch_id,
             status,
@@ -282,28 +274,17 @@ exports.applicationListByBranch = (req, res) => {
             }
           )
         ),
-        new Promise((resolve) =>
-          ClientMasterTrackerModel.filterOptionsForBranch(
-            branch_id,
-            (err, result) => {
-              if (err) return resolve([]);
-              resolve(result);
-            }
-          )
-        ),
       ];
 
-      Promise.all(dataPromises).then(([customers, filterOptions]) => {
+      Promise.all(dataPromises).then(([applications]) => {
         res.json({
           status: true,
-          message: "Billing SPOCs fetched successfully",
+          message: "candidate applications fetched successfully",
           data: {
-            customers,
-            filterOptions,
+            applications,
           },
           totalResults: {
-            customers: customers.length,
-            filterOptions: filterOptions.length,
+            applications: applications.length,
           },
           token: newToken,
         });
@@ -312,7 +293,7 @@ exports.applicationListByBranch = (req, res) => {
   });
 };
 
-exports.applicationByID = (req, res) => {
+exports.cefApplicationByID = (req, res) => {
   const { application_id, branch_id, admin_id, _token } = req.query;
 
   let missingFields = [];
@@ -374,7 +355,7 @@ exports.applicationByID = (req, res) => {
 
       const newToken = result.newToken;
 
-      ClientMasterTrackerModel.applicationByID(
+      CandidateMasterTrackerModel.applicationByID(
         application_id,
         branch_id,
         (err, application) => {
@@ -393,9 +374,10 @@ exports.applicationByID = (req, res) => {
             });
           }
 
-          ClientMasterTrackerModel.getCMTApplicationById(
+          CandidateMasterTrackerModel.cefApplicationByID(
             application_id,
-            (err, CMTApplicationData) => {
+            branch_id,
+            (err, CEFApplicationData) => {
               if (err) {
                 console.error("Database error:", err);
                 return res.status(500).json({
@@ -456,28 +438,183 @@ exports.applicationByID = (req, res) => {
                         });
                       }
 
-                      if (!CMTApplicationData) {
-                        return res.json({
-                          status: true,
-                          message: "Application fetched successfully 1",
-                          application,
-                          branchInfo: currentBranch,
-                          customerInfo: currentCustomer,
-                          admins: adminList,
-                          token: newToken,
-                        });
-                      } else {
-                        return res.json({
-                          status: true,
-                          message: "Application fetched successfully 2",
-                          application,
-                          CMTData: CMTApplicationData,
-                          branchInfo: currentBranch,
-                          customerInfo: currentCustomer,
-                          admins: adminList,
+                      return res.json({
+                        status: true,
+                        message: "Application fetched successfully 2",
+                        application,
+                        CEFData: CEFApplicationData,
+                        branchInfo: currentBranch,
+                        customerInfo: currentCustomer,
+                        admins: adminList,
+                        token: newToken,
+                      });
+                    }
+                  );
+                });
+              });
+            }
+          );
+        }
+      );
+    });
+  });
+};
+
+exports.davApplicationByID = (req, res) => {
+  const { application_id, branch_id, admin_id, _token } = req.query;
+
+  let missingFields = [];
+  if (
+    !application_id ||
+    application_id === "" ||
+    application_id === undefined ||
+    application_id === "undefined"
+  )
+    missingFields.push("Application ID");
+  if (
+    !branch_id ||
+    branch_id === "" ||
+    branch_id === undefined ||
+    branch_id === "undefined"
+  )
+    missingFields.push("Branch ID");
+  if (
+    !admin_id ||
+    admin_id === "" ||
+    admin_id === undefined ||
+    admin_id === "undefined"
+  )
+    missingFields.push("Admin ID");
+  if (
+    !_token ||
+    _token === "" ||
+    _token === undefined ||
+    _token === "undefined"
+  )
+    missingFields.push("Token");
+
+  if (missingFields.length > 0) {
+    return res.status(400).json({
+      status: false,
+      message: `Missing required fields: ${missingFields.join(", ")}`,
+    });
+  }
+
+  const action = "cmt_application";
+  AdminCommon.isAdminAuthorizedForAction(admin_id, action, (result) => {
+    if (!result.status) {
+      return res.status(403).json({
+        status: false,
+        message: result.message, // Return the message from the authorization function
+      });
+    }
+
+    // Verify admin token
+    AdminCommon.isAdminTokenValid(_token, admin_id, (err, result) => {
+      if (err) {
+        console.error("Error checking token validity:", err);
+        return res.status(500).json({ status: false, message: err.message });
+      }
+
+      if (!result.status) {
+        return res.status(401).json({ status: false, message: result.message });
+      }
+
+      const newToken = result.newToken;
+
+      CandidateMasterTrackerModel.applicationByID(
+        application_id,
+        branch_id,
+        (err, application) => {
+          if (err) {
+            console.error("Database error:", err);
+            return res
+              .status(500)
+              .json({ status: false, message: err.message, token: newToken });
+          }
+
+          if (!application) {
+            return res.status(404).json({
+              status: false,
+              message: "Application not found",
+              token: newToken,
+            });
+          }
+
+          CandidateMasterTrackerModel.davApplicationByID(
+            application_id,
+            branch_id,
+            (err, DAVApplicationData) => {
+              if (err) {
+                console.error("Database error:", err);
+                return res.status(500).json({
+                  status: false,
+                  message: err.message,
+                  token: newToken,
+                });
+              }
+
+              Branch.getBranchById(branch_id, (err, currentBranch) => {
+                if (err) {
+                  console.error("Database error during branch retrieval:", err);
+                  return res.status(500).json({
+                    status: false,
+                    message: "Failed to retrieve Branch. Please try again.",
+                    token: newToken,
+                  });
+                }
+
+                if (!currentBranch) {
+                  return res.status(404).json({
+                    status: false,
+                    message: "Branch not found.",
+                    token: newToken,
+                  });
+                }
+
+                Admin.list((err, adminList) => {
+                  if (err) {
+                    console.error("Database error:", err);
+                    return res.status(500).json({
+                      status: false,
+                      message: err.message,
+                      token: newToken,
+                    });
+                  }
+                  Customer.getCustomerById(
+                    parseInt(currentBranch.customer_id),
+                    (err, currentCustomer) => {
+                      if (err) {
+                        console.error(
+                          "Database error during customer retrieval:",
+                          err
+                        );
+                        return res.status(500).json({
+                          status: false,
+                          message:
+                            "Failed to retrieve Customer. Please try again.",
                           token: newToken,
                         });
                       }
+
+                      if (!currentCustomer) {
+                        return res.status(404).json({
+                          status: false,
+                          message: "Customer not found.",
+                          token: newToken,
+                        });
+                      }
+
+                      return res.json({
+                        status: true,
+                        message: "Application fetched successfully 2",
+                        application,
+                        CEFData: DAVApplicationData,
+                        branchInfo: currentBranch,
+                        customerInfo: currentCustomer,
+                        admins: adminList,
+                        token: newToken,
+                      });
                     }
                   );
                 });
@@ -554,7 +691,7 @@ exports.annexureData = (req, res) => {
 
       const newToken = result.newToken;
 
-      ClientMasterTrackerModel.annexureData(
+      CandidateMasterTrackerModel.annexureData(
         application_id,
         modifiedDbTable,
         (err, annexureData) => {
@@ -636,7 +773,7 @@ exports.filterOptions = (req, res) => {
 
       const newToken = result.newToken;
 
-      ClientMasterTrackerModel.filterOptions((err, filterOptions) => {
+      CandidateMasterTrackerModel.filterOptions((err, filterOptions) => {
         if (err) {
           console.error("Database error:", err);
           return res.status(500).json({
@@ -724,7 +861,7 @@ exports.filterOptionsForBranch = (req, res) => {
 
       const newToken = result.newToken;
 
-      ClientMasterTrackerModel.filterOptionsForBranch(
+      CandidateMasterTrackerModel.filterOptionsForBranch(
         branch_id,
         (err, filterOptions) => {
           if (err) {
@@ -812,7 +949,7 @@ exports.reportFormJsonByServiceID = (req, res) => {
 
       const newToken = result.newToken;
 
-      ClientMasterTrackerModel.reportFormJsonByServiceID(
+      CandidateMasterTrackerModel.reportFormJsonByServiceID(
         service_id,
         (err, reportFormJson) => {
           if (err) {
@@ -981,7 +1118,7 @@ exports.generateReport = (req, res) => {
             });
           }
 
-          ClientMasterTrackerModel.getCMTApplicationById(
+          CandidateMasterTrackerModel.getCMTApplicationById(
             application_id,
             (err, currentCMTApplication) => {
               if (err) {
@@ -1024,7 +1161,7 @@ exports.generateReport = (req, res) => {
                 );
               }
 
-              ClientMasterTrackerModel.generateReport(
+              CandidateMasterTrackerModel.generateReport(
                 mainJson,
                 application_id,
                 branch_id,
@@ -1084,7 +1221,7 @@ exports.generateReport = (req, res) => {
                       const subJson = annexure[modifiedDbTable] ?? null;
 
                       const annexurePromise = new Promise((resolve, reject) => {
-                        ClientMasterTrackerModel.getCMTAnnexureByApplicationId(
+                        CandidateMasterTrackerModel.getCMTAnnexureByApplicationId(
                           application_id,
                           modifiedDbTable,
                           (err, currentCMTAnnexure) => {
@@ -1108,7 +1245,7 @@ exports.generateReport = (req, res) => {
                               cmt_id = cmtResult.insertId;
                             }
 
-                            ClientMasterTrackerModel.createOrUpdateAnnexure(
+                            CandidateMasterTrackerModel.createOrUpdateAnnexure(
                               cmt_id,
                               application_id,
                               branch_id,
@@ -1196,7 +1333,7 @@ exports.generateReport = (req, res) => {
                                 email: email.trim(),
                               }));
 
-                            ClientMasterTrackerModel.applicationByID(
+                            CandidateMasterTrackerModel.applicationByID(
                               application_id,
                               branch_id,
                               (err, application) => {
@@ -1217,7 +1354,7 @@ exports.generateReport = (req, res) => {
                                   });
                                 }
 
-                                ClientMasterTrackerModel.getAttachmentsByClientAppID(
+                                CandidateMasterTrackerModel.getAttachmentsByClientAppID(
                                   application_id,
                                   (err, attachments) => {
                                     if (err) {
@@ -1228,7 +1365,7 @@ exports.generateReport = (req, res) => {
                                       });
                                     }
 
-                                    ClientApplication.updateStatus(
+                                    CandidateApplication.updateStatus(
                                       mainJson.overall_status,
                                       application_id,
                                       async (err, result) => {
@@ -1786,7 +1923,7 @@ exports.annexureDataByServiceIdofApplication = (req, res) => {
 
       const newToken = tokenResult.newToken;
 
-      ClientMasterTrackerModel.reportFormJsonByServiceID(
+      CandidateMasterTrackerModel.reportFormJsonByServiceID(
         service_id,
         (err, reportFormJson) => {
           if (err) {
@@ -1809,7 +1946,7 @@ exports.annexureDataByServiceIdofApplication = (req, res) => {
           const heading = parsedData.heading;
           const modifiedDbTable = db_table.replace(/-/g, "_");
 
-          ClientMasterTrackerModel.annexureData(
+          CandidateMasterTrackerModel.annexureData(
             application_id,
             modifiedDbTable,
             (err, annexureData) => {
@@ -1981,7 +2118,7 @@ exports.upload = async (req, res) => {
           }
 
           // Call the model to upload images
-          ClientMasterTrackerModel.upload(
+          CandidateMasterTrackerModel.upload(
             appId,
             modifiedDbTable,
             cleanDBColumnForQry,
@@ -2026,7 +2163,7 @@ exports.upload = async (req, res) => {
                       email: email.trim(),
                     }));
 
-                    ClientMasterTrackerModel.applicationByID(
+                    CandidateMasterTrackerModel.applicationByID(
                       appId,
                       branchId,
                       (err, application) => {
@@ -2050,7 +2187,7 @@ exports.upload = async (req, res) => {
                           });
                         }
 
-                        ClientMasterTrackerModel.getAttachmentsByClientAppID(
+                        CandidateMasterTrackerModel.getAttachmentsByClientAppID(
                           appId,
                           async (err, attachments) => {
                             if (err) {
@@ -2310,7 +2447,7 @@ exports.annexureDataByServiceIds = (req, res) => {
       }
 
       serviceIds.forEach((id) => {
-        ClientMasterTrackerModel.reportFormJsonByServiceID(
+        CandidateMasterTrackerModel.reportFormJsonByServiceID(
           id,
           (err, reportFormJson) => {
             if (err) {
@@ -2342,7 +2479,7 @@ exports.annexureDataByServiceIds = (req, res) => {
             const db_table = parsedData.db_table.replace(/-/g, "_"); // Modify table name
             const heading = parsedData.heading;
 
-            ClientMasterTrackerModel.annexureData(
+            CandidateMasterTrackerModel.annexureData(
               application_id,
               db_table,
               (err, annexureData) => {
@@ -2391,7 +2528,7 @@ exports.annexureDataByServiceIds = (req, res) => {
         pendingRequests -= 1;
         if (pendingRequests === 0) {
           if (report_download == 1 || report_download == "1") {
-            ClientMasterTrackerModel.updateReportDownloadStatus(
+            CandidateMasterTrackerModel.updateReportDownloadStatus(
               application_id,
               (err) => {
                 if (err) {

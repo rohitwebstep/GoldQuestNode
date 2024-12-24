@@ -83,7 +83,7 @@ exports.list = (req, res) => {
       Promise.all(dataPromises).then(([customers, filterOptions]) => {
         res.json({
           status: true,
-          message: "Billing SPOCs fetched successfully",
+          message: "Client Applications fetched successfully",
           data: {
             customers,
             filterOptions,
@@ -296,7 +296,7 @@ exports.applicationListByBranch = (req, res) => {
       Promise.all(dataPromises).then(([customers, filterOptions]) => {
         res.json({
           status: true,
-          message: "Billing SPOCs fetched successfully",
+          message: "Client applications fetched successfully",
           data: {
             customers,
             filterOptions,

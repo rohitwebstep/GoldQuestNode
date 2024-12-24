@@ -13,7 +13,8 @@ router.get(
   "/applications-by-branch",
   candidateMasterTrackerController.applicationListByBranch
 );
-router.get("/application-by-id", candidateMasterTrackerController.applicationByID);
+router.get("/bgv-application-by-id", candidateMasterTrackerController.cefApplicationByID);
+router.get("/dav-application-by-id", candidateMasterTrackerController.davApplicationByID);
 router.get("/filter-options", candidateMasterTrackerController.filterOptions);
 router.get("/branch-filter-options", candidateMasterTrackerController.filterOptionsForBranch);
 router.get("/annexure-data", candidateMasterTrackerController.annexureData);

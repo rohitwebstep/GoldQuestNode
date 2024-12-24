@@ -2048,7 +2048,7 @@ exports.addCustomerListings = (req, res) => {
         Promise.all(dataPromises).then(([services, packages]) => {
           res.json({
             status: true,
-            message: "Billing SPOCs fetched successfully",
+            message: "Services and Packages fetched successfully",
             data: {
               services,
               packages,
