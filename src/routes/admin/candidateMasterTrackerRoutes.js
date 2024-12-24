@@ -13,30 +13,17 @@ router.get(
   "/applications-by-branch",
   candidateMasterTrackerController.applicationListByBranch
 );
-router.get("/bgv-application-by-id", candidateMasterTrackerController.cefApplicationByID);
-router.get("/dav-application-by-id", candidateMasterTrackerController.davApplicationByID);
+router.get(
+  "/bgv-application-by-id",
+  candidateMasterTrackerController.cefApplicationByID
+);
+router.get(
+  "/dav-application-by-id",
+  candidateMasterTrackerController.davApplicationByID
+);
 router.get("/filter-options", candidateMasterTrackerController.filterOptions);
-router.get("/branch-filter-options", candidateMasterTrackerController.filterOptionsForBranch);
-router.get("/annexure-data", candidateMasterTrackerController.annexureData);
 router.get(
-  "/report-form-json-by-service-id",
-  candidateMasterTrackerController.reportFormJsonByServiceID
+  "/branch-filter-options",
+  candidateMasterTrackerController.filterOptionsForBranch
 );
-
-router.get(
-  "/customer-info",
-  candidateMasterTrackerController.customerBasicInfoWithAdminAuth
-);
-
-router.get(
-  "/services-annexure-data",
-  candidateMasterTrackerController.annexureDataByServiceIds
-);
-
-router.get(
-  "/application-service",
-  candidateMasterTrackerController.annexureDataByServiceIdofApplication
-);
-router.post("/upload", candidateMasterTrackerController.upload);
-
 module.exports = router;
