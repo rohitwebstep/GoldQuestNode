@@ -49,27 +49,32 @@ const storage = multer.diskStorage({
 
 const fileFilter = (req, file, cb) => {
   const allowedFileTypes = [
-    "application/pdf",
-    "image/jpeg",
-    "image/png",
-    "image/gif",
-    "image/bmp",
-    "image/tiff",
-    "image/webp",
-    "image/svg+xml",
-    "image/x-icon",
-    "image/heic",
-    "image/heif",
-    "image/apng",
-    "application/zip",
+    "application/pdf", // PDF files
+    "image/jpeg", // JPEG images
+    "image/png", // PNG images
+    "image/gif", // GIF images
+    "image/bmp", // BMP images
+    "image/tiff", // TIFF images
+    "image/webp", // WebP images
+    "image/svg+xml", // SVG images
+    "image/x-icon", // ICO files
+    "image/heic", // HEIC images
+    "image/heif", // HEIF images
+    "image/apng", // APNG images
+    "application/zip", // ZIP files
+    "application/vnd.ms-excel", // Excel files (.xls)
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", // Excel files (.xlsx)
+    "text/csv", // CSV files
+    "application/msword", // Word files (.doc)
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document", // Word files (.docx)
   ];
 
   if (allowedFileTypes.includes(file.mimetype)) {
-    cb(null, true); // Accept file
+    cb(null, true); // Accept the file
   } else {
     cb(
       new Error(
-        "Invalid file type. Only PDF, images, and zip files are allowed."
+        "Invalid file type. Allowed file types are: PDF, images (JPEG, PNG, GIF, BMP, TIFF, WebP, SVG, ICO, HEIC, HEIF, APNG), ZIP, Excel files (.xls, .xlsx), CSV files, and Word documents (.doc, .docx)."
       )
     );
   }
@@ -215,7 +220,7 @@ const savePdf = async (doc, pdfFileName, targetDir) => {
     if (!fs.existsSync(targetDir)) {
       fs.mkdirSync(targetDir, { recursive: true }); // Create directory if it doesn't exist
     }
-    
+
     // Create a temporary path to save the PDF file locally
     const pdfPath = path.join(targetDir, pdfFileName);
 

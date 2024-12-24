@@ -558,6 +558,7 @@ exports.upload = async (req, res) => {
   // Use multer to handle the upload
   upload(req, res, async (err) => {
     if (err) {
+      console.log(`err - `, err);
       return res.status(400).json({
         status: false,
         message: "Error uploading file.",
