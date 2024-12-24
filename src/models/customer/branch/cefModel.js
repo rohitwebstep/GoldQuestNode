@@ -656,11 +656,21 @@ const cef = {
 
               if (cefResult && cefResult.length > 0) {
                 // You can now safely access properties like signature, resume_file, passport_photo
+                const govt_id = cefResult[0].govt_id;
+                const aadhar_card_image = cefResult[0].aadhar_card_image;
+                const pan_card_image = cefResult[0].pan_card_image;
                 const signature = cefResult[0].signature;
-                const resumeFile = cefResult[0].resume_file;
-                const passportPhoto = cefResult[0].passport_photo;
+                const resume_file = cefResult[0].resume_file;
+                const passport_photo = cefResult[0].passport_photo;
 
-                rawAttachments.push(signature, resumeFile, passportPhoto);
+                rawAttachments.push(
+                  govt_id,
+                  aadhar_card_image,
+                  pan_card_image,
+                  signature,
+                  resume_file,
+                  passport_photo
+                );
               }
 
               const services = results[0].services.split(","); // Split services by comma
@@ -760,6 +770,10 @@ const cef = {
                               // Step 3: When all db_table queries are completed, return finalAttachments
                               if (tableQueries === totalTables) {
                                 connectionRelease(connection);
+                                console.log(
+                                  `finalAttachments - `,
+                                  finalAttachments
+                                );
                                 callback(null, finalAttachments.join(", "));
                               }
                             }

@@ -154,7 +154,7 @@ exports.test = (req, res) => {
         message: "Database error occurred",
       });
     }
-    sendNotificationEmails(18, 1, "adsfdsb", 17, 8, "65", "Test 2", res);
+    sendNotificationEmails(1, 1, "Paula Merrill", 18, 8, "65", "Test 2", res);
   });
 };
 
