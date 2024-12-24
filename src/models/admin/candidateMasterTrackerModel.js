@@ -388,7 +388,7 @@ const Customer = {
                                 }
 
                                 if (tableQueries === totalTables) {
-                                  candidateApp.services = servicesResult;
+                                  candidateApp.service_data = servicesResult;
                                   resolve();
                                 }
                               }
