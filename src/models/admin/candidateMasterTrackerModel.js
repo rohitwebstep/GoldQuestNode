@@ -323,6 +323,7 @@ const Customer = {
                 }
 
                 const dbTableFileInputs = {};
+                const dbTableColumnLabel = [];
                 let completedQueries = 0;
                 const dbTableWithHeadings = [];
                 services.forEach((service) => {
@@ -344,6 +345,7 @@ const Customer = {
                         jsonData.inputs.forEach((row) => {
                           if (row.type === "file") {
                             dbTableFileInputs[dbTable].push(row.name);
+                            dbTableColumnLabel[row.name] = row.label;
                           }
                         });
                       } catch (parseErr) {
@@ -380,13 +382,45 @@ const Customer = {
                               selectQuery,
                               [candidateApp.main_id],
                               (err, rows) => {
-                                tableQueries++;
-                                if (!err && rows.length > 0) {
-                                  servicesResult.cef[
-                                    dbTableWithHeadings[dbTable]
-                                  ] = rows;
+                                // If there's an error, skip to the next iteration
+                                if (err) {
+                                  console.error(
+                                    "Error querying database for table:",
+                                    dbTable,
+                                    err
+                                  );
+                                  tableQueries++; // Still increment the query count to avoid blocking logic
+                                  return; // Return early to skip to the next iteration
                                 }
 
+                                // Map the rows to replace column names with labels
+                                const updatedRows = rows.map((row) => {
+                                  const updatedRow = {};
+                                  for (const [key, value] of Object.entries(
+                                    row
+                                  )) {
+                                    const label = dbTableColumnLabel[key];
+                                    if (label) {
+                                      updatedRow[label] = value; // Assign the label as the new key
+                                    } else {
+                                      updatedRow[key] = value; // If no label, keep the original key
+                                    }
+                                  }
+                                  return updatedRow;
+                                });
+
+                                // Increment the table query counter
+                                tableQueries++;
+
+                                // Only update servicesResult if rows are found
+                                if (updatedRows.length > 0) {
+                                  console.log(`updatedRows - `, updatedRows);
+                                  servicesResult.cef[
+                                    dbTableWithHeadings[dbTable]
+                                  ] = updatedRows;
+                                }
+
+                                // Resolve when all queries have been processed
                                 if (tableQueries === totalTables) {
                                   candidateApp.service_data = servicesResult;
                                   resolve();
