@@ -4,6 +4,15 @@ const {
   connectionRelease,
 } = require("../../../config/db");
 
+const replaceEmptyWithNull = (value) => {
+  if (Array.isArray(value)) {
+    return value.length > 0 ? value.join(",") : null; // Convert array to comma-separated string or return null if empty
+  } else if (typeof value === "string") {
+    return value.trim() !== "" ? value : null; // Trim and check if not empty
+  } else {
+    return value || null; // Return value if truthy, otherwise null
+  }
+};
 const candidateApplication = {
   // Method to check if an email has been used before
   isEmailUsedBefore: (email, branch_id, callback) => {
@@ -69,14 +78,14 @@ const candidateApplication = {
       `;
 
     const values = [
-      branch_id,
-      name,
-      employee_id,
-      mobile_number,
-      email,
-      services || null,
-      package || null,
-      customer_id,
+      replaceEmptyWithNull(branch_id),
+      replaceEmptyWithNull(name),
+      replaceEmptyWithNull(employee_id),
+      replaceEmptyWithNull(mobile_number),
+      replaceEmptyWithNull(email),
+      replaceEmptyWithNull(services),
+      replaceEmptyWithNull(package),
+      replaceEmptyWithNull(customer_id),
     ];
 
     startConnection((err, connection) => {

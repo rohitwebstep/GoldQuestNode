@@ -22,6 +22,7 @@ router.get(
   candidateMasterTrackerController.davApplicationByID
 );
 router.get("/filter-options", candidateMasterTrackerController.filterOptions);
+router.get("/send", candidateMasterTrackerController.sendLink);
 router.get(
   "/branch-filter-options",
   candidateMasterTrackerController.filterOptionsForBranch
