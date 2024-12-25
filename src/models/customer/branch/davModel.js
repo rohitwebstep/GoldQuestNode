@@ -183,6 +183,131 @@ const dav = {
       }
     );
   },
+
+  updateImages: (
+    dav_id,
+    candidate_application_id,
+    imagesArr,
+    dbColumn,
+    callback
+  ) => {
+    // Check if `imagesArr` is an array
+    let images;
+    if (Array.isArray(imagesArr)) {
+      if (imagesArr.length === 0) {
+        console.error("Images array is empty.");
+        return callback(new Error("Images array cannot be empty."), null);
+      }
+      // Convert images array into a comma-separated string
+      images = imagesArr.join(",");
+    } else {
+      // If `imagesArr` is not an array, use it as-is
+      images = imagesArr;
+    }
+
+    // Define the SQL query with placeholders
+    const sql = `
+      UPDATE \`dav_applications\`
+      SET \`${dbColumn}\` = ?
+      WHERE \`id\` = ? AND \`candidate_application_id\` = ?
+    `;
+
+    console.log("Preparing to update images...");
+
+    // Start a database connection
+    startConnection((err, connection) => {
+      if (err) {
+        console.error("Error establishing database connection:", err.message);
+        return callback(err, null);
+      }
+
+      console.log(
+        "Database connection established. Checking if column exists..."
+      );
+
+      // First, check if the column exists
+      const checkColumnSql = `
+        SELECT COUNT(*) AS columnExists
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE table_name = 'dav_applications'
+          AND column_name = ?
+      `;
+
+      connection.query(checkColumnSql, [dbColumn], (checkErr, checkResults) => {
+        if (checkErr) {
+          console.error("Error checking column existence:", checkErr.message);
+          connectionRelease(connection);
+          return callback(checkErr, null);
+        }
+
+        // If column doesn't exist, alter the table
+        if (checkResults[0].columnExists === 0) {
+          console.log(
+            `Column ${dbColumn} does not exist. Altering the table...`
+          );
+
+          const alterTableSql = `
+            ALTER TABLE \`dav_applications\`
+            ADD COLUMN \`${dbColumn}\` LONGTEXT
+          `;
+
+          connection.query(alterTableSql, (alterErr) => {
+            if (alterErr) {
+              console.error("Error altering table:", alterErr.message);
+              connectionRelease(connection);
+              return callback(alterErr, null);
+            }
+
+            console.log(
+              `Column ${dbColumn} added successfully. Proceeding with the update...`
+            );
+
+            // Now execute the update query
+            connection.query(
+              sql,
+              [images, dav_id, candidate_application_id],
+              (queryErr, results) => {
+                // Release the connection back to the pool
+                connectionRelease(connection);
+
+                if (queryErr) {
+                  console.error("Error executing query:", queryErr.message);
+                  console.debug("Query error details:", queryErr);
+                  return callback(queryErr, null);
+                }
+
+                console.log("Query executed successfully. Results:", results);
+                callback(null, results);
+              }
+            );
+          });
+        } else {
+          console.log(
+            `Column ${dbColumn} exists. Proceeding with the update...`
+          );
+
+          // If the column exists, execute the update query directly
+          connection.query(
+            sql,
+            [images, dav_id, candidate_application_id],
+            (queryErr, results) => {
+              // Release the connection back to the pool
+              connectionRelease(connection);
+
+              if (queryErr) {
+                console.error("Error executing query:", queryErr.message);
+                console.debug("Query error details:", queryErr);
+                return callback(queryErr, null);
+              }
+
+              console.log("Query executed successfully. Results:", results);
+              callback(null, results);
+            }
+          );
+        }
+      });
+    });
+  },
 };
 
 module.exports = dav;

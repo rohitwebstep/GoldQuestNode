@@ -61,14 +61,14 @@ const startConnection = (callback, retries = 20) => {
 
 // Function to release a connection
 const connectionRelease = (connection) => {
-  console.log("connectionRelease called"); // Log function entry
+  // console.log("connectionRelease called"); // Log function entry
 
   if (connection) {
-    console.log("Valid connection found, attempting to release...");
+    // console.log("Valid connection found, attempting to release...");
 
     try {
       connection.release(); // Release the connection back to the pool
-      console.log("Connection successfully released back to the pool");
+      // console.log("Connection successfully released back to the pool");
     } catch (err) {
       console.error("Error releasing connection:", err.message);
       console.debug("Error details:", err); // Log full error details for debugging
@@ -77,7 +77,7 @@ const connectionRelease = (connection) => {
     console.warn("No valid connection to release");
   }
 
-  console.log("connectionRelease function execution completed");
+  // console.log("connectionRelease function execution completed");
 };
 
 

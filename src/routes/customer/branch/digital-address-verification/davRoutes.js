@@ -5,5 +5,6 @@ const davController = require("../../../../controllers/customer/branch/candidate
 // Basic routes
 router.get("/is-application-exist", davController.isApplicationExist);
 router.put("/submit", davController.submit);
+router.post("/upload", davController.upload);
 
 module.exports = router;
