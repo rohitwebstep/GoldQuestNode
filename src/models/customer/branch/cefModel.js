@@ -26,28 +26,75 @@ const cef = {
     });
   },
 
-  formJsonWithData: (service_id, application_id, callback) => {
+  formJsonWithData: (services, candidate_application_id, callback) => {
     startConnection((err, connection) => {
       if (err) {
-        return callback(
-          { message: "Failed to connect to the database", error: err },
-          null
-        );
+        return callback({ message: "Failed to connect to the database", error: err }, null);
       }
-      const sql = "SELECT * FROM `cef_service_forms` WHERE `service_id` = ?";
-      connection.query(sql, [service_id], (queryErr, results) => {
-        if (queryErr) {
-          console.error("Database query error: 107", queryErr);
-          return callback(queryErr, null);
-        }
-        const sql = "SELECT * FROM `cef_service_forms` WHERE `service_id` = ?";
-        connection.query(sql, [service_id], (queryErr, results) => {
-          connectionRelease(connection);
-          if (queryErr) {
-            console.error("Database query error: 107", queryErr);
-            return callback(queryErr, null);
+  
+      const dbTableFileInputs = {};
+      let completedQueries = 0;
+      const serviceData = {}; // Initialize an object to store data for each service.
+  
+      // Step 1: Loop through each service and perform actions
+      services.forEach((service) => {
+        const query = "SELECT `json` FROM `cef_service_forms` WHERE `service_id` = ?";
+        connection.query(query, [service], (err, result) => {
+          completedQueries++;
+          if (err) {
+            console.error("Error fetching JSON for service:", service, err);
+          } else if (result.length > 0) {
+            try {
+              // Parse the JSON data
+              const jsonData = JSON.parse(result[0].json);
+              const dbTable = jsonData.db_table;
+  
+              // Store service-specific data (jsonData) in the serviceData object
+              serviceData[service] = {
+                jsonData: jsonData,
+                fileInputs: jsonData.inputs.filter((row) => row.type === "file").map((row) => row.name),
+              };
+  
+              // Initialize an array for the dbTable if not already present
+              if (!dbTableFileInputs[dbTable]) {
+                dbTableFileInputs[dbTable] = [];
+              }
+  
+              // Extract inputs with type 'file' and add to the db_table array
+              jsonData.inputs.forEach((row) => {
+                dbTableFileInputs[dbTable].push(row.name);
+              });
+            } catch (parseErr) {
+              console.error("Error parsing JSON for service:", service, parseErr);
+            }
           }
-          callback(null, results);
+  
+          // When all services have been processed
+          if (completedQueries === services.length) {
+            let tableQueries = 0;
+            const totalTables = Object.keys(dbTableFileInputs).length;
+            let finalAttachments = [];
+  
+            // Loop through each db_table and perform a query
+            for (const [dbTable, fileInputNames] of Object.entries(dbTableFileInputs)) {
+              const selectQuery = `SELECT ${fileInputNames.length > 0 ? fileInputNames.join(", ") : "*"} FROM cef_${dbTable} WHERE candidate_application_id = ?`;
+  
+              connection.query(selectQuery, [candidate_application_id], (err, rows) => {
+                tableQueries++;
+                if (err) {
+                  console.error(`Error querying table ${dbTable}:`, err);
+                } else {
+                  finalAttachments.push(rows); // Store rows in the finalAttachments array
+                }
+  
+                // Step 3: When all db_table queries are completed, return finalAttachments and serviceData
+                if (tableQueries === totalTables) {
+                  connectionRelease(connection);
+                  callback(null, { serviceData, finalAttachments: finalAttachments.join(", ") });
+                }
+              });
+            }
+          }
         });
       });
     });

@@ -5,8 +5,8 @@ const CandidateApplication = require("../../models/customer/branch/candidateAppl
 const Branch = require("../../models/customer/branch/branchModel");
 const AdminCommon = require("../../models/admin/commonModel");
 const Admin = require("../../models/admin/adminModel");
-const CEF = require("../../models/customer/branch/cefModel");
 const App = require("../../models/appModel");
+const CEF = require("../../models/customer/branch/cefModel");
 const BranchCommon = require("../../models/customer/branch/commonModel");
 const {
   finalReportMail,
@@ -442,54 +442,27 @@ exports.cefApplicationByID = (req, res) => {
                         });
                       }
 
-                      const serviceResults = []; // Array to store results of service calls
-
-                      // Use Promise.all to handle multiple async requests
-                      const servicePromises = service_ids.map((service_id) => {
-                        return new Promise((resolve, reject) => {
-                          CEF.formJson(service_id, (err, result) => {
-                            if (err) {
-                              console.error("Database error:", err);
-                              reject({
-                                status: false,
-                                message:
-                                  "An error occurred while fetching service form json.",
-                              });
-                            } else {
-                              resolve(result);
-                            }
+                      CEF.formJsonWithData(service_ids, application_id, (err, serviceData) => {
+                        if (err) {
+                          console.error("Database error:", err);
+                          return res.status(500).json({
+                            status: false,
+                            message:
+                              "An error occurred while fetching service form json.",
                           });
+                        }
+                        return res.json({
+                          status: true,
+                          message: "Application fetched successfully 2",
+                          application,
+                          CEFData: CEFApplicationData,
+                          branchInfo: currentBranch,
+                          customerInfo: currentCustomer,
+                          serviceData,
+                          admins: adminList,
+                          token: newToken,
                         });
                       });
-
-                      // Wait for all service requests to complete
-                      Promise.all(servicePromises)
-                        .then((allResults) => {
-                          return res.json({
-                            status: true,
-                            message: "Application fetched successfully 2",
-                            application,
-                            CEFData: CEFApplicationData,
-                            branchInfo: currentBranch,
-                            customerInfo: currentCustomer,
-                            serviceData: allResults,
-                            admins: adminList,
-                            token: newToken,
-                          });
-                        })
-                        .catch((err) => {
-                          return res.json({
-                            status: true,
-                            message: "Application fetched successfully 2",
-                            application,
-                            CEFData: CEFApplicationData,
-                            branchInfo: currentBranch,
-                            customerInfo: currentCustomer,
-                            admins: adminList,
-                            token: newToken,
-                            err,
-                          });
-                        });
                     }
                   );
                 });
