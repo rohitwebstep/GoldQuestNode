@@ -624,7 +624,7 @@ exports.davApplicationByID = (req, res) => {
                         status: true,
                         message: "Application fetched successfully 2",
                         application,
-                        CEFData: DAVApplicationData,
+                        DEFData: DAVApplicationData,
                         branchInfo: currentBranch,
                         customerInfo: currentCustomer,
                         admins: adminList,

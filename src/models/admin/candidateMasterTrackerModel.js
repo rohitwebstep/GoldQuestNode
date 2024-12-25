@@ -309,29 +309,100 @@ const Customer = {
             digitalAddressID = parseInt(singleEntry.id, 10);
           }
 
-          const cmtPromises = results.map((candidateApp) => {
-            return new Promise((resolve, reject) => {
-              const servicesResult = { cef: {}, dav: {} };
+          const cmtPromises = results.map(async (candidateApp) => {
+            const servicesResult = { cef: {}, dav: {} };
 
-              if (candidateApp.cef_submitted === 1) {
-                const services = candidateApp.services.split(",");
+            // Handle DAV submitted cases
+            if (candidateApp.dav_submitted === 1) {
+              const checkDavSql = `
+                SELECT identity_proof, home_photo, locality
+                FROM \`dav_applications\`
+                WHERE \`candidate_application_id\` = ?
+              `;
 
-                if (services.includes(digitalAddressID)) {
-                  candidateApp.dav_exist = 1;
-                } else {
-                  candidateApp.dav_exist = 0;
+              try {
+                const davResults = await new Promise((resolve, reject) => {
+                  startConnection((err, connection) => {
+                    if (err) {
+                      console.error("Connection error:", err);
+                      return reject(err); // Reject if connection fails
+                    }
+
+                    connection.query(
+                      checkDavSql,
+                      [candidateApp.main_id],
+                      (queryErr, results) => {
+                        connectionRelease(connection); // Always release connection after query
+                        if (queryErr) {
+                          console.error(
+                            "Database query error: Check DAV",
+                            queryErr
+                          );
+                          return reject(queryErr); // Reject on query error
+                        }
+                        resolve(results); // Resolve with query results
+                      }
+                    );
+                  });
+                });
+
+                // Process DAV results
+                if (davResults.length === 0) {
+                  throw new Error("Candidate DAV form is not submitted yet");
                 }
 
-                const dbTableFileInputs = {};
-                const dbTableColumnLabel = [];
-                let completedQueries = 0;
-                const dbTableWithHeadings = [];
-                services.forEach((service) => {
-                  const query =
-                    "SELECT `json` FROM `cef_service_forms` WHERE `service_id` = ?";
-                  connection.query(query, [service], (err, result) => {
-                    completedQueries++;
-                    if (!err && result.length > 0) {
+                davResults.forEach((cefResult) => {
+                  // Check if the values are not empty or null before pushing to servicesResult.dav
+                  if (
+                    cefResult.identity_proof &&
+                    cefResult.identity_proof !== ""
+                  ) {
+                    servicesResult.dav["Identity Proof"] =
+                      cefResult.identity_proof;
+                  }
+
+                  if (cefResult.home_photo && cefResult.home_photo !== "") {
+                    servicesResult.dav["Home Photo"] = cefResult.home_photo;
+                  }
+
+                  if (cefResult.locality && cefResult.locality !== "") {
+                    servicesResult.dav["Locality"] = cefResult.locality;
+                  }
+                });
+
+                candidateApp.service_data = servicesResult;
+              } catch (error) {
+                return Promise.reject(error); // Reject the promise if DAV check fails
+              }
+            }
+
+            // Handle CEF submitted cases
+            if (candidateApp.cef_submitted === 1) {
+              const services = candidateApp.services.split(",");
+              candidateApp.dav_exist = services.includes(digitalAddressID)
+                ? 1
+                : 0;
+
+              const dbTableFileInputs = {};
+              const dbTableColumnLabel = {};
+              let completedQueries = 0;
+              const dbTableWithHeadings = {};
+
+              try {
+                await Promise.all(
+                  services.map(async (service) => {
+                    const query =
+                      "SELECT `json` FROM `cef_service_forms` WHERE `service_id` = ?";
+                    const result = await new Promise((resolve, reject) => {
+                      connection.query(query, [service], (err, result) => {
+                        if (err) {
+                          return reject(err); // Reject if there is an error in the query
+                        }
+                        resolve(result); // Resolve with query result
+                      });
+                    });
+
+                    if (result.length > 0) {
                       try {
                         const rawJson = result[0].json;
                         const sanitizedJson = rawJson
@@ -340,12 +411,15 @@ const Customer = {
                         const jsonData = JSON.parse(sanitizedJson);
                         const dbTable = jsonData.db_table;
                         const heading = jsonData.heading;
+
                         if (dbTable && heading) {
-                          dbTableWithHeadings[dbTable] = heading; // Use dbTable as the key
+                          dbTableWithHeadings[dbTable] = heading;
                         }
+
                         if (!dbTableFileInputs[dbTable]) {
                           dbTableFileInputs[dbTable] = [];
                         }
+
                         jsonData.rows.forEach((row) => {
                           row.inputs.forEach((input) => {
                             if (input.type === "file") {
@@ -358,98 +432,81 @@ const Customer = {
                         console.error("Error parsing JSON:", parseErr);
                       }
                     }
+                  })
+                );
 
-                    if (completedQueries === services.length) {
-                      const hostSql = `SELECT \`cloud_host\` FROM \`app_info\` WHERE \`status\` = 1 AND \`interface_type\` = ? ORDER BY \`updated_at\` DESC LIMIT 1`;
-                      connection.query(
-                        hostSql,
-                        ["backend"],
-                        (err, hostResults) => {
-                          const host =
-                            hostResults.length > 0
-                              ? hostResults[0].cloud_host
-                              : "www.example.com";
-
-                          let tableQueries = 0;
-                          const totalTables =
-                            Object.keys(dbTableFileInputs).length;
-                          if (totalTables === 0) {
-                            resolve();
-                          }
-                          for (const [
-                            dbTable,
-                            fileInputNames,
-                          ] of Object.entries(dbTableFileInputs)) {
-                            const selectQuery = `SELECT ${
-                              fileInputNames && fileInputNames.length > 0
-                                ? fileInputNames.join(", ")
-                                : "*"
-                            } FROM cef_${dbTable} WHERE candidate_application_id = ?`;
-
-                            connection.query(
-                              selectQuery,
-                              [candidateApp.main_id],
-                              (err, rows) => {
-                                // If there's an error, skip to the next iteration
-                                if (err) {
-                                  console.error(
-                                    "Error querying database for table:",
-                                    dbTable,
-                                    err
-                                  );
-                                  tableQueries++; // Still increment the query count to avoid blocking logic
-                                  return; // Return early to skip to the next iteration
-                                }
-
-                                // Map the rows to replace column names with labels
-                                const updatedRows = rows.map((row) => {
-                                  const updatedRow = {};
-                                  for (const [key, value] of Object.entries(
-                                    row
-                                  )) {
-                                    const label = dbTableColumnLabel[key];
-                                    if (label) {
-                                      updatedRow[label] = value; // Assign the label as the new key
-                                    } else {
-                                      updatedRow[key] = value; // If no label, keep the original key
-                                    }
-                                  }
-                                  return updatedRow;
-                                });
-
-                                // Increment the table query counter
-                                tableQueries++;
-
-                                // Only update servicesResult if rows are found
-                                if (updatedRows.length > 0) {
-                                  console.log(`updatedRows - `, updatedRows);
-                                  servicesResult.cef[
-                                    dbTableWithHeadings[dbTable]
-                                  ] = updatedRows;
-                                }
-
-                                // Resolve when all queries have been processed
-                                if (tableQueries === totalTables) {
-                                  candidateApp.service_data = servicesResult;
-                                  resolve();
-                                }
-                              }
-                            );
-                          }
-                        }
-                      );
+                // After all CEF queries are completed, perform the host SQL query
+                const hostSql = `SELECT \`cloud_host\` FROM \`app_info\` WHERE \`status\` = 1 AND \`interface_type\` = ? ORDER BY \`updated_at\` DESC LIMIT 1`;
+                const hostResults = await new Promise((resolve, reject) => {
+                  connection.query(hostSql, ["backend"], (err, hostResults) => {
+                    if (err) {
+                      return reject(err);
                     }
+                    resolve(hostResults);
                   });
                 });
-              } else {
-                resolve();
-              }
 
-              if (candidateApp.dav_submitted === 1) {
-                // Add DAV-specific processing logic here
-                resolve();
+                const host =
+                  hostResults.length > 0
+                    ? hostResults[0].cloud_host
+                    : "www.example.com";
+                let tableQueries = 0;
+                const totalTables = Object.keys(dbTableFileInputs).length;
+
+                if (totalTables === 0) {
+                  return; // If no tables to query, resolve immediately
+                }
+
+                await Promise.all(
+                  Object.entries(dbTableFileInputs).map(
+                    async ([dbTable, fileInputNames]) => {
+                      const selectQuery = `SELECT ${fileInputNames.join(
+                        ", "
+                      )} FROM cef_${dbTable} WHERE candidate_application_id = ?`;
+                      const rows = await new Promise((resolve, reject) => {
+                        connection.query(
+                          selectQuery,
+                          [candidateApp.main_id],
+                          (err, rows) => {
+                            if (err) {
+                              console.error(
+                                "Error querying database for table:",
+                                dbTable,
+                                err
+                              );
+                              return reject(err);
+                            }
+                            resolve(rows);
+                          }
+                        );
+                      });
+
+                      // Process and map the rows to replace column names with labels
+                      const updatedRows = rows.map((row) => {
+                        const updatedRow = {};
+                        for (const [key, value] of Object.entries(row)) {
+                          const label = dbTableColumnLabel[key];
+                          updatedRow[label || key] = value; // Use label if available, else keep original key
+                        }
+                        return updatedRow;
+                      });
+
+                      if (updatedRows.length > 0) {
+                        servicesResult.cef[dbTableWithHeadings[dbTable]] =
+                          updatedRows;
+                      }
+
+                      tableQueries++;
+                      if (tableQueries === totalTables) {
+                        candidateApp.service_data = servicesResult;
+                      }
+                    }
+                  )
+                );
+              } catch (error) {
+                return Promise.reject(error); // Reject if any errors occur during CEF processing
               }
-            });
+            }
           });
 
           Promise.all(cmtPromises)
@@ -571,9 +628,7 @@ const Customer = {
             );
           }
 
-          callback(null, {
-            cefData: cefResults[0],
-          });
+          callback(null, cefResults[0]);
         }
       );
     });
@@ -614,9 +669,7 @@ const Customer = {
             );
           }
 
-          callback(null, {
-            cefData: cefResults[0],
-          });
+          callback(null, cefResults[0]);
         }
       );
     });
