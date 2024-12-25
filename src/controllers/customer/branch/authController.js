@@ -1,6 +1,7 @@
 const crypto = require("crypto");
 const BranchAuth = require("../../../models/customer/branch/branchAuthModel");
 const Common = require("../../../models/customer/branch/commonModel");
+const AdminCommon = require("../../../models/admin/commonModel");
 const AppModel = require("../../../models/appModel");
 
 // Utility function to generate a random token
@@ -29,7 +30,7 @@ const {
 
 // Branch login handler
 exports.login = (req, res) => {
-  const { username, password } = req.body;
+  const { username, password, admin_id, admin_token } = req.body;
   const missingFields = [];
 
   // Validate required fields
@@ -169,127 +170,220 @@ exports.login = (req, res) => {
               });
             }
             */
-            if (branch.two_factor_enabled && branch.two_factor_enabled == 1) {
-              const isMobile = /^\d{10}$/.test(username);
-              const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(username);
 
-              const otp = generateOTP();
-              const otpExpiry = getOTPExpiry();
-
-              if (isEmail) {
-                // Update the token in the database
-                BranchAuth.updateToken(branch.id, null, null, (err) => {
-                  if (err) {
-                    Common.branchLoginLog(
-                      branch.id,
-                      "login",
-                      "0",
-                      "Error updating token: " + err,
-                      () => {}
-                    );
-                    return res.status(500).json({
+            if (admin_id && admin_token) {
+              const action = "customer";
+              AdminCommon.isAdminAuthorizedForAction(
+                admin_id,
+                action,
+                (authResult) => {
+                  if (!authResult || !authResult.status) {
+                    return res.status(403).json({
                       status: false,
-                      message: `Error updating token: ${err}`,
+                      err: authResult,
+                      message: authResult
+                        ? authResult.message
+                        : "Authorization failed",
                     });
                   }
-                  BranchAuth.updateOTP(
-                    branch.id,
-                    otp,
-                    otpExpiry,
-                    (err, result) => {
+
+                  AdminCommon.isAdminTokenValid(
+                    admin_token,
+                    admin_id,
+                    (err, tokenResult) => {
                       if (err) {
+                        console.error("Error checking token validity:", err);
                         return res.status(500).json({
                           status: false,
-                          message:
-                            "Failed to update OTP. Please try again later.",
+                          message: "Token validation failed",
                         });
                       }
 
-                      const toArr = [{ name: branch.name, email: username }];
-                      twoFactorAuth(
-                        "branch auth",
-                        "two-factor-auth",
-                        otp,
-                        branch.name,
-                        toArr,
-                        []
-                      )
-                        .then(() => {
-                          return res.status(200).json({
-                            status: true,
-                            message: "OTP sent successfully.",
-                          });
-                        })
-                        .catch((emailError) => {
-                          return res.status(200).json({
-                            status: true,
-                            message:
-                              "OTP generated successfully, but email failed.",
-                          });
+                      if (!tokenResult.status) {
+                        return res.status(401).json({
+                          status: false,
+                          message: tokenResult.message,
                         });
+                      }
+
+                      const adminNewToken = tokenResult.newToken;
+
+                      // Generate new token and expiry time
+                      const token = generateToken();
+                      const newTokenExpiry = getTokenExpiry(); // This will be an ISO string
+
+                      // Update the token in the database
+                      BranchAuth.updateToken(
+                        branch.id,
+                        token,
+                        newTokenExpiry,
+                        (err) => {
+                          if (err) {
+                            console.error("Database error:", err);
+                            Common.branchLoginLog(
+                              branch.id,
+                              "login",
+                              "0",
+                              "Error updating token: " + err,
+                              () => {}
+                            );
+                            return res.status(500).json({
+                              status: false,
+                              message: `Error updating token: ${err}`,
+                              adminNewToken,
+                            });
+                          }
+
+                          // Log successful login and return the response
+                          Common.branchLoginLog(
+                            branch.id,
+                            "login",
+                            "1",
+                            null,
+                            () => {}
+                          );
+                          const {
+                            login_token,
+                            token_expiry,
+                            ...branchDataWithoutToken
+                          } = branch;
+
+                          res.json({
+                            status: true,
+                            message: "Login successful",
+                            branchData: branchDataWithoutToken,
+                            token,
+                            adminNewToken,
+                          });
+                        }
+                      );
                     }
                   );
-                });
-              } else if (isMobile) {
-                return res.status(500).json({
-                  status: false,
-                  message:
-                    "Failed to send OTP on mobile. Please try again later.",
-                });
-              } else {
-                return res.status(500).json({
-                  status: false,
-                  message: "unexpected method used for login",
-                });
-              }
+                }
+              );
             } else {
-              // Generate new token and expiry time
-              const token = generateToken();
-              const newTokenExpiry = getTokenExpiry(); // This will be an ISO string
+              if (branch.two_factor_enabled && branch.two_factor_enabled == 1) {
+                const isMobile = /^\d{10}$/.test(username);
+                const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(username);
 
-              // Update the token in the database
-              BranchAuth.updateToken(
-                branch.id,
-                token,
-                newTokenExpiry,
-                (err) => {
-                  if (err) {
-                    console.error("Database error:", err);
+                const otp = generateOTP();
+                const otpExpiry = getOTPExpiry();
+
+                if (isEmail) {
+                  // Update the token in the database
+                  BranchAuth.updateToken(branch.id, null, null, (err) => {
+                    if (err) {
+                      Common.branchLoginLog(
+                        branch.id,
+                        "login",
+                        "0",
+                        "Error updating token: " + err,
+                        () => {}
+                      );
+                      return res.status(500).json({
+                        status: false,
+                        message: `Error updating token: ${err}`,
+                      });
+                    }
+                    BranchAuth.updateOTP(
+                      branch.id,
+                      otp,
+                      otpExpiry,
+                      (err, result) => {
+                        if (err) {
+                          return res.status(500).json({
+                            status: false,
+                            message:
+                              "Failed to update OTP. Please try again later.",
+                          });
+                        }
+
+                        const toArr = [{ name: branch.name, email: username }];
+                        twoFactorAuth(
+                          "branch auth",
+                          "two-factor-auth",
+                          otp,
+                          branch.name,
+                          toArr,
+                          []
+                        )
+                          .then(() => {
+                            return res.status(200).json({
+                              status: true,
+                              message: "OTP sent successfully.",
+                            });
+                          })
+                          .catch((emailError) => {
+                            return res.status(200).json({
+                              status: true,
+                              message:
+                                "OTP generated successfully, but email failed.",
+                            });
+                          });
+                      }
+                    );
+                  });
+                } else if (isMobile) {
+                  return res.status(500).json({
+                    status: false,
+                    message:
+                      "Failed to send OTP on mobile. Please try again later.",
+                  });
+                } else {
+                  return res.status(500).json({
+                    status: false,
+                    message: "unexpected method used for login",
+                  });
+                }
+              } else {
+                // Generate new token and expiry time
+                const token = generateToken();
+                const newTokenExpiry = getTokenExpiry(); // This will be an ISO string
+
+                // Update the token in the database
+                BranchAuth.updateToken(
+                  branch.id,
+                  token,
+                  newTokenExpiry,
+                  (err) => {
+                    if (err) {
+                      console.error("Database error:", err);
+                      Common.branchLoginLog(
+                        branch.id,
+                        "login",
+                        "0",
+                        "Error updating token: " + err,
+                        () => {}
+                      );
+                      return res.status(500).json({
+                        status: false,
+                        message: `Error updating token: ${err}`,
+                      });
+                    }
+
+                    // Log successful login and return the response
                     Common.branchLoginLog(
                       branch.id,
                       "login",
-                      "0",
-                      "Error updating token: " + err,
+                      "1",
+                      null,
                       () => {}
                     );
-                    return res.status(500).json({
-                      status: false,
-                      message: `Error updating token: ${err}`,
+                    const {
+                      login_token,
+                      token_expiry,
+                      ...branchDataWithoutToken
+                    } = branch;
+
+                    res.json({
+                      status: true,
+                      message: "Login successful",
+                      branchData: branchDataWithoutToken,
+                      token,
                     });
                   }
-
-                  // Log successful login and return the response
-                  Common.branchLoginLog(
-                    branch.id,
-                    "login",
-                    "1",
-                    null,
-                    () => {}
-                  );
-                  const {
-                    login_token,
-                    token_expiry,
-                    ...branchDataWithoutToken
-                  } = branch;
-
-                  res.json({
-                    status: true,
-                    message: "Login successful",
-                    branchData: branchDataWithoutToken,
-                    token,
-                  });
-                }
-              );
+                );
+              }
             }
           });
         });
