@@ -23,11 +23,13 @@ const startConnection = (callback, retries = 20) => {
   const attemptConnection = (retriesLeft) => {
     pool.getConnection((err, connection) => {
       if (err) {
+        console.error("Error getting connection from pool:", err);
         if (retriesLeft > 0) {
           console.log(
             `Connection attempt failed. Retrying... (${retriesLeft} attempts left)`
           );
-          attemptConnection(retriesLeft - 1); // Retry if there are attempts left
+          setTimeout(() => attemptConnection(retriesLeft - 1), 2000);
+          // attemptConnection(retriesLeft - 1);
         } else {
           console.error("Error getting connection from pool:", err); // Log error for debugging
           return callback(err, null); // Return error after retries are exhausted
@@ -44,9 +46,11 @@ const startConnection = (callback, retries = 20) => {
 
 // Function to release a connection
 const connectionRelease = (connection) => {
-  if (connection) {
+  if (connection && !connection._closing) {
     connection.release(); // Release the connection back to the pool
     console.log("Connection released"); // Optional: Log connection release
+  } else {
+    console.warn("Attempted to release an already closed connection");
   }
 };
 
