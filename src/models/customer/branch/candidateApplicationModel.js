@@ -363,8 +363,6 @@ const candidateApplication = {
         sql,
         [customer_id, app_id, branch_id, customer_id],
         (err, results) => {
-          connectionRelease(connection); // Ensure connection is released
-
           if (err) {
             console.error("Database query error: 106", err);
             return callback(err, null);
@@ -372,6 +370,7 @@ const candidateApplication = {
 
           // Return the entry if it exists, or false otherwise
           const entry = results.length > 0 ? results[0] : false;
+          connectionRelease(connection);
           callback(null, entry);
         }
       );

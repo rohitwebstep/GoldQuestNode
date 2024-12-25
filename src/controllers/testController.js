@@ -1,5 +1,7 @@
 const fs = require("fs");
 const path = require("path");
+const Test = require("../models/testModel");
+
 const { upload, saveImage, saveImages } = require("../utils/cloudImageSave");
 
 exports.uploadImage = (req, res) => {
@@ -52,6 +54,33 @@ exports.uploadImage = (req, res) => {
           message: "An error occurred while saving the image",
         });
       }
+    });
+  });
+};
+exports.connectionCheck = (req, res) => {
+  Test.connectionCheck((err, result) => {
+    if (err) {
+      console.error("Database error:", err);
+      return res.status(500).json({
+        status: false,
+        message: err.message,
+      });
+    }
+
+    if (!result) {
+      return res.json({
+        status: true,
+        message: "No matching customers found",
+        customers: [],
+        totalResults: 0,
+      });
+    }
+
+    res.json({
+      status: true,
+      message: "Customers fetched successfully",
+      customers: result,
+      totalResults: Array.isArray(result) ? result.length : 1,
     });
   });
 };

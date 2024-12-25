@@ -263,8 +263,6 @@ const Admin = {
       }
 
       connection.query(sql, [username, username], (queryErr, results) => {
-        connectionRelease(connection); // Release the connection
-
         if (queryErr) {
           console.error("Database query error: 5", queryErr);
           return callback(
@@ -279,7 +277,7 @@ const Admin = {
             null
           );
         }
-
+        connectionRelease(connection);
         callback(null, results);
       });
     });
