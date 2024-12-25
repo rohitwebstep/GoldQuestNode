@@ -45,7 +45,7 @@ const startConnection = (callback, retries = 20) => {
           console.log(
             `Connection attempt failed. Retrying... (${retriesLeft} attempts left)`
           );
-          setTimeout(() => attemptConnection(retriesLeft - 1), 2000);
+          setTimeout(() => attemptConnection(retriesLeft - 1), 500);
         } else {
           callback(err, null); // Return error after retries are exhausted
         }
