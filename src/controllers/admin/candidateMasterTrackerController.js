@@ -373,6 +373,8 @@ exports.cefApplicationByID = (req, res) => {
             });
           }
 
+          const service_ids = application.services;
+
           CandidateMasterTrackerModel.cefApplicationByID(
             application_id,
             branch_id,
@@ -437,16 +439,54 @@ exports.cefApplicationByID = (req, res) => {
                         });
                       }
 
-                      return res.json({
-                        status: true,
-                        message: "Application fetched successfully 2",
-                        application,
-                        CEFData: CEFApplicationData,
-                        branchInfo: currentBranch,
-                        customerInfo: currentCustomer,
-                        admins: adminList,
-                        token: newToken,
+                      const serviceResults = []; // Array to store results of service calls
+
+                      // Use Promise.all to handle multiple async requests
+                      const servicePromises = service_ids.map((service_id) => {
+                        return new Promise((resolve, reject) => {
+                          CEF.formJson(service_id, (err, result) => {
+                            if (err) {
+                              console.error("Database error:", err);
+                              reject({
+                                status: false,
+                                message:
+                                  "An error occurred while fetching service form json.",
+                              });
+                            } else {
+                              resolve(result);
+                            }
+                          });
+                        });
                       });
+
+                      // Wait for all service requests to complete
+                      Promise.all(servicePromises)
+                        .then((allResults) => {
+                          return res.json({
+                            status: true,
+                            message: "Application fetched successfully 2",
+                            application,
+                            CEFData: CEFApplicationData,
+                            branchInfo: currentBranch,
+                            customerInfo: currentCustomer,
+                            serviceData: allResults,
+                            admins: adminList,
+                            token: newToken,
+                          });
+                        })
+                        .catch((err) => {
+                          return res.json({
+                            status: true,
+                            message: "Application fetched successfully 2",
+                            application,
+                            CEFData: CEFApplicationData,
+                            branchInfo: currentBranch,
+                            customerInfo: currentCustomer,
+                            admins: adminList,
+                            token: newToken,
+                            err,
+                          });
+                        });
                     }
                   );
                 });
