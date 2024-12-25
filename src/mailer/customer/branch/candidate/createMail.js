@@ -9,14 +9,16 @@ const generateTable = (services) => {
             </tr>`;
   }
 
-  let rows = services.map((service, index) => {
-    const [title, description] = service.split(":"); // Split the service into title and description
-    return `<tr>
+  let rows = services
+    .map((service, index) => {
+      const [title, description] = service.split(":"); // Split the service into title and description
+      return `<tr>
               <td>${index + 1}</td> <!-- Serial number -->
               <td>${title}</td> <!-- Title -->
               <td>${description.trim()}</td> <!-- Description -->
             </tr>`;
-  }).join("");
+    })
+    .join("");
 
   return rows;
 };
@@ -26,6 +28,7 @@ async function createMail(
   module,
   action,
   name,
+  customerName,
   application_id,
   href,
   services,
@@ -86,6 +89,7 @@ async function createMail(
     let template = email.template
       .replace(/{{candidate_name}}/g, name)
       .replace(/{{table_rows}}/g, table_rows)
+      .replace(/{{company_name}}/g, customerName)
       .replace(/{{form_href}}/g, href);
 
     // Prepare CC list
@@ -139,7 +143,9 @@ async function createMail(
       .join(", ");
 
     if (!toList) {
-      throw new Error("Failed to prepare recipient list due to invalid recipient data");
+      throw new Error(
+        "Failed to prepare recipient list due to invalid recipient data"
+      );
     }
 
     // Send email

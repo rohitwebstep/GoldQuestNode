@@ -291,13 +291,13 @@ const candidateApplication = {
     `;
 
     const values = [
-      name,
-      employee_id,
-      mobile_number,
-      email,
-      services,
-      package,
-      candidate_application_id,
+      replaceEmptyWithNull(name),
+      replaceEmptyWithNull(employee_id),
+      replaceEmptyWithNull(mobile_number),
+      replaceEmptyWithNull(email),
+      replaceEmptyWithNull(services),
+      replaceEmptyWithNull(package),
+      replaceEmptyWithNull(candidate_application_id),
     ];
 
     startConnection((err, connection) => {

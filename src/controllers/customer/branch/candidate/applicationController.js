@@ -112,69 +112,89 @@ exports.create = (req, res) => {
             });
           }
 
-          Candidate.create(
-            {
-              branch_id,
-              name,
-              employee_id,
-              mobile_number,
-              email,
-              services: services || null,
-              package: package || null,
-              customer_id,
-            },
-            (err, result) => {
+          Customer.getCustomerById(
+            parseInt(customer_id),
+            (err, currentCustomer) => {
               if (err) {
-                console.error(
-                  "Database error during candidate application creation:",
-                  err
-                );
-                BranchCommon.branchActivityLog(
-                  branch_id,
-                  "Candidate Application",
-                  "Create",
-                  "0",
-                  null,
-                  err,
-                  () => {}
-                );
+                console.error("Database error during customer retrieval:", err);
                 return res.status(500).json({
                   status: false,
-                  message: err.message,
+                  message: "Failed to retrieve Customer. Please try again.",
                   token: newToken,
                 });
               }
 
-              BranchCommon.branchActivityLog(
-                branch_id,
-                "Candidate Application",
-                "Create",
-                "1",
-                `{id: ${result.insertId}}`,
-                null,
-                () => {}
-              );
-
-              BranchCommon.getBranchandCustomerEmailsForNotification(
-                branch_id,
-                (emailError, emailData) => {
-                  if (emailError) {
-                    console.error("Error fetching emails:", emailError);
+              if (!currentCustomer) {
+                return res.status(404).json({
+                  status: false,
+                  message: "Customer not found.",
+                  token: newToken,
+                });
+              }
+              const customerName = currentCustomer.name;
+              Candidate.create(
+                {
+                  branch_id,
+                  name,
+                  employee_id,
+                  mobile_number,
+                  email,
+                  services: services || null,
+                  package: package || null,
+                  customer_id,
+                },
+                (err, result) => {
+                  if (err) {
+                    console.error(
+                      "Database error during candidate application creation:",
+                      err
+                    );
+                    BranchCommon.branchActivityLog(
+                      branch_id,
+                      "Candidate Application",
+                      "Create",
+                      "0",
+                      null,
+                      err,
+                      () => {}
+                    );
                     return res.status(500).json({
                       status: false,
-                      message: "Failed to retrieve email addresses.",
+                      message: err.message,
                       token: newToken,
                     });
                   }
 
-                  const { branch, customer } = emailData;
+                  BranchCommon.branchActivityLog(
+                    branch_id,
+                    "Candidate Application",
+                    "Create",
+                    "1",
+                    `{id: ${result.insertId}}`,
+                    null,
+                    () => {}
+                  );
 
-                  // Prepare recipient and CC lists
+                  BranchCommon.getBranchandCustomerEmailsForNotification(
+                    branch_id,
+                    (emailError, emailData) => {
+                      if (emailError) {
+                        console.error("Error fetching emails:", emailError);
+                        return res.status(500).json({
+                          status: false,
+                          message: "Failed to retrieve email addresses.",
+                          token: newToken,
+                        });
+                      }
 
-                  const toArr = [{ name, email }];
-                  let ccArr = [];
+                      const { branch, customer } = emailData;
 
-                  /*
+                      // Prepare recipient and CC lists
+
+                      const toArr = [{ name, email }];
+                      let ccArr = [];
+
+                      /*
                   const toArr = [
                     { name: branch.name, email: branch.email },
                     { name, email },
@@ -185,42 +205,20 @@ exports.create = (req, res) => {
                   }));
                   */
 
-                  const serviceIds = services
-                    ? services
-                        .split(",")
-                        .map((id) => parseInt(id.trim(), 10))
-                        .filter(Number.isInteger)
-                    : [];
+                      const serviceIds = services
+                        ? services
+                            .split(",")
+                            .map((id) => parseInt(id.trim(), 10))
+                            .filter(Number.isInteger)
+                        : [];
 
-                  const serviceNames = [];
+                      const serviceNames = [];
 
-                  // Function to fetch service names recursively
-                  const fetchServiceNames = (index = 0) => {
-                    if (index >= serviceIds.length) {
-                      // Once all service names are fetched, get app info
-                      AppModel.appInfo("frontend", (err, appInfo) => {
-                        if (err) {
-                          console.error("Database error:", err);
-                          return res.status(500).json({
-                            status: false,
-                            message: err.message,
-                            token: newToken,
-                          });
-                        }
-
-                        if (appInfo) {
-                          const appHost =
-                            appInfo.host || "www.goldquestglobal.com";
-                          const base64_app_id = btoa(result.insertId);
-                          const base64_branch_id = btoa(branch_id);
-                          const base64_customer_id = btoa(customer_id);
-                          const base64_link_with_ids = `YXBwX2lk=${base64_app_id}&YnJhbmNoX2lk=${base64_branch_id}&Y3VzdG9tZXJfaWQ==${base64_customer_id}`;
-
-                          const dav_href = `${appHost}/digital-form?${base64_link_with_ids}`;
-                          const bgv_href = `${appHost}/background-form?${base64_link_with_ids}`;
-
-                          // Fetch and process digital address service
-                          Service.digitlAddressService((err, serviceEntry) => {
+                      // Function to fetch service names recursively
+                      const fetchServiceNames = (index = 0) => {
+                        if (index >= serviceIds.length) {
+                          // Once all service names are fetched, get app info
+                          AppModel.appInfo("frontend", (err, appInfo) => {
                             if (err) {
                               console.error("Database error:", err);
                               return res.status(500).json({
@@ -230,111 +228,141 @@ exports.create = (req, res) => {
                               });
                             }
 
-                            if (serviceEntry) {
-                              const digitalAddressID = parseInt(
-                                serviceEntry.id,
-                                10
+                            if (appInfo) {
+                              const appHost =
+                                appInfo.host || "www.goldquestglobal.com";
+                              const base64_app_id = btoa(result.insertId);
+                              const base64_branch_id = btoa(branch_id);
+                              const base64_customer_id = btoa(customer_id);
+                              const base64_link_with_ids = `YXBwX2lk=${base64_app_id}&YnJhbmNoX2lk=${base64_branch_id}&Y3VzdG9tZXJfaWQ==${base64_customer_id}`;
+
+                              const dav_href = `${appHost}/digital-form?${base64_link_with_ids}`;
+                              const bgv_href = `${appHost}/background-form?${base64_link_with_ids}`;
+
+                              // Fetch and process digital address service
+                              Service.digitlAddressService(
+                                (err, serviceEntry) => {
+                                  if (err) {
+                                    console.error("Database error:", err);
+                                    return res.status(500).json({
+                                      status: false,
+                                      message: err.message,
+                                      token: newToken,
+                                    });
+                                  }
+
+                                  if (serviceEntry) {
+                                    const digitalAddressID = parseInt(
+                                      serviceEntry.id,
+                                      10
+                                    );
+                                    if (serviceIds.includes(digitalAddressID)) {
+                                      davMail(
+                                        "candidate application",
+                                        "dav",
+                                        name,
+                                        customer.name,
+                                        dav_href,
+                                        [{ name: name, email: email.trim() }]
+                                      )
+                                        .then(() => {
+                                          console.log(
+                                            "Digital address verification mail sent."
+                                          );
+                                        })
+                                        .catch((emailError) => {
+                                          console.error(
+                                            "Error sending digital address email:",
+                                            emailError
+                                          );
+                                        });
+                                    }
+                                  }
+                                }
                               );
-                              if (serviceIds.includes(digitalAddressID)) {
-                                davMail(
-                                  "candidate application",
-                                  "dav",
-                                  name,
-                                  customer.name,
-                                  dav_href,
-                                  [{ name: name, email: email.trim() }]
-                                )
-                                  .then(() => {
-                                    console.log(
-                                      "Digital address verification mail sent."
-                                    );
-                                  })
-                                  .catch((emailError) => {
-                                    console.error(
-                                      "Error sending digital address email:",
-                                      emailError
-                                    );
+
+                              // Send application creation email
+                              createMail(
+                                "candidate application",
+                                "create",
+                                name,
+                                customerName,
+                                result.insertId,
+                                bgv_href,
+                                serviceNames,
+                                toArr || [],
+                                ccArr || []
+                              )
+                                .then(() => {
+                                  return res.status(201).json({
+                                    status: true,
+                                    message:
+                                      "Candidate application created successfully and email sent.",
+                                    data: {
+                                      candidate: result,
+                                      package,
+                                    },
+                                    token: newToken,
+                                    toArr: toArr || [],
+                                    ccArr: ccArr || [],
                                   });
-                              }
+                                })
+                                .catch((emailError) => {
+                                  console.error(
+                                    "Error sending application creation email:",
+                                    emailError
+                                  );
+                                  return res.status(201).json({
+                                    status: true,
+                                    message:
+                                      "Candidate application created successfully, but email failed to send.",
+                                    candidate: result,
+                                    token: newToken,
+                                  });
+                                });
                             }
                           });
+                          return;
+                        }
 
-                          // Send application creation email
-                          createMail(
-                            "candidate application",
-                            "create",
-                            name,
-                            result.insertId,
-                            bgv_href,
-                            serviceNames,
-                            toArr || [],
-                            ccArr || []
-                          )
-                            .then(() => {
-                              return res.status(201).json({
-                                status: true,
-                                message:
-                                  "Candidate application created successfully and email sent.",
-                                data: {
-                                  candidate: result,
-                                  package,
-                                },
-                                token: newToken,
-                                toArr: toArr || [],
-                                ccArr: ccArr || [],
-                              });
-                            })
-                            .catch((emailError) => {
+                        const id = serviceIds[index];
+
+                        // Fetch service required documents for each service ID
+                        Service.getServiceRequiredDocumentsByServiceId(
+                          id,
+                          (err, currentService) => {
+                            if (err) {
                               console.error(
-                                "Error sending application creation email:",
-                                emailError
+                                "Error fetching service data:",
+                                err
                               );
-                              return res.status(201).json({
-                                status: true,
-                                message:
-                                  "Candidate application created successfully, but email failed to send.",
-                                candidate: result,
+                              return res.status(500).json({
+                                status: false,
+                                message: err.message,
                                 token: newToken,
                               });
-                            });
-                        }
-                      });
-                      return;
-                    }
+                            }
 
-                    const id = serviceIds[index];
+                            if (!currentService || !currentService.title) {
+                              // Skip invalid services and continue to the next service
+                              return fetchServiceNames(index + 1);
+                            }
 
-                    // Fetch service required documents for each service ID
-                    Service.getServiceRequiredDocumentsByServiceId(
-                      id,
-                      (err, currentService) => {
-                        if (err) {
-                          console.error("Error fetching service data:", err);
-                          return res.status(500).json({
-                            status: false,
-                            message: err.message,
-                            token: newToken,
-                          });
-                        }
+                            // Add the service name and description to the array
+                            serviceNames.push(
+                              `${currentService.title}: ${currentService.description}`
+                            );
 
-                        if (!currentService || !currentService.title) {
-                          // Skip invalid services and continue to the next service
-                          return fetchServiceNames(index + 1);
-                        }
-
-                        // Add the service name and description to the array
-                        serviceNames.push(
-                          `${currentService.title}: ${currentService.description}`
+                            // Recursively fetch the next service
+                            fetchServiceNames(index + 1);
+                          }
                         );
+                      };
 
-                        // Recursively fetch the next service
-                        fetchServiceNames(index + 1);
-                      }
-                    );
-                  };
-
-                  // Start fetching service names
-                  fetchServiceNames();
+                      // Start fetching service names
+                      fetchServiceNames();
+                    }
+                  );
                 }
               );
             }
@@ -813,6 +841,7 @@ function sendNotificationEmails(
                           "candidate application",
                           "create",
                           app.applicant_full_name,
+                          customer.name,
                           app.insertId,
                           bgv_href,
                           serviceNames,
