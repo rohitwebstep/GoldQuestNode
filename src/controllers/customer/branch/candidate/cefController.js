@@ -96,6 +96,7 @@ exports.isApplicationExist = (req, res) => {
         console.error("Database error:", err);
         return res.status(500).json({
           status: false,
+          err,
           message: "An error occurred while checking application existence.",
         });
       }
