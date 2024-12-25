@@ -44,10 +44,10 @@ const startConnection = (callback, retries = 3) => {
 
 // Function to release a connection
 const connectionRelease = (connection) => {
-  if (connection) {
-    connection.release(); // Release the connection back to the pool
-    console.log("Connection released"); // Optional: Log connection release
-  }
+  // if (connection) {
+  //   connection.release(); // Release the connection back to the pool
+  //   console.log("Connection released"); // Optional: Log connection release
+  // }
 };
 
 module.exports = { pool, startConnection, connectionRelease };

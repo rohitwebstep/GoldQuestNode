@@ -15,7 +15,7 @@ const Branch = {
       }
 
       const sql = `
-        SELECT \`id\`, \`customer_id\`, \`name\`, \`email\`, \`status\`, \`login_token\`, \`token_expiry\`
+        SELECT \`id\`, \`customer_id\`, \`name\`, \`email\`, \`status\`, \`login_token\`, \`token_expiry\`, \`otp\`, \`two_factor_enabled\`, \`otp_expiry\`
         FROM \`branches\`
         WHERE \`email\` = ?
       `;
@@ -200,6 +200,51 @@ const Branch = {
           affectedRows: results.affectedRows,
         });
       });
+    });
+  },
+
+  updateOTP: (branch_id, otp, otp_expiry, callback) => {
+    const sql = `UPDATE \`branches\` SET \`otp\` = ?, \`otp_expiry\` = ?,  \`reset_password_token\` = null, \`login_token\` = null, \`token_expiry\` = null, \`password_token_expiry\` = null WHERE \`id\` = ?`;
+
+    startConnection((err, connection) => {
+      if (err) {
+        return callback(err, null);
+      }
+
+      connection.query(
+        sql,
+        [otp, otp_expiry, branch_id],
+        (queryErr, results) => {
+          connectionRelease(connection); // Release the connection
+
+          if (queryErr) {
+            console.error("Database query error: 8", queryErr);
+            return callback(
+              {
+                message: "An error occurred while updating the password.",
+                error: queryErr,
+              },
+              null
+            );
+          }
+
+          // Check if the branch_id was found and the update affected any rows
+          if (results.affectedRows === 0) {
+            return callback(
+              {
+                message:
+                  "Branch not found or password not updated. Please check the provided details.",
+              },
+              null
+            );
+          }
+
+          callback(null, {
+            message: "Password updated successfully.",
+            affectedRows: results.affectedRows,
+          });
+        }
+      );
     });
   },
 
