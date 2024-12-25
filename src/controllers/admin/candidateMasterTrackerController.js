@@ -373,7 +373,9 @@ exports.cefApplicationByID = (req, res) => {
             });
           }
 
-          const service_ids = application.services;
+          const service_ids = Array.isArray(application.services)
+            ? application.services
+            : application.services.split(",").map((item) => item.trim());
 
           CandidateMasterTrackerModel.cefApplicationByID(
             application_id,
