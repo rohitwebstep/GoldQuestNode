@@ -333,7 +333,11 @@ const Customer = {
                     completedQueries++;
                     if (!err && result.length > 0) {
                       try {
-                        const jsonData = JSON.parse(result[0].json);
+                        const rawJson = result[0].json;
+                        const sanitizedJson = rawJson
+                          .replace(/\\"/g, '"')
+                          .replace(/\\'/g, "'");
+                        const jsonData = JSON.parse(sanitizedJson);
                         const dbTable = jsonData.db_table;
                         const heading = jsonData.heading;
                         if (dbTable && heading) {
@@ -342,11 +346,13 @@ const Customer = {
                         if (!dbTableFileInputs[dbTable]) {
                           dbTableFileInputs[dbTable] = [];
                         }
-                        jsonData.inputs.forEach((row) => {
-                          if (row.type === "file") {
-                            dbTableFileInputs[dbTable].push(row.name);
-                            dbTableColumnLabel[row.name] = row.label;
-                          }
+                        jsonData.rows.forEach((row) => {
+                          row.inputs.forEach((input) => {
+                            if (input.type === "file") {
+                              dbTableFileInputs[dbTable].push(input.name);
+                              dbTableColumnLabel[input.name] = input.label;
+                            }
+                          });
                         });
                       } catch (parseErr) {
                         console.error("Error parsing JSON:", parseErr);
