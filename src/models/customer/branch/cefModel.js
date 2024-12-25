@@ -26,6 +26,33 @@ const cef = {
     });
   },
 
+  formJsonWithData: (service_id, application_id, callback) => {
+    startConnection((err, connection) => {
+      if (err) {
+        return callback(
+          { message: "Failed to connect to the database", error: err },
+          null
+        );
+      }
+      const sql = "SELECT * FROM `cef_service_forms` WHERE `service_id` = ?";
+      connection.query(sql, [service_id], (queryErr, results) => {
+        if (queryErr) {
+          console.error("Database query error: 107", queryErr);
+          return callback(queryErr, null);
+        }
+        const sql = "SELECT * FROM `cef_service_forms` WHERE `service_id` = ?";
+        connection.query(sql, [service_id], (queryErr, results) => {
+          connectionRelease(connection);
+          if (queryErr) {
+            console.error("Database query error: 107", queryErr);
+            return callback(queryErr, null);
+          }
+          callback(null, results);
+        });
+      });
+    });
+  },
+
   getCMEFormDataByApplicationId: (
     candidate_application_id,
     db_table,

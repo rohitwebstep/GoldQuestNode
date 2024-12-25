@@ -388,6 +388,7 @@ exports.verifyTwoFactor = (req, res) => {
     const tokenExpiry = new Date(branch.token_expiry);
     console.log("Current time:", currentTime, "Token expiry:", tokenExpiry);
 
+    /*
     if (branch.login_token && tokenExpiry > currentTime) {
       console.log("Another branch is currently logged in.");
       Common.branchLoginLog(
@@ -403,7 +404,7 @@ exports.verifyTwoFactor = (req, res) => {
           "Another branch is currently logged in. Please try again later.",
       });
     }
-
+*/
     if (branch.two_factor_enabled !== 1) {
       console.log("Two-factor authentication disabled for this branch.");
       return res.status(400).json({
