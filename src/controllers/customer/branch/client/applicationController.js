@@ -1003,7 +1003,7 @@ exports.update = (req, res) => {
                   {
                     name,
                     employee_id,
-                    spoc,
+                    client_spoc: spoc,
                     batch_number,
                     sub_client,
                     location,
