@@ -486,8 +486,11 @@ const Customer = {
                         const updatedRows = rows.map((row) => {
                           const updatedRow = {};
                           for (const [key, value] of Object.entries(row)) {
-                            const label = dbTableColumnLabel[key];
-                            updatedRow[label || key] = value; // Use label if available, else keep original key
+                            // Only include non-null and non-empty values
+                            if (value != null && value !== "") {
+                              const label = dbTableColumnLabel[key];
+                              updatedRow[label || key] = value; // Use label if available, else keep original key
+                            }
                           }
                           return updatedRow;
                         });
