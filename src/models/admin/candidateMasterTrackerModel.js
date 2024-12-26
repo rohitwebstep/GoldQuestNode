@@ -352,22 +352,19 @@ const Customer = {
                 }
 
                 davResults.forEach((cefResult) => {
-                  // Check if the values are not empty or null before pushing to servicesResult.dav
-                  if (
-                    cefResult.identity_proof &&
-                    cefResult.identity_proof !== ""
-                  ) {
-                    servicesResult.dav["Identity Proof"] =
-                      cefResult.identity_proof;
-                  }
+                  // Define a mapping of keys to labels
+                  const mappings = {
+                    identity_proof: "Identity Proof",
+                    home_photo: "Home Photo",
+                    locality: "Locality",
+                  };
 
-                  if (cefResult.home_photo && cefResult.home_photo !== "") {
-                    servicesResult.dav["Home Photo"] = cefResult.home_photo;
-                  }
-
-                  if (cefResult.locality && cefResult.locality !== "") {
-                    servicesResult.dav["Locality"] = cefResult.locality;
-                  }
+                  // Iterate over the mappings and assign values if not null or empty
+                  Object.entries(mappings).forEach(([key, label]) => {
+                    if (cefResult[key] != null && cefResult[key] !== "") {
+                      servicesResult.dav[label] = cefResult[key];
+                    }
+                  });
                 });
 
                 candidateApp.service_data = servicesResult;
