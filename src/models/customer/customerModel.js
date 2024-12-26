@@ -555,6 +555,8 @@ const Customer = {
         customers.id, 
         customer_metas.address,
         customer_metas.gst_number,
+        customer_metas.contact_person_name,
+        customer_metas.status,
         customer_metas.id AS meta_id
       FROM 
         customers
