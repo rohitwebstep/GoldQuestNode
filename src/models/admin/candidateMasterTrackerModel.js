@@ -432,21 +432,6 @@ const Customer = {
                   })
                 );
 
-                // After all CEF queries are completed, perform the host SQL query
-                const hostSql = `SELECT \`cloud_host\` FROM \`app_info\` WHERE \`status\` = 1 AND \`interface_type\` = ? ORDER BY \`updated_at\` DESC LIMIT 1`;
-                const hostResults = await new Promise((resolve, reject) => {
-                  connection.query(hostSql, ["backend"], (err, hostResults) => {
-                    if (err) {
-                      return reject(err);
-                    }
-                    resolve(hostResults);
-                  });
-                });
-
-                const host =
-                  hostResults.length > 0
-                    ? hostResults[0].cloud_host
-                    : "www.example.com";
                 let tableQueries = 0;
                 const totalTables = Object.keys(dbTableFileInputs).length;
 
@@ -491,8 +476,10 @@ const Customer = {
                           }
                           return updatedRow;
                         });
-
-                        if (updatedRows.length > 0) {
+                        if (
+                          updatedRows.length > 0 &&
+                          updatedRows.some((row) => Object.keys(row).length > 0)
+                        ) {
                           servicesResult.cef[dbTableWithHeadings[dbTable]] =
                             updatedRows;
                         }
