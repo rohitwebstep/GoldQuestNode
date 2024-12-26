@@ -311,7 +311,11 @@ const Customer = {
 
           const cmtPromises = results.map(async (candidateApp) => {
             const servicesResult = { cef: {}, dav: {} };
+            const services = candidateApp.services.split(",");
 
+            candidateApp.dav_exist = services.includes(digitalAddressID)
+              ? 1
+              : 0;
             // Handle DAV submitted cases
             if (candidateApp.dav_submitted === 1) {
               const checkDavSql = `
@@ -375,11 +379,6 @@ const Customer = {
 
             // Handle CEF submitted cases
             if (candidateApp.cef_submitted === 1) {
-              const services = candidateApp.services.split(",");
-              candidateApp.dav_exist = services.includes(digitalAddressID)
-                ? 1
-                : 0;
-
               const dbTableFileInputs = {};
               const dbTableColumnLabel = {};
               let completedQueries = 0;
@@ -669,24 +668,81 @@ const Customer = {
   },
 
   applicationByID: (application_id, branch_id, callback) => {
-    // Start a connection
     startConnection((err, connection) => {
       if (err) {
+        console.error("Error starting database connection:", err);
         return callback(err, null);
       }
 
-      // Use a parameterized query to prevent SQL injection
-      const sql =
-        "SELECT CA.*, C.name AS customer_name FROM `candidate_applications` AS CA INNER JOIN `customers` AS C ON C.id = CA.customer_id WHERE CA.`id` = ? AND CA.`branch_id` = ? ORDER BY `created_at` DESC";
+      const sql = `
+        SELECT 
+          ca.*, 
+          ca.id AS main_id, 
+          cef.created_at AS cef_filled_date,
+          cef.id AS cef_id,
+          dav.created_at AS dav_filled_date,
+          dav.id AS dav_id,
+          CASE WHEN cef.id IS NOT NULL THEN 1 ELSE 0 END AS cef_submitted,
+          CASE WHEN dav.id IS NOT NULL THEN 1 ELSE 0 END AS dav_submitted,
+          c.name AS customer_name
+        FROM 
+          \`candidate_applications\` ca
+        LEFT JOIN 
+          \`cef_applications\` cef ON ca.id = cef.candidate_application_id
+        LEFT JOIN 
+          \`dav_applications\` dav ON ca.id = dav.candidate_application_id
+        LEFT JOIN 
+          \`customers\` c ON ca.customer_id = c.id
+        WHERE 
+          ca.\`id\` = ? AND ca.\`branch_id\` = ?
+        ORDER BY 
+          ca.\`created_at\` DESC
+        LIMIT 1;
+      `;
+      const params = [application_id, branch_id];
 
-      connection.query(sql, [application_id, branch_id], (err, results) => {
-        connectionRelease(connection); // Release the connection
+      connection.query(sql, params, (err, results) => {
         if (err) {
-          console.error("Database query error: 19", err);
+          console.error("Database query error:", err);
+          connectionRelease(connection);
           return callback(err, null);
         }
-        // Assuming `results` is an array, and we want the first result
-        callback(null, results[0] || null); // Return single application or null if not found
+
+        const candidateApp = results[0];
+        const davSql = `
+          SELECT * FROM \`services\`
+          WHERE 
+            LOWER(\`title\`) LIKE '%digital%' AND 
+            (LOWER(\`title\`) LIKE '%verification%' OR LOWER(\`title\`) LIKE '%address%')
+          LIMIT 1;
+        `;
+
+        connection.query(davSql, (queryErr, davResults) => {
+          if (queryErr) {
+            console.error(
+              "Database query error while fetching DAV services:",
+              queryErr
+            );
+            connectionRelease(connection);
+            return callback(queryErr, null);
+          }
+
+          let digitalAddressID = null;
+          if (davResults.length > 0) {
+            digitalAddressID = parseInt(davResults[0].id, 10);
+          }
+
+          // Check if digitalAddressID is present in the candidate's services
+          const services = candidateApp.services
+            ? candidateApp.services.split(",")
+            : [];
+          candidateApp.dav_exist = services.includes(String(digitalAddressID))
+            ? 1
+            : 0;
+
+          connectionRelease(connection);
+          callback(null, candidateApp);
+        });
       });
     });
   },

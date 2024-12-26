@@ -841,11 +841,13 @@ exports.sendLink = (req, res) => {
   }
 
   const action = "cmt_application";
+
+  // Check if admin is authorized for the action
   AdminCommon.isAdminAuthorizedForAction(admin_id, action, (result) => {
     if (!result.status) {
       return res.status(403).json({
         status: false,
-        message: result.message, // Return the message from the authorization function
+        message: result.message,
       });
     }
 
@@ -862,25 +864,29 @@ exports.sendLink = (req, res) => {
 
       const newToken = result.newToken;
 
+      // Fetch application by ID
       CandidateMasterTrackerModel.applicationByID(
         application_id,
         branch_id,
         (err, application) => {
           if (err) {
             console.error("Database error:", err);
-            return res
-              .status(500)
-              .json({ status: false, message: err.message, token: newToken });
+            return res.status(500).json({
+              status: false,
+              message: "Database error occurred.",
+              token: newToken,
+            });
           }
 
           if (!application) {
             return res.status(404).json({
               status: false,
-              message: "Application not found",
+              message: "Application not found.",
               token: newToken,
             });
           }
 
+          // Fetch CEF application by ID
           CandidateMasterTrackerModel.cefApplicationByID(
             application_id,
             branch_id,
@@ -904,44 +910,29 @@ exports.sendLink = (req, res) => {
                       }
 
                       const { branch, customer } = emailData;
-                      // Prepare recipient and CC lists
                       const name = application.name;
                       const email = application.email;
                       const services = application.services;
 
                       const toArr = [{ name, email }];
                       let ccArr = [];
-
-                      /*
-        const toArr = [
-          { name: branch.name, email: branch.email },
-          { name, email },
-        ];
-        ccArr = JSON.parse(customer.emails).map((email) => ({
-          name: customer.name,
-          email: email.trim(),
-        }));
-        */
-
                       const serviceIds = services
                         ? services
                             .split(",")
                             .map((id) => parseInt(id.trim(), 10))
                             .filter(Number.isInteger)
                         : [];
-
                       const serviceNames = [];
 
-                      // Function to fetch service names recursively
                       const fetchServiceNames = (index = 0) => {
                         if (index >= serviceIds.length) {
-                          // Once all service names are fetched, get app info
                           App.appInfo("frontend", (err, appInfo) => {
                             if (err) {
-                              console.error("Database error:", err);
+                              console.error("Error fetching app info:", err);
                               return res.status(500).json({
                                 status: false,
-                                message: err.message,
+                                message:
+                                  "Error fetching application information.",
                                 token: newToken,
                               });
                             }
@@ -957,82 +948,110 @@ exports.sendLink = (req, res) => {
                               const dav_href = `${appHost}/digital-form?${base64_link_with_ids}`;
                               const bgv_href = `${appHost}/background-form?${base64_link_with_ids}`;
 
-                              // Fetch and process digital address service
-                              Service.digitlAddressService(
-                                (err, serviceEntry) => {
-                                  if (err) {
-                                    console.error("Database error:", err);
-                                    return res.status(500).json({
-                                      status: false,
-                                      message: err.message,
-                                      token: newToken,
-                                    });
-                                  }
-
-                                  if (serviceEntry) {
-                                    const digitalAddressID = parseInt(
-                                      serviceEntry.id,
-                                      10
-                                    );
-                                    if (serviceIds.includes(digitalAddressID)) {
-                                      davMail(
-                                        "candidate application",
-                                        "dav",
-                                        name,
-                                        customer.name,
-                                        dav_href,
-                                        [
-                                          {
-                                            name: name,
-                                            email: email.trim(),
-                                          },
-                                        ]
-                                      )
-                                        .then(() => {
-                                          console.log(
-                                            "Digital address verification mail sent."
-                                          );
-                                        })
-                                        .catch((emailError) => {
-                                          console.error(
-                                            "Error sending digital address email:",
-                                            emailError
-                                          );
-                                        });
-                                    }
-                                  }
-                                }
+                              let davExist = parseInt(
+                                application.dav_exist,
+                                10
+                              );
+                              let davSubmitted = parseInt(
+                                application.dav_submitted,
+                                10
+                              );
+                              let cefSubmitted = parseInt(
+                                application.cef_submitted,
+                                10
                               );
 
-                              // Send application creation email
-                              createMail(
-                                "candidate application",
-                                "create",
-                                name || "",
-                                customer.name || "",
-                                result.insertId || "",
-                                bgv_href || "",
-                                serviceNames || [],
-                                toArr || [],
-                                ccArr || []
-                              )
-                                .then(() => {
-                                  return res.status(201).json({
-                                    status: true,
-                                    message:
-                                      "Candidate application created successfully and email sent.",
-                                    token: newToken,
+                              // Initialize flags for sent mails and errors
+                              let davMailSent = false;
+                              let cefMailSent = false;
+                              let davErrors = [];
+                              let cefErrors = [];
+
+                              const emailTasks = [];
+
+                              // Send Digital Address Verification Mail if required
+                              if (davExist === 1 && davSubmitted === 0) {
+                                const davMailPromise = davMail(
+                                  "candidate application",
+                                  "dav",
+                                  name,
+                                  customer.name,
+                                  dav_href,
+                                  toArr
+                                )
+                                  .then(() => {
+                                    davMailSent = true;
+                                    console.log(
+                                      "Digital address verification mail sent."
+                                    );
+                                  })
+                                  .catch((emailError) => {
+                                    davErrors.push(emailError);
+                                    console.error(
+                                      "Error sending DAV email:",
+                                      emailError
+                                    );
                                   });
-                                })
-                                .catch((emailError) => {
-                                  console.error(
-                                    "Error sending application creation email:",
-                                    emailError
-                                  );
-                                  return res.status(201).json({
+                                emailTasks.push(davMailPromise); // Add to emailTasks
+                              }
+
+                              // Send CEF application email if required
+                              if (cefSubmitted === 0) {
+                                const cefMailPromise = createMail(
+                                  "candidate application",
+                                  "create",
+                                  name,
+                                  customer.name,
+                                  result.insertId,
+                                  bgv_href,
+                                  serviceNames,
+                                  toArr,
+                                  ccArr
+                                )
+                                  .then(() => {
+                                    cefMailSent = true;
+                                    console.log("CEF application mail sent.");
+                                  })
+                                  .catch((emailError) => {
+                                    cefErrors.push(emailError);
+                                    console.error(
+                                      "Error sending CEF email:",
+                                      emailError
+                                    );
+                                  });
+                                emailTasks.push(cefMailPromise); // Add to emailTasks
+                              }
+
+                              // Wait for all email tasks to complete
+                              Promise.all(emailTasks)
+                                .then(() => {
+                                  // Final response based on email sending status
+                                  const responseMessage = {
                                     status: true,
+                                    token: newToken,
                                     message:
-                                      "Candidate application created successfully, but email failed to send.",
+                                      "Email notifications successfully sent.",
+                                    details: {
+                                      davMailSent,
+                                      cefMailSent,
+                                      davErrors,
+                                      cefErrors,
+                                    },
+                                  };
+
+                                  if (!davMailSent && !cefMailSent) {
+                                    responseMessage.message =
+                                      "No email notifications sent.";
+                                    responseMessage.status = false;
+                                  }
+
+                                  return res.status(201).json(responseMessage);
+                                })
+                                .catch((err) => {
+                                  console.error("Error sending emails:", err);
+                                  return res.status(500).json({
+                                    status: false,
+                                    message: "Error sending emails.",
                                     token: newToken,
                                   });
                                 });
@@ -1042,8 +1061,6 @@ exports.sendLink = (req, res) => {
                         }
 
                         const id = serviceIds[index];
-
-                        // Fetch service required documents for each service ID
                         Service.getServiceRequiredDocumentsByServiceId(
                           id,
                           (err, currentService) => {
@@ -1054,43 +1071,38 @@ exports.sendLink = (req, res) => {
                               );
                               return res.status(500).json({
                                 status: false,
-                                message: err.message,
+                                message: "Service data error.",
                                 token: newToken,
                               });
                             }
 
                             if (!currentService || !currentService.title) {
-                              // Skip invalid services and continue to the next service
                               return fetchServiceNames(index + 1);
                             }
 
-                            // Add the service name and description to the array
                             serviceNames.push(
                               `${currentService.title}: ${currentService.description}`
                             );
-
-                            // Recursively fetch the next service
                             fetchServiceNames(index + 1);
                           }
                         );
                       };
 
-                      // Start fetching service names
                       fetchServiceNames();
                     }
                   );
                 } else {
-                  console.error("Database error:", err);
+                  console.error("Error fetching CEF application data:", err);
                   return res.status(500).json({
                     status: false,
-                    message: err.message,
+                    message: "Failed to retrieve CEF application data.",
                     token: newToken,
                   });
                 }
               } else {
                 return res.status(500).json({
                   status: false,
-                  message: "BFV form already submited",
+                  message: "BFV form already submitted",
                   token: newToken,
                 });
               }

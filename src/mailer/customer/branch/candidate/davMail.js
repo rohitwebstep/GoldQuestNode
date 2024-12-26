@@ -80,8 +80,6 @@ async function davMail(
       })
       .join(", ");
 
-    console.log("Recipient List:", toList);
-
     // Send email
     const info = await transporter.sendMail({
       from: `"${smtp.title}" <${smtp.username}>`,
