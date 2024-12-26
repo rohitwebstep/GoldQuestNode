@@ -460,45 +460,51 @@ const Customer = {
                 await Promise.all(
                   Object.entries(dbTableFileInputs).map(
                     async ([dbTable, fileInputNames]) => {
-                      const selectQuery = `SELECT ${fileInputNames.join(
-                        ", "
-                      )} FROM cef_${dbTable} WHERE candidate_application_id = ?`;
-                      const rows = await new Promise((resolve, reject) => {
-                        connection.query(
-                          selectQuery,
-                          [candidateApp.main_id],
-                          (err, rows) => {
-                            if (err) {
-                              console.error(
-                                "Error querying database for table:",
-                                dbTable,
-                                err
-                              );
-                              return reject(err);
+                      if (fileInputNames.length > 0) {
+                        const selectQuery = `SELECT ${fileInputNames.join(
+                          ", "
+                        )} FROM cef_${dbTable} WHERE candidate_application_id = ?`;
+                        const rows = await new Promise((resolve, reject) => {
+                          connection.query(
+                            selectQuery,
+                            [candidateApp.main_id],
+                            (err, rows) => {
+                              if (err) {
+                                console.error(
+                                  "Error querying database for table:",
+                                  dbTable,
+                                  err
+                                );
+                                return reject(err);
+                              }
+                              resolve(rows);
                             }
-                            resolve(rows);
+                          );
+                        });
+
+                        // Process and map the rows to replace column names with labels
+                        const updatedRows = rows.map((row) => {
+                          const updatedRow = {};
+                          for (const [key, value] of Object.entries(row)) {
+                            const label = dbTableColumnLabel[key];
+                            updatedRow[label || key] = value; // Use label if available, else keep original key
                           }
-                        );
-                      });
+                          return updatedRow;
+                        });
 
-                      // Process and map the rows to replace column names with labels
-                      const updatedRows = rows.map((row) => {
-                        const updatedRow = {};
-                        for (const [key, value] of Object.entries(row)) {
-                          const label = dbTableColumnLabel[key];
-                          updatedRow[label || key] = value; // Use label if available, else keep original key
+                        if (updatedRows.length > 0) {
+                          servicesResult.cef[dbTableWithHeadings[dbTable]] =
+                            updatedRows;
                         }
-                        return updatedRow;
-                      });
 
-                      if (updatedRows.length > 0) {
-                        servicesResult.cef[dbTableWithHeadings[dbTable]] =
-                          updatedRows;
-                      }
-
-                      tableQueries++;
-                      if (tableQueries === totalTables) {
-                        candidateApp.service_data = servicesResult;
+                        tableQueries++;
+                        if (tableQueries === totalTables) {
+                          candidateApp.service_data = servicesResult;
+                        }
+                      } else {
+                        console.log(
+                          `Skipping table ${dbTable} as fileInputNames is empty.`
+                        );
                       }
                     }
                   )
