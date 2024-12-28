@@ -290,7 +290,7 @@ const Customer = {
           connectionRelease(connection);
           return callback(err, null);
         }
-
+        console.log(`results- `, results);
         const davSql = `
         SELECT * FROM \`services\`
         WHERE LOWER(\`title\`) LIKE '%digital%'
@@ -439,62 +439,86 @@ const Customer = {
                 }
 
                 await Promise.all(
-                  Object.entries(dbTableFileInputs).map(
-                    async ([dbTable, fileInputNames]) => {
-                      if (fileInputNames.length > 0) {
-                        const selectQuery = `SELECT ${fileInputNames.join(
-                          ", "
-                        )} FROM cef_${dbTable} WHERE candidate_application_id = ?`;
-                        const rows = await new Promise((resolve, reject) => {
-                          connection.query(
-                            selectQuery,
-                            [candidateApp.main_id],
-                            (err, rows) => {
-                              if (err) {
-                                console.error(
-                                  "Error querying database for table:",
-                                  dbTable,
-                                  err
-                                );
-                                return reject(err);
-                              }
-                              resolve(rows);
+                  Object.entries(dbTableFileInputs).map(async ([dbTable, fileInputNames]) => {
+                    if (fileInputNames.length > 0) {
+                      try {
+                        // Fetch the column names of the table
+                        const existingColumns = await new Promise((resolve, reject) => {
+                          const describeQuery = `DESCRIBE cef_${dbTable}`;
+                          connection.query(describeQuery, (err, results) => {
+                            if (err) {
+                              console.error("Error describing table:", dbTable, err);
+                              return reject(err);
                             }
-                          );
+                            resolve(results.map((col) => col.Field)); // Extract column names
+                          });
                         });
 
-                        // Process and map the rows to replace column names with labels
-                        const updatedRows = rows.map((row) => {
-                          const updatedRow = {};
-                          for (const [key, value] of Object.entries(row)) {
-                            // Only include non-null and non-empty values
-                            if (value != null && value !== "") {
-                              const label = dbTableColumnLabel[key];
-                              updatedRow[label || key] = value; // Use label if available, else keep original key
+                        // Get only the columns that exist in the table
+                        const validColumns = fileInputNames.filter((col) =>
+                          existingColumns.includes(col)
+                        );
+
+                        if (validColumns.length > 0) {
+                          // Create and execute the SELECT query
+                          const selectQuery = `SELECT ${validColumns.join(", ")} FROM cef_${dbTable} WHERE candidate_application_id = ?`;
+                          const rows = await new Promise((resolve, reject) => {
+                            connection.query(
+                              selectQuery,
+                              [candidateApp.main_id],
+                              (err, rows) => {
+                                if (err) {
+                                  console.error(
+                                    "Error querying database for table:",
+                                    dbTable,
+                                    err
+                                  );
+                                  return reject(err);
+                                }
+                                resolve(rows);
+                              }
+                            );
+                          });
+
+                          // Process and map the rows to replace column names with labels
+                          const updatedRows = rows.map((row) => {
+                            const updatedRow = {};
+                            for (const [key, value] of Object.entries(row)) {
+                              if (value != null && value !== "") {
+                                const label = dbTableColumnLabel[key];
+                                updatedRow[label || key] = value; // Use label if available, else keep original key
+                              }
                             }
+                            return updatedRow;
+                          });
+
+                          if (
+                            updatedRows.length > 0 &&
+                            updatedRows.some((row) => Object.keys(row).length > 0)
+                          ) {
+                            servicesResult.cef[dbTableWithHeadings[dbTable]] = updatedRows;
                           }
-                          return updatedRow;
-                        });
-                        if (
-                          updatedRows.length > 0 &&
-                          updatedRows.some((row) => Object.keys(row).length > 0)
-                        ) {
-                          servicesResult.cef[dbTableWithHeadings[dbTable]] =
-                            updatedRows;
+                        } else {
+                          console.log(
+                            `Skipping table ${dbTable} as no valid columns exist in the table.`
+                          );
                         }
 
                         tableQueries++;
                         if (tableQueries === totalTables) {
                           candidateApp.service_data = servicesResult;
                         }
-                      } else {
-                        console.log(
-                          `Skipping table ${dbTable} as fileInputNames is empty.`
-                        );
+                      } catch (error) {
+                        console.error(`Error processing table ${dbTable}:`, error);
                       }
+                    } else {
+                      console.log(
+                        `Skipping table ${dbTable} as fileInputNames is empty.`
+                      );
                     }
-                  )
+                  })
                 );
+
               } catch (error) {
                 return Promise.reject(error); // Reject if any errors occur during CEF processing
               }
