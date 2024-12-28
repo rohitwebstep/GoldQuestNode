@@ -263,6 +263,7 @@ exports.update = (req, res) => {
           return res.status(500).json({
             status: false,
             message: "Failed to retrieve package. Please try again.",
+            token: newToken,
           });
         }
 

@@ -273,6 +273,7 @@ exports.sendNotification = async (req, res) => {
                           return res.status(500).json({
                             message: "Error updating acknowledgment status",
                             error: err,
+                            token: newToken,
                           });
                         }
 

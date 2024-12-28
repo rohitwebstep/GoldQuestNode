@@ -452,6 +452,7 @@ exports.cefApplicationByID = (req, res) => {
                               status: false,
                               message:
                                 "An error occurred while fetching service form json.",
+                              token: newToken,
                             });
                           }
                           return res.json({
@@ -918,9 +919,9 @@ exports.sendLink = (req, res) => {
                       let ccArr = [];
                       const serviceIds = services
                         ? services
-                            .split(",")
-                            .map((id) => parseInt(id.trim(), 10))
-                            .filter(Number.isInteger)
+                          .split(",")
+                          .map((id) => parseInt(id.trim(), 10))
+                          .filter(Number.isInteger)
                         : [];
                       const serviceNames = [];
 
