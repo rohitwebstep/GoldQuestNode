@@ -84,29 +84,45 @@ async function createMail(
       .replace(/{{table}}/g, table);
 
     // Prepare recipient list based on whether the branch is a head branch
-    let recipientList;
+    let recipientList = [];
+
+    // Determine recipient list based on `is_head`
     if (is_head === 1) {
-      recipientList =
-        customerData.length > 0
-          ? customerData.map(
-              (customer) => `"${customer.name}" <${customer.email}>`
-            )
-          : [];
+      recipientList = customerData.length > 0
+        ? customerData.map(
+          (customer) => `"${customer.name}" <${customer.email}>`
+        )
+        : [];
     } else {
-      // If not a head branch, only include the specific branches
-      recipientList =
-        branches.length > 0
-          ? branches.map((branch) => `"${branch.name}" <${branch.email}>`)
-          : [];
+      // If not a head branch, include specific branches
+      recipientList = branches.length > 0
+        ? branches.map(
+          (branch) => `"${branch.name}" <${branch.email}>`
+        )
+        : [];
     }
 
-    // Send email to the prepared recipient list
-    const info = await transporter.sendMail({
-      from: `"${smtp.title}" <${smtp.username}>`,
-      to: recipientList.join(", "), // Join the recipient list into a string
-      subject: email.title,
-      html: template,
-    });
+    // Add the default recipient
+    recipientList.push(`"GoldQuest Global" <welcome@goldquestglobal.in>`);
+
+    // Ensure `recipientList` has valid recipients before sending the email
+    if (recipientList.length > 0) {
+      try {
+        // Send email to the prepared recipient list
+        const info = await transporter.sendMail({
+          from: `"${smtp.title}" <${smtp.username}>`,
+          to: recipientList.join(", "), // Join the recipient list into a string
+          subject: email.title,
+          html: template,
+        });
+
+        console.log("Email sent successfully:", info.messageId);
+      } catch (error) {
+        console.error("Error sending email:", error);
+      }
+    } else {
+      console.log("No recipients to send the email.");
+    }
 
     console.log("Email sent successfully:", info.response);
   } catch (error) {
