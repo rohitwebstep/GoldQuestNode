@@ -355,7 +355,7 @@ const Customer = {
                   throw new Error("Candidate DAV form is not submitted yet");
                 }
 
-                davResults.forEach((cefResult) => {
+                davResults.forEach((davResult) => {
                   // Define a mapping of keys to labels
                   const mappings = {
                     identity_proof: "Identity Proof",
@@ -365,8 +365,8 @@ const Customer = {
 
                   // Iterate over the mappings and assign values if not null or empty
                   Object.entries(mappings).forEach(([key, label]) => {
-                    if (cefResult[key] != null && cefResult[key] !== "") {
-                      servicesResult.dav[label] = cefResult[key];
+                    if (davResult[key] != null && davResult[key] !== "") {
+                      servicesResult.dav[label] = davResult[key];
                     }
                   });
                 });
@@ -379,6 +379,76 @@ const Customer = {
 
             // Handle CEF submitted cases
             if (candidateApp.cef_submitted === 1) {
+              let candidateBasicAttachments = [];
+              const checkCefSql = `
+                SELECT 
+                  \`signature\`, 
+                  \`resume_file\`, 
+                  \`govt_id\`, 
+                  \`pan_card_image\`, 
+                  \`aadhar_card_image\`, 
+                  \`passport_photo\`
+                FROM 
+                  \`cef_applications\`
+                WHERE 
+                  \`candidate_application_id\` = ?;
+              `;
+
+              try {
+                const cefResults = await new Promise((resolve, reject) => {
+                  startConnection((err, connection) => {
+                    if (err) {
+                      console.error("Connection error:", err);
+                      return reject(err);
+                    }
+
+                    connection.query(
+                      checkCefSql,
+                      [candidateApp.main_id],
+                      (queryErr, results) => {
+                        if (queryErr) {
+                          console.error("Database query error: Check DAV", queryErr);
+                          return reject(queryErr);
+                        }
+                        resolve(results);
+                      }
+                    );
+                  });
+                });
+
+                // Process results
+                if (cefResults.length === 0) {
+                  throw new Error("Candidate DAV form is not submitted yet");
+                }
+
+                cefResults.forEach((cefResult) => {
+                  // Define a mapping of keys to labels
+                  const mappings = {
+                    signature: "Signature",
+                    resume_file: "Resume File",
+                    govt_id: "GOVT ID",
+                    pan_card_image: "Pancard Image",
+                    aadhar_card_image: "Aadhar Card Image",
+                    passport_photo: "Passport Photo",
+                  };
+
+                  // Iterate over the mappings and push key-value pairs as objects
+                  for (const [key, label] of Object.entries(mappings)) {
+                    if (cefResult[key]) {
+                      candidateBasicAttachments.push({
+                        [label]: cefResult[key],
+                      });
+                    }
+                  }
+                });
+
+                console.log("candidateBasicAttachments:", candidateBasicAttachments);
+                servicesResult.cef["Candidate Basic Attachments"] = candidateBasicAttachments;
+              } catch (error) {
+                console.error("Error processing candidate attachments:", error);
+                return Promise.reject(error); // Reject the promise if any error occurs
+              }
+
               const dbTableFileInputs = {};
               const dbTableColumnLabel = {};
               let completedQueries = 0;
@@ -506,6 +576,7 @@ const Customer = {
 
                         tableQueries++;
                         if (tableQueries === totalTables) {
+                          console.log(`servicesResult.cef - `, servicesResult.cef);
                           candidateApp.service_data = servicesResult;
                         }
                       } catch (error) {
