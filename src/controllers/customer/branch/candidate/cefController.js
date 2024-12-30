@@ -5,6 +5,8 @@ const BranchCommon = require("../../../../models/customer/branch/commonModel");
 const CEF = require("../../../../models/customer/branch/cefModel");
 const Service = require("../../../../models/admin/serviceModel");
 const App = require("../../../../models/appModel");
+const Admin = require("../../../../models/admin/adminModel");
+
 const { cdfDataPDF } = require("../../../../utils/cdfDataPDF");
 const fs = require("fs");
 const path = require("path");
@@ -156,11 +158,12 @@ exports.test = (req, res) => {
       });
     }
     console.log(`attachments - `, attachments);
-    return res.status(500).json({
-      status: false,
-      message: "Database error occurred",
-    });
-    sendNotificationEmails(1, 1, "Paula Merrill", 18, 8, "65", "Test 2", res);
+    // return res.status(500).json({
+    //   status: false,
+    //   message: "Database error occurred",
+    // });
+    sendNotificationEmails(15, 3, "Paula Merrill", 10, 5, "65", "Test 2", res);
+    // (candidateAppId,cefID,name,branch_id,customer_id,client_unique_id,customer_name,res)
   });
 };
 
@@ -522,41 +525,67 @@ const sendNotificationEmails = (
                 );
                 attachments +=
                   (attachments ? "," : "") + `${imageHost}/${pdfPath}`;
-                const { branch, customer } = emailData;
-                const toArr = [{ name: branch.name, email: branch.email }];
-                const ccArr = JSON.parse(customer.emails).map((email) => ({
-                  name: customer.name,
-                  email: email.trim(),
-                }));
-                // Send application creation email
-                cefSubmitMail(
-                  "Candidate Background Form",
-                  "submit",
-                  name,
-                  customer_name,
-                  attachments,
-                  toArr || [],
-                  ccArr || [],
-                  currentCEFApplication || []
-                )
-                  .then(() => {
-                    return res.status(201).json({
-                      status: true,
-                      message:
-                        "CEF Application submitted successfully and notifications sent.",
+
+                Admin.list((err, adminResult) => {
+                  if (err) {
+                    console.error("Database error:", err);
+                    return res.status(500).json({
+                      status: false,
+                      message: "Error retrieving admin details.",
+                      token: newToken,
                     });
-                  })
-                  .catch((emailError) => {
-                    console.error(
-                      "Error sending application creation email:",
-                      emailError
-                    );
-                    return res.status(201).json({
-                      status: true,
-                      message:
-                        "CEF Application submitted successfully, but email failed to send.",
+                  }
+                  const { branch, customer } = emailData;
+
+                  // Prepare recipient and CC lists
+                  const toArr = [{ name: branch.name, email: branch.email }];
+
+                  const emailList = JSON.parse(customer.emails);
+                  const ccArr1 = emailList.map(email => ({ name: customer.name, email }));
+
+                  const mergedEmails = [
+                    ...ccArr1,
+                    ...adminResult.map(admin => ({ name: admin.name, email: admin.email }))
+                  ];
+
+                  const uniqueEmails = [
+                    ...new Map(mergedEmails.map(item => [item.email, item])).values()
+                  ];
+
+                  const ccArr = [
+                    ...new Map([...ccArr1, ...uniqueEmails].map(item => [item.email, item])).values()
+                  ];
+
+                  // Send application creation email
+                  cefSubmitMail(
+                    "Candidate Background Form",
+                    "submit",
+                    name,
+                    customer_name,
+                    attachments,
+                    toArr || [],
+                    ccArr || [],
+                    currentCEFApplication || []
+                  )
+                    .then(() => {
+                      return res.status(201).json({
+                        status: true,
+                        message:
+                          "CEF Application submitted successfully and notifications sent.",
+                      });
+                    })
+                    .catch((emailError) => {
+                      console.error(
+                        "Error sending application creation email:",
+                        emailError
+                      );
+                      return res.status(201).json({
+                        status: true,
+                        message:
+                          "CEF Application submitted successfully, but email failed to send.",
+                      });
                     });
-                  });
+                });
               });
             }
           );

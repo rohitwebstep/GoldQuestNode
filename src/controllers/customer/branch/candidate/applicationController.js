@@ -198,8 +198,6 @@ exports.create = (req, res) => {
                           });
                         }
 
-
-
                         const { branch, customer } = emailData;
                         console.log(`customer - `, customer);
 
