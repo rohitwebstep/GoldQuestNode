@@ -40,7 +40,7 @@ exports.list = (req, res) => {
     });
   }
 
-  const action = "cmt_application";
+  const action = "client_master_tracker";
   AdminCommon.isAdminAuthorizedForAction(admin_id, action, (authResult) => {
     if (!authResult.status) {
       return res.status(403).json({
@@ -160,7 +160,7 @@ exports.listByCustomerId = (req, res) => {
     });
   }
 
-  const action = "cmt_application";
+  const action = "client_master_tracker";
   AdminCommon.isAdminAuthorizedForAction(admin_id, action, (result) => {
     if (!result.status) {
       return res.status(403).json({
@@ -239,7 +239,7 @@ exports.applicationListByBranch = (req, res) => {
     });
   }
 
-  const action = "cmt_application";
+  const action = "client_master_tracker";
   AdminCommon.isAdminAuthorizedForAction(admin_id, action, (result) => {
     if (!result.status) {
       return res.status(403).json({
@@ -352,7 +352,7 @@ exports.applicationByID = (req, res) => {
     });
   }
 
-  const action = "cmt_application";
+  const action = "client_master_tracker";
   AdminCommon.isAdminAuthorizedForAction(admin_id, action, (result) => {
     if (!result.status) {
       return res.status(403).json({
@@ -532,7 +532,7 @@ exports.annexureData = (req, res) => {
     });
   }
 
-  const action = "cmt_application";
+  const action = "client_master_tracker";
   AdminCommon.isAdminAuthorizedForAction(admin_id, action, (result) => {
     if (!result.status) {
       return res.status(403).json({
@@ -614,7 +614,7 @@ exports.filterOptions = (req, res) => {
     });
   }
 
-  const action = "cmt_application";
+  const action = "client_master_tracker";
   AdminCommon.isAdminAuthorizedForAction(admin_id, action, (result) => {
     if (!result.status) {
       return res.status(403).json({
@@ -702,7 +702,7 @@ exports.filterOptionsForBranch = (req, res) => {
     });
   }
 
-  const action = "cmt_application";
+  const action = "client_master_tracker";
   AdminCommon.isAdminAuthorizedForAction(admin_id, action, (result) => {
     if (!result.status) {
       return res.status(403).json({
@@ -790,7 +790,7 @@ exports.reportFormJsonByServiceID = (req, res) => {
     });
   }
 
-  const action = "cmt_application";
+  const action = "client_master_tracker";
   AdminCommon.isAdminAuthorizedForAction(admin_id, action, (result) => {
     if (!result.status) {
       return res.status(403).json({
@@ -914,7 +914,7 @@ exports.generateReport = (req, res) => {
     return { mainJson: result, annexureRawJson: annexureResult };
   }
 
-  const action = "cmt_application";
+  const action = "client_master_tracker";
   AdminCommon.isAdminAuthorizedForAction(admin_id, action, (AuthResult) => {
     if (!AuthResult.status) {
       return res.status(403).json({
@@ -1676,7 +1676,7 @@ exports.customerBasicInfoWithAdminAuth = (req, res) => {
     });
   }
 
-  const action = "cmt_application";
+  const action = "client_master_tracker";
   AdminCommon.isAdminAuthorizedForAction(admin_id, action, (result) => {
     if (!result.status) {
       return res.status(403).json({
@@ -1763,7 +1763,7 @@ exports.annexureDataByServiceIdofApplication = (req, res) => {
     });
   }
 
-  const action = "cmt_application";
+  const action = "client_master_tracker";
   AdminCommon.isAdminAuthorizedForAction(admin_id, action, (result) => {
     if (!result.status) {
       return res.status(403).json({
@@ -1910,7 +1910,7 @@ exports.upload = async (req, res) => {
       });
     }
 
-    const action = "cmt_application";
+    const action = "client_master_tracker";
     AdminCommon.isAdminAuthorizedForAction(adminId, action, (result) => {
       if (!result.status) {
         return res.status(403).json({
@@ -2275,7 +2275,7 @@ exports.annexureDataByServiceIds = (req, res) => {
     });
   }
 
-  const action = "cmt_application";
+  const action = "client_master_tracker";
   AdminCommon.isAdminAuthorizedForAction(admin_id, action, (result) => {
     if (!result.status) {
       return res.status(403).json({

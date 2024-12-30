@@ -47,7 +47,7 @@ exports.list = (req, res) => {
     });
   }
 
-  const action = "acknowledgement";
+  const action = "acknowledgement_email";
   AdminCommon.isAdminAuthorizedForAction(admin_id, action, (authResult) => {
     if (!authResult.status) {
       return res.status(403).json({
@@ -110,7 +110,7 @@ exports.sendNotification = async (req, res) => {
     });
   }
 
-  const action = "acknowledgement";
+  const action = "acknowledgement_email";
   // Check admin authorization
   AdminCommon.isAdminAuthorizedForAction(
     admin_id,

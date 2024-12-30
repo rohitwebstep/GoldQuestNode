@@ -78,7 +78,7 @@ exports.addClientListings = (req, res) => {
     });
   }
 
-  const action = "customer";
+  const action = "client_management";
   Common.isAdminAuthorizedForAction(admin_id, action, (authResult) => {
     if (!authResult || !authResult.status) {
       return res.status(403).json({

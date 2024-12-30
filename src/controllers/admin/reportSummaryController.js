@@ -16,7 +16,7 @@ exports.reportTracker = (req, res) => {
     });
   }
 
-  const action = "cmt_application";
+  const action = "client_master_tracker";
   Common.isAdminAuthorizedForAction(admin_id, action, (result) => {
     if (!result.status) {
       return res.status(403).json({
@@ -69,7 +69,7 @@ exports.reportGeneration = (req, res) => {
       message: `Missing required fields: ${missingFields.join(", ")}`,
     });
   }
-  const action = "cmt_application";
+  const action = "client_master_tracker";
   Common.isAdminAuthorizedForAction(admin_id, action, (result) => {
     if (!result.status) {
       return res.status(403).json({

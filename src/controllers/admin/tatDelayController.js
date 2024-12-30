@@ -16,7 +16,7 @@ exports.list = (req, res) => {
     });
   }
   
-  const action = "tat_delay";
+  const action = "tat_delay_notification";
   Common.isAdminAuthorizedForAction(admin_id, action, (result) => {
     if (!result.status) {
       return res.status(403).json({
