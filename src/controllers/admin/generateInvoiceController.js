@@ -1,5 +1,5 @@
 const crypto = require("crypto");
-const generategenerate_invoiceModel = require("../../models/admin/generategenerate_invoiceModel");
+const generategenerate_invoiceModel = require("../../models/admin/generateInvoiceModel");
 const Customer = require("../../models/customer/customerModel");
 const ClientApplication = require("../../models/customer/branch/clientApplicationModel");
 const Branch = require("../../models/customer/branch/branchModel");
@@ -134,7 +134,7 @@ async function getServiceNames(serviceIds) {
 }
 
 // Controller to list all customers
-exports.generategenerate_invoice = async (req, res) => {
+exports.generateInvoice = async (req, res) => {
   const { customer_id, month, year, admin_id, _token } = req.query; // Renamed for clarity
 
   // Check for missing required fields
