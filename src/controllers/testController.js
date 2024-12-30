@@ -72,8 +72,8 @@ exports.connectionCheck = (req, res) => {
     ipAddress = ipAddress.slice(7);  // Remove "::ffff:" to get the correct IPv4 address
   }
 
-  // Optionally, trim any surrounding spaces
   ipAddress = ipAddress.trim();
+  
   Test.connectionCheck((err, result) => {
     if (err) {
       console.error("Database error:", err);
