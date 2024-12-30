@@ -76,16 +76,14 @@ exports.connectionCheck = (req, res) => {
       return res.json({
         status: true,
         message: "No matching customers found",
-        customers: [],
-        totalResults: 0,
+        ipAddress
       });
     }
 
     res.json({
       status: true,
       message: "Customers fetched successfully",
-      customers: result,
-      totalResults: Array.isArray(result) ? result.length : 1,
+      ipAddress
     });
   });
 };
