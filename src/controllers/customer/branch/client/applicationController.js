@@ -1411,72 +1411,71 @@ exports.upload = async (req, res) => {
                                     }
 
                                     const serviceIds =
-                                      typeof services === "string" &&
-                                        services.trim() !== ""
-                                        ? services
-                                          .split(",")
-                                          .map((id) => id.trim())
-                                        : [];
+                                      typeof currentClientApplication.services === "string" &&
+                                        currentClientApplication.services.trim() !== ""
+                                        ? currentClientApplication.services.split(",").map((id) => id.trim())
+                                        : currentClientApplication.services;
 
                                     const serviceNames = [];
 
                                     // Function to fetch service names
                                     const fetchServiceNames = (index = 0) => {
                                       if (index >= serviceIds.length) {
-
                                         AppModel.appInfo("frontend", async (err, appInfo) => {
                                           if (err) {
                                             console.error("Database error:", err);
-                                            return res.status(500).json({
-                                              status: false,
-                                              message:
-                                                "An error occurred while retrieving application information. Please try again.",
-                                            });
+                                            if (!res.headersSent) {
+                                              return res.status(500).json({
+                                                status: false,
+                                                message:
+                                                  "An error occurred while retrieving application information. Please try again.",
+                                              });
+                                            }
+                                            return;
                                           }
 
                                           if (!appInfo) {
-                                            console.error(
-                                              "Database error during app info retrieval:",
-                                              err
-                                            );
-                                            return reject(
-                                              new Error("Information of the application not found.")
-                                            );
+                                            console.error("Database error during app info retrieval:", err);
+                                            if (!res.headersSent) {
+                                              return res.status(404).json({
+                                                status: false,
+                                                message: "Information of the application not found.",
+                                              });
+                                            }
+                                            return;
                                           }
-                                          const appHost = appInfo.host || 'www.example.com';
-                                          const appName = appInfo.name || 'Example Company';
-                                          console.log(
-                                            `serviceNames - `,
-                                            serviceNames
-                                          );
+
+                                          const appHost = appInfo.host || "www.example.com";
+                                          const appName = appInfo.name || "Example Company";
+                                          console.log(`serviceNames - `, serviceNames);
+
                                           // Once all services have been processed, send email notification
-                                          createMail(
-                                            "client application",
-                                            "create",
-                                            client_application_name,
-                                            client_application_generated_id,
-                                            clientName,
-                                            clientCode,
-                                            serviceNames,
-                                            newAttachedDocsString,
-                                            appHost,
-                                            toArr,
-                                            ccArr
-                                          )
-                                            .then(() => {
+                                          try {
+                                            await createMail(
+                                              "client application",
+                                              "create",
+                                              client_application_name,
+                                              client_application_generated_id,
+                                              clientName,
+                                              clientCode,
+                                              serviceNames,
+                                              newAttachedDocsString,
+                                              appHost,
+                                              toArr,
+                                              ccArr
+                                            );
+
+                                            if (!res.headersSent) {
                                               return res.status(201).json({
                                                 status: true,
-                                                message:
-                                                  "Client application created successfully and email sent.",
+                                                message: "Client application created successfully and email sent.",
                                                 token: newToken,
                                                 savedImagePaths,
                                               });
-                                            })
-                                            .catch((emailError) => {
-                                              console.error(
-                                                "Error sending email:",
-                                                emailError
-                                              );
+                                            }
+                                          } catch (emailError) {
+                                            console.error("Error sending email:", emailError);
+                                            if (!res.headersSent) {
                                               return res.status(201).json({
                                                 status: true,
                                                 message:
@@ -1485,21 +1484,18 @@ exports.upload = async (req, res) => {
                                                 token: newToken,
                                                 savedImagePaths,
                                               });
-                                            });
-                                          return;
+                                            }
+                                          }
                                         });
+                                        return;
                                       }
 
                                       const id = serviceIds[index];
 
-                                      Service.getServiceById(
-                                        id,
-                                        (err, currentService) => {
-                                          if (err) {
-                                            console.error(
-                                              "Error fetching service data:",
-                                              err
-                                            );
+                                      Service.getServiceById(id, (err, currentService) => {
+                                        if (err) {
+                                          console.error("Error fetching service data:", err);
+                                          if (!res.headersSent) {
                                             return res.status(500).json({
                                               status: false,
                                               message: err.message,
@@ -1507,28 +1503,25 @@ exports.upload = async (req, res) => {
                                               savedImagePaths,
                                             });
                                           }
-
-                                          // Skip invalid services and continue to the next index
-                                          if (
-                                            !currentService ||
-                                            !currentService.title
-                                          ) {
-                                            return fetchServiceNames(index + 1);
-                                          }
-
-                                          // Add the current service name to the array
-                                          serviceNames.push(
-                                            currentService.title
-                                          );
-
-                                          // Recursively fetch the next service
-                                          fetchServiceNames(index + 1);
+                                          return;
                                         }
-                                      );
+
+                                        // Skip invalid services and continue to the next index
+                                        if (!currentService || !currentService.title) {
+                                          return fetchServiceNames(index + 1);
+                                        }
+
+                                        // Add the current service name to the array
+                                        serviceNames.push(currentService.title);
+
+                                        // Recursively fetch the next service
+                                        fetchServiceNames(index + 1);
+                                      });
                                     };
 
                                     // Start fetching service names
                                     fetchServiceNames();
+
                                   }
                                 );
                               }
