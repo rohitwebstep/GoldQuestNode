@@ -23,7 +23,7 @@ exports.list = (req, res) => {
       message: `Missing required fields: ${missingFields.join(", ")}`,
     });
   }
-  const action = "admin";
+  const action = "internal_login_credentials";
   Common.isAdminAuthorizedForAction(admin_id, action, (result) => {
     if (!result.status) {
       return res.status(403).json({
@@ -186,7 +186,7 @@ exports.create = (req, res) => {
       message: `Missing required fields: ${missingFields.join(", ")}`,
     });
   }
-  const action = "admin";
+  const action = "internal_login_credentials";
   Common.isAdminAuthorizedForAction(admin_id, action, (authResult) => {
     if (!authResult.status) {
       return res.status(403).json({
@@ -341,7 +341,7 @@ exports.update = (req, res) => {
     });
   }
 
-  const action = "admin";
+  const action = "internal_login_credentials";
   Common.isAdminAuthorizedForAction(admin_id, action, (authResult) => {
     if (!authResult.status) {
       return res.status(403).json({
@@ -462,7 +462,7 @@ exports.delete = (req, res) => {
     });
   }
 
-  const action = "admin";
+  const action = "internal_login_credentials";
   Common.isAdminAuthorizedForAction(admin_id, action, (authResult) => {
     if (!authResult.status) {
       return res.status(403).json({
@@ -611,7 +611,7 @@ exports.upload = async (req, res) => {
             token: newToken,
           });
         }
-        const action = "admin";
+        const action = "internal_login_credentials";
         Common.isAdminAuthorizedForAction(
           adminId,
           action,

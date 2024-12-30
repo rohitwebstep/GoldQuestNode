@@ -18,7 +18,7 @@ exports.create = (req, res) => {
     });
   }
 
-  const action = "holiday";
+  const action = "client_management";
   Common.isAdminAuthorizedForAction(admin_id, action, (result) => {
     if (!result.status) {
       // Check the status returned by the authorization function
@@ -50,7 +50,7 @@ exports.create = (req, res) => {
             "0",
             null,
             err,
-            () => {}
+            () => { }
           );
           return res
             .status(500)
@@ -64,7 +64,7 @@ exports.create = (req, res) => {
           "1",
           `{id: ${result.insertId}}`,
           null,
-          () => {}
+          () => { }
         );
 
         res.json({
@@ -92,7 +92,7 @@ exports.list = (req, res) => {
       message: `Missing required fields: ${missingFields.join(", ")}`,
     });
   }
-  const action = "holiday";
+  const action = "client_management";
   Common.isAdminAuthorizedForAction(admin_id, action, (result) => {
     if (!result.status) {
       return res.status(403).json({
@@ -145,7 +145,7 @@ exports.getHolidayById = (req, res) => {
       message: `Missing required fields: ${missingFields.join(", ")}`,
     });
   }
-  const action = "holiday";
+  const action = "client_management";
   Common.isAdminAuthorizedForAction(admin_id, action, (result) => {
     if (!result.status) {
       return res.status(403).json({
@@ -211,7 +211,7 @@ exports.update = (req, res) => {
       message: `Missing required fields: ${missingFields.join(", ")}`,
     });
   }
-  const action = "holiday";
+  const action = "client_management";
   Common.isAdminAuthorizedForAction(admin_id, action, (result) => {
     if (!result.status) {
       // Check the status returned by the authorization function
@@ -266,7 +266,7 @@ exports.update = (req, res) => {
               "0",
               JSON.stringify({ id, ...changes }),
               err,
-              () => {}
+              () => { }
             );
             return res
               .status(500)
@@ -280,7 +280,7 @@ exports.update = (req, res) => {
             "1",
             JSON.stringify({ id, ...changes }),
             null,
-            () => {}
+            () => { }
           );
 
           res.json({
@@ -310,7 +310,7 @@ exports.delete = (req, res) => {
       message: `Missing required fields: ${missingFields.join(", ")}`,
     });
   }
-  const action = "holiday";
+  const action = "client_management";
   Common.isAdminAuthorizedForAction(admin_id, action, (result) => {
     if (!result.status) {
       // Check the status returned by the authorization function
@@ -351,7 +351,7 @@ exports.delete = (req, res) => {
               "0",
               JSON.stringify({ id, ...currentHoliday }),
               err,
-              () => {}
+              () => { }
             );
             return res
               .status(500)
@@ -365,7 +365,7 @@ exports.delete = (req, res) => {
             "1",
             JSON.stringify(currentHoliday),
             null,
-            () => {}
+            () => { }
           );
 
           res.json({

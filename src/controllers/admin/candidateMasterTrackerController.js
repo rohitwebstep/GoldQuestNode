@@ -42,7 +42,7 @@ exports.list = (req, res) => {
     });
   }
 
-  const action = "client_master_tracker";
+  const action = "candidate_master_tracker";
   AdminCommon.isAdminAuthorizedForAction(admin_id, action, (authResult) => {
     if (!authResult.status) {
       return res.status(403).json({
@@ -153,7 +153,7 @@ exports.listByCustomerId = (req, res) => {
     });
   }
 
-  const action = "client_master_tracker";
+  const action = "candidate_master_tracker";
   AdminCommon.isAdminAuthorizedForAction(admin_id, action, (result) => {
     if (!result.status) {
       return res.status(403).json({
@@ -232,7 +232,7 @@ exports.applicationListByBranch = (req, res) => {
     });
   }
 
-  const action = "client_master_tracker";
+  const action = "candidate_master_tracker";
   AdminCommon.isAdminAuthorizedForAction(admin_id, action, (result) => {
     if (!result.status) {
       return res.status(403).json({
@@ -333,7 +333,7 @@ exports.cefApplicationByID = (req, res) => {
     });
   }
 
-  const action = "client_master_tracker";
+  const action = "candidate_master_tracker";
   AdminCommon.isAdminAuthorizedForAction(admin_id, action, (result) => {
     if (!result.status) {
       return res.status(403).json({
@@ -520,7 +520,7 @@ exports.davApplicationByID = (req, res) => {
     });
   }
 
-  const action = "client_master_tracker";
+  const action = "candidate_master_tracker";
   AdminCommon.isAdminAuthorizedForAction(admin_id, action, (result) => {
     if (!result.status) {
       return res.status(403).json({
@@ -673,7 +673,7 @@ exports.filterOptions = (req, res) => {
     });
   }
 
-  const action = "client_master_tracker";
+  const action = "candidate_master_tracker";
   AdminCommon.isAdminAuthorizedForAction(admin_id, action, (result) => {
     if (!result.status) {
       return res.status(403).json({
@@ -761,7 +761,7 @@ exports.filterOptionsForBranch = (req, res) => {
     });
   }
 
-  const action = "client_master_tracker";
+  const action = "candidate_master_tracker";
   AdminCommon.isAdminAuthorizedForAction(admin_id, action, (result) => {
     if (!result.status) {
       return res.status(403).json({
@@ -841,7 +841,7 @@ exports.sendLink = (req, res) => {
     });
   }
 
-  const action = "client_master_tracker";
+  const action = "candidate_master_tracker";
 
   // Check if admin is authorized for the action
   AdminCommon.isAdminAuthorizedForAction(admin_id, action, (result) => {

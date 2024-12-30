@@ -19,7 +19,7 @@ exports.create = (req, res) => {
     });
   }
 
-  const action = "package";
+  const action = "client_management";
   // Check admin authorization
   Common.isAdminAuthorizedForAction(admin_id, action, (result) => {
     if (!result.status) {
@@ -60,7 +60,7 @@ exports.create = (req, res) => {
             "0",
             null,
             err,
-            () => {}
+            () => { }
           );
           return res.status(500).json({
             status: false,
@@ -76,7 +76,7 @@ exports.create = (req, res) => {
           "1",
           `{id: ${result.insertId}}`,
           null,
-          () => {}
+          () => { }
         );
 
         res.status(201).json({
@@ -104,7 +104,7 @@ exports.list = (req, res) => {
       message: `Missing required fields: ${missingFields.join(", ")}`,
     });
   }
-  const action = "package";
+  const action = "client_management";
   Common.isAdminAuthorizedForAction(admin_id, action, (result) => {
     if (!result.status) {
       return res.status(403).json({
@@ -158,7 +158,7 @@ exports.getPackageById = (req, res) => {
       message: `Missing required fields: ${missingFields.join(", ")}`,
     });
   }
-  const action = "package";
+  const action = "client_management";
   Common.isAdminAuthorizedForAction(admin_id, action, (result) => {
     if (!result.status) {
       return res.status(403).json({
@@ -226,7 +226,7 @@ exports.update = (req, res) => {
     });
   }
 
-  const action = "package";
+  const action = "client_management";
   // Check admin authorization
   Common.isAdminAuthorizedForAction(admin_id, action, (result) => {
     if (!result.status) {
@@ -297,7 +297,7 @@ exports.update = (req, res) => {
               "0",
               JSON.stringify({ id, ...changes }),
               err,
-              () => {}
+              () => { }
             );
             return res.status(500).json({
               status: false,
@@ -313,7 +313,7 @@ exports.update = (req, res) => {
             "1",
             JSON.stringify({ id, ...changes }),
             null,
-            () => {}
+            () => { }
           );
 
           res.status(200).json({
@@ -345,7 +345,7 @@ exports.delete = (req, res) => {
     });
   }
 
-  const action = "package";
+  const action = "client_management";
   // Check admin authorization
   Common.isAdminAuthorizedForAction(admin_id, action, (result) => {
     if (!result.status) {
@@ -405,7 +405,7 @@ exports.delete = (req, res) => {
               "0",
               JSON.stringify({ id }),
               err,
-              () => {}
+              () => { }
             );
             return res.status(500).json({
               status: false,
@@ -421,7 +421,7 @@ exports.delete = (req, res) => {
             "1",
             JSON.stringify({ id }),
             null,
-            () => {}
+            () => { }
           );
 
           res.status(200).json({

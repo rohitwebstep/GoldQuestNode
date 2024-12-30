@@ -15,7 +15,7 @@ exports.rolesList = (req, res) => {
       message: `Missing required fields: ${missingFields.join(", ")}`,
     });
   }
-  const action = "admin";
+  const action = "internal_login_credentials";
   Common.isAdminAuthorizedForAction(admin_id, action, (result) => {
     if (!result.status) {
       return res.status(403).json({
@@ -68,7 +68,7 @@ exports.list = (req, res) => {
       message: `Missing required fields: ${missingFields.join(", ")}`,
     });
   }
-  const action = "admin";
+  const action = "internal_login_credentials";
   Common.isAdminAuthorizedForAction(admin_id, action, (result) => {
     if (!result.status) {
       return res.status(403).json({
@@ -137,7 +137,7 @@ exports.update = (req, res) => {
     });
   }
 
-  const action = "admin";
+  const action = "internal_login_credentials";
   Common.isAdminAuthorizedForAction(admin_id, action, (result) => {
     if (!result.status) {
       // Check the status returned by the authorization function

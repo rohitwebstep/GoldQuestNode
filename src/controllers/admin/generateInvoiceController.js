@@ -1,5 +1,5 @@
 const crypto = require("crypto");
-const generateInvoiceModel = require("../../models/admin/generateInvoiceModel");
+const generategenerate_invoiceModel = require("../../models/admin/generategenerate_invoiceModel");
 const Customer = require("../../models/customer/customerModel");
 const ClientApplication = require("../../models/customer/branch/clientApplicationModel");
 const Branch = require("../../models/customer/branch/branchModel");
@@ -134,7 +134,7 @@ async function getServiceNames(serviceIds) {
 }
 
 // Controller to list all customers
-exports.generateInvoice = async (req, res) => {
+exports.generategenerate_invoice = async (req, res) => {
   const { customer_id, month, year, admin_id, _token } = req.query; // Renamed for clarity
 
   // Check for missing required fields
@@ -149,15 +149,15 @@ exports.generateInvoice = async (req, res) => {
   }
 
   if (!month || month === "" || month === undefined || month === "undefined") {
-    missingFields.push("Invoice Month");
+    missingFields.push("generate_invoice Month");
   }
 
   if (!year || year === "" || year === undefined || year === "undefined") {
-    missingFields.push("Invoice Year");
+    missingFields.push("generate_invoice Year");
   }
 
   if (!year || year === "" || year === undefined || year === "undefined") {
-    missingFields.push("Invoice Year");
+    missingFields.push("generate_invoice Year");
   }
 
   if (
@@ -178,7 +178,7 @@ exports.generateInvoice = async (req, res) => {
   }
 
   // Action for admin authorization
-  const actionPayload = "invoice";
+  const actionPayload = "generate_invoice";
   AdminCommon.isAdminAuthorizedForAction(
     admin_id,
     actionPayload,
@@ -216,7 +216,7 @@ exports.generateInvoice = async (req, res) => {
           }
 
           // Fetch customer information and applications
-          generateInvoiceModel.generateInvoice(
+          generategenerate_invoiceModel.generategenerate_invoice(
             customer_id,
             month,
             year,
