@@ -241,7 +241,8 @@ const Customer = {
           cmt.delay_reason,
           cmt.report_generate_by,
           report_admin.name AS report_generated_by_name,
-          cmt.case_upload
+          cmt.case_upload,
+          customer_metas.tat_days
         FROM 
           \`client_applications\` ca
         LEFT JOIN 
@@ -252,6 +253,10 @@ const Customer = {
           \`admins\` AS qc_admin 
         ON 
           qc_admin.id = cmt.qc_done_by
+        LEFT JOIN 
+          \`customer_metas\` AS customer_metas 
+        ON 
+          customer_metas.customer_id = ca.customer_id
         LEFT JOIN 
           \`admins\` AS report_admin 
         ON 
@@ -1171,11 +1176,10 @@ const Customer = {
                   for (const [dbTable, fileInputNames] of Object.entries(
                     dbTableFileInputs
                   )) {
-                    const selectQuery = `SELECT ${
-                      fileInputNames && fileInputNames.length > 0
-                        ? fileInputNames.join(", ")
-                        : "*"
-                    } FROM ${dbTable} WHERE client_application_id = ?`;
+                    const selectQuery = `SELECT ${fileInputNames && fileInputNames.length > 0
+                      ? fileInputNames.join(", ")
+                      : "*"
+                      } FROM ${dbTable} WHERE client_application_id = ?`;
 
                     connection.query(
                       selectQuery,
