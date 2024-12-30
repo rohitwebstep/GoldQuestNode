@@ -18,7 +18,7 @@ exports.list = (req, res) => {
     });
   }
 
-  const action = "customer";
+  const action = "external_login_credentials";
   AdminCommon.isAdminAuthorizedForAction(admin_id, action, (result) => {
     if (!result.status) {
       return res.status(403).json({
