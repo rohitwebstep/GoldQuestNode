@@ -49,6 +49,7 @@ async function createMail(
   client_code,
   services,
   docs,
+  appHost,
   toArr,
   ccArr
 ) {
@@ -111,7 +112,8 @@ async function createMail(
       .replace(/{{client_name}}/g, name)
       .replace(/{{application_id}}/g, application_id)
       .replace(/{{client_code}}/g, client_code)
-      .replace(/{{services}}/g, table);
+      .replace(/{{services}}/g, table)
+      .replace(/{{appHost}}/g, appHost);
 
     // If docsHTML has content, replace its placeholder
     if (docsHTML) {

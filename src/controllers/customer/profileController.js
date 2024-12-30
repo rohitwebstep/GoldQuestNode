@@ -6,6 +6,9 @@ const Branch = require("../../models/customer/branch/branchModel");
 const AdminCommon = require("../../models/admin/commonModel");
 const App = require("../../models/appModel");
 const BranchCommon = require("../../models/customer/branch/commonModel");
+const AppModel = require("../../models/appModel");
+
+
 const { createMail } = require("../../mailer/customer/createMail");
 
 const fs = require("fs");

@@ -138,7 +138,7 @@ exports.create = (req, res) => {
                   "0",
                   null,
                   err,
-                  () => {}
+                  () => { }
                 );
                 return res.status(500).json({
                   status: false,
@@ -156,7 +156,7 @@ exports.create = (req, res) => {
                 "1",
                 `{id: ${result.insertId}}`,
                 null,
-                () => {}
+                () => { }
               );
 
               if (send_mail == 0) {
@@ -233,7 +233,7 @@ exports.create = (req, res) => {
 
                           const serviceIds =
                             typeof services === "string" &&
-                            services.trim() !== ""
+                              services.trim() !== ""
                               ? services.split(",").map((id) => id.trim())
                               : services;
 
@@ -242,41 +242,64 @@ exports.create = (req, res) => {
                           // Function to fetch service names
                           const fetchServiceNames = (index = 0) => {
                             if (index >= serviceIds.length) {
-                              // Once all services have been processed, send email notification
-                              createMail(
-                                "client application",
-                                "create",
-                                name,
-                                result.insertId,
-                                clientName,
-                                clientCode,
-                                serviceNames,
-                                newAttachedDocsString,
-                                toArr,
-                                ccArr
-                              )
-                                .then(() => {
-                                  return res.status(201).json({
-                                    status: true,
+                              AppModel.appInfo("frontend", async (err, appInfo) => {
+                                if (err) {
+                                  console.error("Database error:", err);
+                                  return res.status(500).json({
+                                    status: false,
                                     message:
-                                      "Client application created successfully and email sent.",
-                                    token: newToken,
+                                      "An error occurred while retrieving application information. Please try again.",
                                   });
-                                })
-                                .catch((emailError) => {
+                                }
+
+                                if (!appInfo) {
                                   console.error(
-                                    "Error sending email:",
-                                    emailError
+                                    "Database error during app info retrieval:",
+                                    err
                                   );
-                                  return res.status(201).json({
-                                    status: true,
-                                    message:
-                                      "Client application created successfully, but failed to send email.",
-                                    client: result,
-                                    token: newToken,
+                                  return reject(
+                                    new Error("Information of the application not found.")
+                                  );
+                                }
+                                const appHost = appInfo.host || 'www.example.com';
+                                const appName = appInfo.name || 'Example Company';
+                                // Once all services have been processed, send email notification
+                                createMail(
+                                  "client application",
+                                  "create",
+                                  name,
+                                  result.insertId,
+                                  clientName,
+                                  clientCode,
+                                  serviceNames,
+                                  newAttachedDocsString,
+                                  appHost,
+                                  toArr,
+                                  ccArr
+                                )
+                                  .then(() => {
+                                    return res.status(201).json({
+                                      status: true,
+                                      message:
+                                        "Client application created successfully and email sent.",
+                                      token: newToken,
+                                    });
+                                  })
+                                  .catch((emailError) => {
+                                    console.error(
+                                      "Error sending email:",
+                                      emailError
+                                    );
+                                    return res.status(201).json({
+                                      status: true,
+                                      message:
+                                        "Client application created successfully, but failed to send email.",
+                                      client: result,
+                                      token: newToken,
+                                    });
                                   });
-                                });
-                              return;
+                                return;
+                              });
                             }
 
                             const id = serviceIds[index];
@@ -424,8 +447,7 @@ exports.bulkCreate = (req, res) => {
 
             if (missingFields.length > 0) {
               emptyValues.push(
-                `${
-                  app.applicant_full_name || "Unnamed applicant"
+                `${app.applicant_full_name || "Unnamed applicant"
                 } (missing fields: ${missingFields.join(", ")})`
               );
               return false; // Exclude applications with missing fields
@@ -443,8 +465,7 @@ exports.bulkCreate = (req, res) => {
 
             if (emptyFields.length > 0) {
               emptyValues.push(
-                `${
-                  app.applicant_full_name || "Unnamed applicant"
+                `${app.applicant_full_name || "Unnamed applicant"
                 } (empty fields: ${emptyFields.join(", ")})`
               );
             }
@@ -529,7 +550,7 @@ exports.bulkCreate = (req, res) => {
                           "1",
                           `{id: ${result.insertId}}`,
                           null,
-                          () => {}
+                          () => { }
                         );
 
                         // Assign the new application ID to the corresponding app object
@@ -667,44 +688,67 @@ function sendNotificationEmails(
             let responseSent = false; // Flag to track if the response has already been sent
 
             if (index >= serviceIds.length) {
-              bulkCreateMail(
-                "client application",
-                "bulk-create",
-                updatedApplications,
-                branch.name,
-                customer.name,
-                serviceNames,
-                "",
-                toArr,
-                ccArr
-              )
-                .then(() => {
-                  if (!responseSent) {
-                    responseSent = true; // Mark the response as sent
-                    return res.status(201).json({
-                      status: true,
-                      message:
-                        "Client application created successfully and email sent.",
-                      token: newToken,
-                    });
-                  }
-                })
-                .catch((emailError) => {
-                  if (!responseSent) {
-                    console.error(
-                      "Error sending email (controller):",
-                      emailError
-                    );
-                    responseSent = true; // Mark the response as sent
-                    return res.status(201).json({
-                      status: true,
-                      message:
-                        "Client application created successfully, but failed to send email.",
-                      token: newToken,
-                    });
-                  }
-                });
-              return;
+              AppModel.appInfo("frontend", async (err, appInfo) => {
+                if (err) {
+                  console.error("Database error:", err);
+                  return res.status(500).json({
+                    status: false,
+                    message:
+                      "An error occurred while retrieving application information. Please try again.",
+                  });
+                }
+
+                if (!appInfo) {
+                  console.error(
+                    "Database error during app info retrieval:",
+                    err
+                  );
+                  return reject(
+                    new Error("Information of the application not found.")
+                  );
+                }
+                const appHost = appInfo.host || 'www.example.com';
+                const appName = appInfo.name || 'Example Company';
+                bulkCreateMail(
+                  "client application",
+                  "bulk-create",
+                  updatedApplications,
+                  branch.name,
+                  customer.name,
+                  serviceNames,
+                  "",
+                  appHost,
+                  toArr,
+                  ccArr
+                )
+                  .then(() => {
+                    if (!responseSent) {
+                      responseSent = true; // Mark the response as sent
+                      return res.status(201).json({
+                        status: true,
+                        message:
+                          "Client application created successfully and email sent.",
+                        token: newToken,
+                      });
+                    }
+                  })
+                  .catch((emailError) => {
+                    if (!responseSent) {
+                      console.error(
+                        "Error sending email (controller):",
+                        emailError
+                      );
+                      responseSent = true; // Mark the response as sent
+                      return res.status(201).json({
+                        status: true,
+                        message:
+                          "Client application created successfully, but failed to send email.",
+                        token: newToken,
+                      });
+                    }
+                  });
+                return;
+              });
             }
 
             const id = serviceIds[index];
@@ -1024,7 +1068,7 @@ exports.update = (req, res) => {
                         "0",
                         JSON.stringify({ client_application_id, ...changes }),
                         err,
-                        () => {}
+                        () => { }
                       );
                       return res.status(500).json({
                         status: false,
@@ -1040,7 +1084,7 @@ exports.update = (req, res) => {
                       "1",
                       JSON.stringify({ client_application_id, ...changes }),
                       null,
-                      () => {}
+                      () => { }
                     );
 
                     res.status(200).json({
@@ -1257,7 +1301,7 @@ exports.upload = async (req, res) => {
                         if (
                           currentClientApplication.attach_documents &&
                           currentClientApplication.attach_documents.trim() !==
-                            ""
+                          ""
                         ) {
                           AppModel.appInfo("backend", (err, appInfo) => {
                             if (err) {
@@ -1368,10 +1412,10 @@ exports.upload = async (req, res) => {
 
                                     const serviceIds =
                                       typeof services === "string" &&
-                                      services.trim() !== ""
+                                        services.trim() !== ""
                                         ? services
-                                            .split(",")
-                                            .map((id) => id.trim())
+                                          .split(",")
+                                          .map((id) => id.trim())
                                         : [];
 
                                     const serviceNames = [];
@@ -1379,47 +1423,71 @@ exports.upload = async (req, res) => {
                                     // Function to fetch service names
                                     const fetchServiceNames = (index = 0) => {
                                       if (index >= serviceIds.length) {
-                                        console.log(
-                                          `serviceNames - `,
-                                          serviceNames
-                                        );
-                                        // Once all services have been processed, send email notification
-                                        createMail(
-                                          "client application",
-                                          "create",
-                                          client_application_name,
-                                          client_application_generated_id,
-                                          clientName,
-                                          clientCode,
-                                          serviceNames,
-                                          newAttachedDocsString,
-                                          toArr,
-                                          ccArr
-                                        )
-                                          .then(() => {
-                                            return res.status(201).json({
-                                              status: true,
+
+                                        AppModel.appInfo("frontend", async (err, appInfo) => {
+                                          if (err) {
+                                            console.error("Database error:", err);
+                                            return res.status(500).json({
+                                              status: false,
                                               message:
-                                                "Client application created successfully and email sent.",
-                                              token: newToken,
-                                              savedImagePaths,
+                                                "An error occurred while retrieving application information. Please try again.",
                                             });
-                                          })
-                                          .catch((emailError) => {
+                                          }
+
+                                          if (!appInfo) {
                                             console.error(
-                                              "Error sending email:",
-                                              emailError
+                                              "Database error during app info retrieval:",
+                                              err
                                             );
-                                            return res.status(201).json({
-                                              status: true,
-                                              message:
-                                                "Client application created successfully, but failed to send email.",
-                                              client: result,
-                                              token: newToken,
-                                              savedImagePaths,
+                                            return reject(
+                                              new Error("Information of the application not found.")
+                                            );
+                                          }
+                                          const appHost = appInfo.host || 'www.example.com';
+                                          const appName = appInfo.name || 'Example Company';
+                                          console.log(
+                                            `serviceNames - `,
+                                            serviceNames
+                                          );
+                                          // Once all services have been processed, send email notification
+                                          createMail(
+                                            "client application",
+                                            "create",
+                                            client_application_name,
+                                            client_application_generated_id,
+                                            clientName,
+                                            clientCode,
+                                            serviceNames,
+                                            newAttachedDocsString,
+                                            appHost,
+                                            toArr,
+                                            ccArr
+                                          )
+                                            .then(() => {
+                                              return res.status(201).json({
+                                                status: true,
+                                                message:
+                                                  "Client application created successfully and email sent.",
+                                                token: newToken,
+                                                savedImagePaths,
+                                              });
+                                            })
+                                            .catch((emailError) => {
+                                              console.error(
+                                                "Error sending email:",
+                                                emailError
+                                              );
+                                              return res.status(201).json({
+                                                status: true,
+                                                message:
+                                                  "Client application created successfully, but failed to send email.",
+                                                client: result,
+                                                token: newToken,
+                                                savedImagePaths,
+                                              });
                                             });
-                                          });
-                                        return;
+                                          return;
+                                        });
                                       }
 
                                       const id = serviceIds[index];
@@ -1586,7 +1654,7 @@ exports.delete = (req, res) => {
                   "0",
                   JSON.stringify({ id }),
                   err,
-                  () => {}
+                  () => { }
                 );
                 return res.status(500).json({
                   status: false,
@@ -1603,7 +1671,7 @@ exports.delete = (req, res) => {
                 "1",
                 JSON.stringify({ id }),
                 null,
-                () => {}
+                () => { }
               );
 
               res.status(200).json({
