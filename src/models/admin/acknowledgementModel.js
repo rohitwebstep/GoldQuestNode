@@ -8,11 +8,27 @@ const hashPassword = (password) =>
 const Acknowledgement = {
   list: (callback) => {
     const sql = `
-      SELECT \`id\`, \`ack_sent\`, \`branch_id\`, \`customer_id\`, COUNT(*) AS application_count
-      FROM \`client_applications\`
-      WHERE ack_sent = 0
-      GROUP BY \`branch_id\`, \`customer_id\`
-    `;
+    SELECT 
+      ca.\`id\`, 
+      ca.\`ack_sent\`, 
+      ca.\`branch_id\`, 
+      ca.\`customer_id\`, 
+      COUNT(*) AS application_count
+    FROM 
+      \`client_applications\` AS ca
+    LEFT JOIN 
+      \`cmt_applications\` AS cmt 
+      ON ca.\`id\` = cmt.\`client_application_id\`
+    WHERE 
+      ca.\`ack_sent\` = 0
+      AND (
+        cmt.\`client_application_id\` IS NULL -- No corresponding entry exists in cmt_applications
+        OR cmt.\`overall_status\` != "completed" -- Entry exists but status is not "completed"
+      )
+    GROUP BY 
+      ca.\`branch_id\`, 
+      ca.\`customer_id\`;
+  `;
 
     startConnection((err, connection) => {
       if (err) {
