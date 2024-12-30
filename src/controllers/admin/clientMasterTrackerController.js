@@ -2202,7 +2202,7 @@ exports.upload = async (req, res) => {
                               console.log(`Email Status - `, emailStatus);
                               return res.status(200).json({
                                 status: true,
-                                message: "Images uploaded successfully 1.",
+                                message: "Images uploaded successfully.",
                                 token: newToken,
                                 savedImagePaths,
                               });
@@ -2216,7 +2216,7 @@ exports.upload = async (req, res) => {
               } else {
                 return res.status(200).json({
                   status: true,
-                  message: "Images uploaded successfully 2.",
+                  message: "Images uploaded successfully.",
                   token: newToken,
                   savedImagePaths,
                 });
