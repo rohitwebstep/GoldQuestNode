@@ -29,10 +29,13 @@ async function createMail(
   branches,
   is_head,
   customerData,
-  password // Added password parameter
+  password,
+  appCustomerLoginHost
 ) {
   let connection;
-
+  if (!appCustomerLoginHost) {
+    appCustomerLoginHost = "www.example.com";
+  }
   try {
     // Use a promise to handle the callback-based startConnection function
     connection = await new Promise((resolve, reject) => {
@@ -81,7 +84,8 @@ async function createMail(
     // Replace placeholders in the email template
     let template = email.template
       .replace(/{{dynamic_name}}/g, client_name)
-      .replace(/{{table}}/g, table);
+      .replace(/{{table}}/g, table)
+      .replace(/{{appCustomerLoginHost}}/g, appCustomerLoginHost);
 
     // Prepare recipient list based on whether the branch is a head branch
     let recipientList;
@@ -89,8 +93,8 @@ async function createMail(
       recipientList =
         customerData.length > 0
           ? customerData.map(
-              (customer) => `"${customer.name}" <${customer.email}>`
-            )
+            (customer) => `"${customer.name}" <${customer.email}>`
+          )
           : [];
     } else {
       // If not a head branch, only include the specific branches
