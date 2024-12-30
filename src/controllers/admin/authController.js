@@ -705,7 +705,7 @@ exports.forgotPasswordRequest = (req, res) => {
           }
 
           // Send password reset email
-          const resetLink = `${appInfo.host || "https://www.goldquestglobal.com"
+          const resetLink = `${appInfo.host || "https://www.example.com"
             }/reset-password?email=${admin.email}&token=${token}`;
           const toArr = [{ name: admin.name, email: admin.email }];
 

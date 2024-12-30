@@ -230,7 +230,7 @@ exports.create = (req, res) => {
 
                             if (appInfo) {
                               const appHost =
-                                appInfo.host || "www.goldquestglobal.com";
+                                appInfo.host || "www.example.com";
                               const base64_app_id = btoa(result.insertId);
                               const base64_branch_id = btoa(branch_id);
                               const base64_customer_id = btoa(customer_id);
@@ -770,7 +770,7 @@ function sendNotificationEmails(
                   }
 
                   if (appInfo) {
-                    const appHost = appInfo.host || "www.goldquestglobal.com";
+                    const appHost = appInfo.host || "www.example.com";
 
                     // Initialize counters for tracking email success/failure
                     let processedApplications = 0;

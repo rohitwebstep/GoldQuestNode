@@ -1272,7 +1272,7 @@ exports.upload = async (req, res) => {
 
                             if (appInfo) {
                               const appHost =
-                                appInfo.host || "www.goldquestglobal.com";
+                                appInfo.host || "www.example.com";
                               const documentsArray =
                                 currentClientApplication.attach_documents
                                   .split(",")

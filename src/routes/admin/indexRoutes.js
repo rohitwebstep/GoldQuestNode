@@ -2,6 +2,8 @@ const express = require("express");
 const router = express.Router();
 const authController = require("../../controllers/admin/authController");
 const adminController = require("../../controllers/admin/adminController");
+const permissionRoutes = require("./permissionRoutes");
+
 
 // Authentication routes
 router.post("/login", authController.login);
@@ -19,4 +21,5 @@ router.get("/list", adminController.list);
 router.put("/update", adminController.update);
 router.delete("/delete", adminController.delete);
 
+router.use("/permission", permissionRoutes);
 module.exports = router;
