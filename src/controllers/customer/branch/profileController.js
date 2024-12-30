@@ -160,7 +160,7 @@ exports.list = (req, res) => {
     });
   }
 
-  const action = "branch";
+  const action = "client_management";
   AdminCommon.isAdminAuthorizedForAction(admin_id, action, (result) => {
     if (!result.status) {
       return res.status(403).json({
@@ -218,7 +218,7 @@ exports.listByCustomerID = (req, res) => {
     });
   }
 
-  const action = "branch";
+  const action = "client_management";
   AdminCommon.isAdminAuthorizedForAction(admin_id, action, (authResult) => {
     if (!authResult.status) {
       return res.status(403).json({
@@ -472,7 +472,7 @@ exports.update = (req, res) => {
     });
   }
 
-  const action = "branch";
+  const action = "client_management";
   // Check admin authorization
   AdminCommon.isAdminAuthorizedForAction(admin_id, action, (result) => {
     if (!result.status) {
@@ -604,7 +604,7 @@ exports.active = (req, res) => {
     });
   }
 
-  const action = "branch";
+  const action = "client_management";
   // Check admin authorization
   AdminCommon.isAdminAuthorizedForAction(admin_id, action, (result) => {
     if (!result.status) {
@@ -729,7 +729,7 @@ exports.inactive = (req, res) => {
     });
   }
 
-  const action = "branch";
+  const action = "client_management";
   // Check admin authorization
   AdminCommon.isAdminAuthorizedForAction(admin_id, action, (result) => {
     if (!result.status) {
@@ -854,7 +854,7 @@ exports.delete = (req, res) => {
     });
   }
 
-  const action = "branch";
+  const action = "client_management";
   // Check admin authorization
   AdminCommon.isAdminAuthorizedForAction(admin_id, action, (result) => {
     if (!result.status) {
