@@ -252,29 +252,10 @@ const Admin = {
 
   findByEmailOrMobile: (username, callback) => {
     const sql = `
-    SELECT 
-      a.\`id\`, 
-      a.\`emp_id\`, 
-      a.\`name\`, 
-      a.\`profile_picture\`, 
-      a.\`email\`, 
-      a.\`mobile\`, 
-      a.\`status\`, 
-      a.\`login_token\`, 
-      a.\`token_expiry\`, 
-      a.\`otp\`, 
-      a.\`two_factor_enabled\`, 
-      a.\`otp_expiry\`,
-      p.\`json\` AS permissions_tab
-    FROM 
-      \`admins\` a
-    INNER JOIN 
-      \`permissions\` p 
-      ON a.\`id\` = p.\`admin_id\`
-    WHERE 
-      (a.\`email\` = ? OR a.\`mobile\` = ?)
-      AND p.\`role\` = a.\`role\`;
-  `;
+      SELECT \`id\`, \`emp_id\`, \`name\`, \`profile_picture\`, \`email\`, \`mobile\`, \`status\`, \`login_token\`, \`token_expiry\`, \`otp\`, \`two_factor_enabled\`, \`otp_expiry\`
+      FROM \`admins\`
+      WHERE \`email\` = ? OR \`mobile\` = ?
+    `;
 
     startConnection((err, connection) => {
       if (err) {
