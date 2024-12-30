@@ -145,7 +145,7 @@ exports.create = (req, res) => {
     emails,
     address,
     username,
-    branches,
+    branches = [],
     state_code,
     client_code,
     company_name,
@@ -174,7 +174,6 @@ exports.create = (req, res) => {
     gstin,
     emails,
     address,
-    branches,
     state_code,
     client_code,
     company_name,
@@ -1296,7 +1295,7 @@ exports.update = (req, res) => {
           repeatedEmails: uniqueDuplicateEmails,
           token: newToken,
         });
-        
+
       }
 
       areEmailsUsedForUpdate(filterEmails, customer_id)
