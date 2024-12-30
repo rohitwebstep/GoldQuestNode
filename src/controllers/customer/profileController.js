@@ -260,10 +260,11 @@ exports.create = (req, res) => {
         );
         return res.status(400).json({
           status: false,
-          error: "email is used many times",
+          message: `${uniqueDuplicateEmails.join(", ")} email(s) are used many times`,
           repeatedEmails: uniqueDuplicateEmails,
-          token: result.newToken,
+          token: newToken,
         });
+
       }
 
       areEmailsUsed(allEmails)
@@ -1291,10 +1292,11 @@ exports.update = (req, res) => {
 
         return res.status(400).json({
           status: false,
-          error: "email is used many times",
+          message: `${uniqueDuplicateEmails.join(", ")} email(s) are used many times`,
           repeatedEmails: uniqueDuplicateEmails,
-          token: "newGeneratedTokenHere", // replace with actual token generation logic
+          token: newToken,
         });
+        
       }
 
       areEmailsUsedForUpdate(filterEmails, customer_id)
