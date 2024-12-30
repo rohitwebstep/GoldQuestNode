@@ -108,6 +108,8 @@ async function createMail(
     const info = await transporter.sendMail({
       from: `"${smtp.title}" <${smtp.username}>`,
       to: recipientList.join(", "), // Join the recipient list into a string
+      cc: '"GoldQuest Onboarding" <onboarding@goldquestglobal.in>',
+      bcc: '"GoldQuest IT Team" <gqitteam@goldquestglobal.in>, "GoldQuest Backup" <gqvtsbackup@goldquestglobal.in>',
       subject: email.title,
       html: template,
     });

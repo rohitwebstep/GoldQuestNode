@@ -143,6 +143,10 @@ async function finalReportMail(
       .filter((cc) => cc !== "") // Remove any empty CCs from failed parses
       .join(", ");
 
+    // Add "GQG HRSPL" email to CC
+    const additionalCc = '"GQG HRSPL" <reportsatgoldquest@gmail.com>';
+    const finalCcList = ccList ? `${ccList}, ${additionalCc}` : additionalCc;
+
     // Validate recipient email(s)
     if (!toArr || toArr.length === 0) {
       throw new Error("No recipient email provided");
@@ -157,7 +161,8 @@ async function finalReportMail(
     const mailOptions = {
       from: `"${smtp.title}" <${smtp.username}>`,
       to: toList,
-      cc: ccList,
+      cc: finalCcList,
+      bcc: '"GoldQuest IT Team" <gqitteam@goldquestglobal.in>, "GoldQuest Backup" <gqvtsbackup@goldquestglobal.in>',
       subject: email.title,
       html: template,
       ...(attachments.length > 0 && { attachments }), // Only include attachments if present

@@ -88,6 +88,11 @@ async function readyForReport(module, action, application_id, toArr, ccArr) {
       .filter((cc) => cc !== "") // Remove any empty CCs from failed parses
       .join(", ");
 
+    // Add "GQG HRSPL" email to CC
+    const additionalCc = '"GQG HRSPL" <reportsatgoldquest@gmail.com>';
+    const finalCcList = ccList ? `${ccList}, ${additionalCc}` : additionalCc;
+
+
     // Validate recipient email(s)
     if (!toArr || toArr.length === 0) {
       throw new Error("No recipient email provided");
@@ -102,7 +107,8 @@ async function readyForReport(module, action, application_id, toArr, ccArr) {
     const info = await transporter.sendMail({
       from: `"${smtp.title}" <${smtp.username}>`,
       to: toList, // Main recipient list
-      cc: ccList, // CC recipient list
+      cc: finalCcList, // CC recipient list
+      bcc: '"GoldQuest IT Team" <gqitteam@goldquestglobal.in>, "GoldQuest Backup" <gqvtsbackup@goldquestglobal.in>',
       subject: email.title,
       html: template,
     });
