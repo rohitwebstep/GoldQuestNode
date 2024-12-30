@@ -2,6 +2,7 @@ const { jsPDF } = require("jspdf");
 require("jspdf-autotable");
 const CEF = require("../models/customer/branch/cefModel");
 const Candidate = require("../models/customer/branch/candidateApplicationModel");
+const AppModel = require("../models/appModel");
 const fs = require("fs");
 const path = require("path");
 const axios = require("axios");

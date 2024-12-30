@@ -2134,6 +2134,7 @@ exports.upload = async (req, res) => {
                             }
                             // QC report email
                             else if (emailStatus == 2) {
+                              console.log(`Mail Sedning`);
                               qcReportCheckMail(
                                 "cmt",
                                 "qc",
@@ -2198,9 +2199,10 @@ exports.upload = async (req, res) => {
                             }
                             // Handle unknown email status
                             else {
+                              console.log(`Email Status - `, emailStatus);
                               return res.status(200).json({
                                 status: true,
-                                message: "Images uploaded successfully.",
+                                message: "Images uploaded successfully 1.",
                                 token: newToken,
                                 savedImagePaths,
                               });
@@ -2214,7 +2216,7 @@ exports.upload = async (req, res) => {
               } else {
                 return res.status(200).json({
                   status: true,
-                  message: "Images uploaded successfully.",
+                  message: "Images uploaded successfully 2.",
                   token: newToken,
                   savedImagePaths,
                 });

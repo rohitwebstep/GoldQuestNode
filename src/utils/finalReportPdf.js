@@ -1,4 +1,5 @@
 const ClientMasterTrackerModel = require("../models/admin/clientMasterTrackerModel");
+const AppModel = require("../models/appModel");
 const { jsPDF } = require("jspdf");
 require("jspdf-autotable");
 const fs = require("fs");
