@@ -58,6 +58,11 @@ exports.uploadImage = (req, res) => {
   });
 };
 exports.connectionCheck = (req, res) => {
+
+  // Get the IP address from the request
+  const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+  console.log("Request received from IP address:", ipAddress);
+
   Test.connectionCheck((err, result) => {
     if (err) {
       console.error("Database error:", err);
