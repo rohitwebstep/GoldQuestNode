@@ -147,7 +147,7 @@ exports.isApplicationExist = (req, res) => {
 };
 
 exports.test = (req, res) => {
-  CEF.getAttachmentsByClientAppID(18, async (err, attachments) => {
+  CEF.getAttachmentsByClientAppID(4, async (err, attachments) => {
     if (err) {
       console.error("Database error:", err);
       return res.status(500).json({
@@ -155,6 +155,11 @@ exports.test = (req, res) => {
         message: "Database error occurred",
       });
     }
+    console.log(`attachments - `, attachments);
+    return res.status(500).json({
+      status: false,
+      message: "Database error occurred",
+    });
     sendNotificationEmails(1, 1, "Paula Merrill", 18, 8, "65", "Test 2", res);
   });
 };
