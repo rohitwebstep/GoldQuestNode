@@ -47,17 +47,22 @@ const startConnection = (callback, retries = 20) => {
           );
           setTimeout(() => attemptConnection(retriesLeft - 1), 500);
         } else {
-          callback(err, null); // Return error after retries are exhausted
+          callback(err, null);
         }
+      } else if (connection.state === 'disconnected') {
+        console.warn("Connection is disconnected. Retrying...");
+        connection.release();
+        attemptConnection(retriesLeft - 1);
       } else {
-        console.log("Connection established"); // Log successful connection
-        callback(null, connection); // Pass the connection to the callback
+        console.log("Connection established");
+        callback(null, connection);
       }
     });
   };
 
-  attemptConnection(retries); // Initial connection attempt
+  attemptConnection(retries);
 };
+
 
 // Function to release a connection
 const connectionRelease = (connection) => {
