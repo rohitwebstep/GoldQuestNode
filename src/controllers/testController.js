@@ -59,10 +59,21 @@ exports.uploadImage = (req, res) => {
 };
 exports.connectionCheck = (req, res) => {
 
-  // Get the IP address from the request
-  const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-  console.log("Request received from IP address:", ipAddress);
+  // Get the IP address from the X-Forwarded-For header or req.ip
+  let ipAddress = req.headers['x-forwarded-for'] || req.connection.remoteAddress || req.ip;
 
+  // If there are multiple IPs in X-Forwarded-For, take the first one (the real client's IP)
+  if (ipAddress.includes(',')) {
+    ipAddress = ipAddress.split(',')[0].trim();  // Take the first IP in the list
+  }
+
+  // If the IP address is IPv6-mapped IPv4 (::ffff:), extract the real IPv4 address
+  if (ipAddress.startsWith('::ffff:')) {
+    ipAddress = ipAddress.slice(7);  // Remove "::ffff:" to get the correct IPv4 address
+  }
+
+  // Optionally, trim any surrounding spaces
+  ipAddress = ipAddress.trim();
   Test.connectionCheck((err, result) => {
     if (err) {
       console.error("Database error:", err);
