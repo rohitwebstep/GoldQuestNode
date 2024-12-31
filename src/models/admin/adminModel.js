@@ -82,28 +82,39 @@ const Admin = {
             }
           }
 
-          // If no duplicates are found, proceed with inserting the new admin
-          const sql = `
-            INSERT INTO \`admins\` (\`name\`, \`emp_id\`, \`mobile\`, \`email\`, \`role\`, \`service_groups\`, \`status\`, \`password\`) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, md5(?))
-          `;
-          connection.query(
-            sql,
-            [name, employee_id, mobile, email, role, JSON.stringify(service_groups), "1", password],
-            (queryErr, results) => {
-              connectionRelease(connection); // Release the connection
+          // If role is 'admin', we don't include the service_groups field
+          let sql;
+          let queryParams;
 
-              if (queryErr) {
-                console.error("Database query error: 612", queryErr);
-                return callback(queryErr, null);
-              }
-              callback(null, results); // Successfully inserted the admin
+          if (role.toLowerCase() === 'admin') {
+            sql = `
+              INSERT INTO \`admins\` (\`name\`, \`emp_id\`, \`mobile\`, \`email\`, \`role\`, \`status\`, \`password\`) 
+              VALUES (?, ?, ?, ?, ?, ?, md5(?))
+            `;
+            queryParams = [name, employee_id, mobile, email, role, "1", password];
+          } else {
+            sql = `
+              INSERT INTO \`admins\` (\`name\`, \`emp_id\`, \`mobile\`, \`email\`, \`role\`, \`service_groups\`, \`status\`, \`password\`) 
+              VALUES (?, ?, ?, ?, ?, ?, ?, md5(?))
+            `;
+            queryParams = [name, employee_id, mobile, email, role, JSON.stringify(service_groups), "1", password];
+          }
+
+          // Insert the new admin
+          connection.query(sql, queryParams, (queryErr, results) => {
+            connectionRelease(connection); // Release the connection
+
+            if (queryErr) {
+              console.error("Database query error: 612", queryErr);
+              return callback(queryErr, null);
             }
-          );
+            callback(null, results); // Successfully inserted the admin
+          });
         }
       );
     });
   },
+
 
   update: (data, callback) => {
     const { id, name, mobile, email, employee_id, role, status, service_groups } = data;
@@ -150,33 +161,49 @@ const Admin = {
             }
           }
 
-          // If no duplicates are found, proceed with updating the admin record
-          const sql = `
-            UPDATE \`admins\` 
-            SET 
-              \`name\` = ?, 
-              \`emp_id\` = ?, 
-              \`mobile\` = ?, 
-              \`email\` = ?, 
-              \`role\` = ?, 
-              \`service_groups\` = ?,
-              \`status\` = ?
-            WHERE \`id\` = ?
-          `;
+          // If role is 'admin', we don't include the service_groups field in the update
+          let sql;
+          let queryParams;
 
-          connection.query(
-            sql,
-            [name, employee_id, mobile, email, role, service_groups, status, id],
-            (queryErr, results) => {
-              connectionRelease(connection); // Release the connection
+          if (role.toLowerCase() === 'admin') {
+            sql = `
+              UPDATE \`admins\` 
+              SET 
+                \`name\` = ?, 
+                \`emp_id\` = ?, 
+                \`mobile\` = ?, 
+                \`email\` = ?, 
+                \`role\` = ?, 
+                \`status\` = ? 
+              WHERE \`id\` = ?
+            `;
+            queryParams = [name, employee_id, mobile, email, role, status, id];
+          } else {
+            sql = `
+              UPDATE \`admins\` 
+              SET 
+                \`name\` = ?, 
+                \`emp_id\` = ?, 
+                \`mobile\` = ?, 
+                \`email\` = ?, 
+                \`role\` = ?, 
+                \`service_groups\` = ?, 
+                \`status\` = ? 
+              WHERE \`id\` = ?
+            `;
+            queryParams = [name, employee_id, mobile, email, role, JSON.stringify(service_groups), status, id];
+          }
 
-              if (queryErr) {
-                console.error("Database query error: 7", queryErr);
-                return callback(queryErr, null);
-              }
-              callback(null, results); // Successfully updated the admin
+          // Update the admin record
+          connection.query(sql, queryParams, (queryErr, results) => {
+            connectionRelease(connection); // Release the connection
+
+            if (queryErr) {
+              console.error("Database query error: 7", queryErr);
+              return callback(queryErr, null);
             }
-          );
+            callback(null, results); // Successfully updated the admin
+          });
         }
       );
     });
