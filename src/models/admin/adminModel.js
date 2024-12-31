@@ -84,7 +84,7 @@ const Admin = {
 
           // If no duplicates are found, proceed with inserting the new admin
           const sql = `
-            INSERT INTO \`admins\` (\`name\`, \`emp_id\`, \`mobile\`, \`email\`, \`role\`, \`service_group\`, \`status\`, \`password\`) 
+            INSERT INTO \`admins\` (\`name\`, \`emp_id\`, \`mobile\`, \`email\`, \`role\`, \`service_groups\`, \`status\`, \`password\`) 
             VALUES (?, ?, ?, ?, ?, ?, ?, md5(?))
           `;
           connection.query(
