@@ -3,13 +3,14 @@ const Common = require("../../models/admin/commonModel");
 
 // Controller to create a new service
 exports.create = (req, res) => {
-  const { title, description, short_code, sac_code, admin_id, _token } =
+  const { title, description, short_code, group, sac_code, admin_id, _token } =
     req.body;
 
   let missingFields = [];
   if (!title || title === "") missingFields.push("Title");
   if (!description || description === "") missingFields.push("Description");
   if (!short_code || short_code === "") missingFields.push("Short Code");
+  if (!group || group === "") missingFields.push("Service Group");
   if (!sac_code || sac_code === "") missingFields.push("SAC Code");
   if (!admin_id || description === "") missingFields.push("Admin ID");
   if (!_token || _token === "") missingFields.push("Token");
@@ -47,23 +48,37 @@ exports.create = (req, res) => {
         title,
         description,
         short_code,
+        group,
         sac_code,
         admin_id,
         (err, result) => {
           if (err) {
+            // Log the entire error for debugging purposes
             console.error("Database error:", err);
+
+            // Extract the main error message from the `sqlMessage` property
+            const logError = err.sqlMessage || err.message;
+
+            // Log the extracted error message for better readability
+            console.log(`logError -`, logError);
+
+            // Save the error in the admin activity log
             Common.adminActivityLog(
               admin_id,
               "Service",
               "Create",
-              "0",
+              "0", // Indicating failure
               null,
-              err.message,
-              () => {}
+              logError, // Pass the extracted message
+              () => { } // Empty callback
             );
-            return res
-              .status(500)
-              .json({ status: false, message: err.message, token: newToken });
+
+            // Return an appropriate response to the client
+            return res.status(500).json({
+              status: false,
+              message: logError, // Send the extracted message in the response
+              token: newToken,
+            });
           }
 
           Common.adminActivityLog(
@@ -73,7 +88,7 @@ exports.create = (req, res) => {
             "1",
             `{id: ${result.insertId}}`,
             null,
-            () => {}
+            () => { }
           );
 
           res.json({
@@ -285,7 +300,7 @@ exports.update = (req, res) => {
                 "0",
                 JSON.stringify({ id, ...changes }),
                 err.message,
-                () => {}
+                () => { }
               );
               return res
                 .status(500)
@@ -299,7 +314,7 @@ exports.update = (req, res) => {
               "1",
               JSON.stringify({ id, ...changes }),
               null,
-              () => {}
+              () => { }
             );
 
             res.json({
@@ -371,7 +386,7 @@ exports.delete = (req, res) => {
               "0",
               JSON.stringify({ id, ...currentService }),
               err,
-              () => {}
+              () => { }
             );
             return res
               .status(500)
@@ -385,7 +400,7 @@ exports.delete = (req, res) => {
             "1",
             JSON.stringify(currentService),
             null,
-            () => {}
+            () => { }
           );
 
           res.json({

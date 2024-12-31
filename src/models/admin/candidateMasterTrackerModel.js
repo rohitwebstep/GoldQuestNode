@@ -290,18 +290,19 @@ const Customer = {
           connectionRelease(connection);
           return callback(err, null);
         }
-        console.log(`results- `, results);
+
         const davSql = `
-        SELECT * FROM \`services\`
-        WHERE LOWER(\`title\`) LIKE '%digital%'
-        AND (LOWER(\`title\`) LIKE '%verification%' OR LOWER(\`title\`) LIKE '%address%')
-        LIMIT 1
-      `;
+            SELECT * FROM \`services\`
+            WHERE LOWER(\`title\`) LIKE '%digital%'
+            AND (LOWER(\`title\`) LIKE '%verification%' OR LOWER(\`title\`) LIKE '%address%')
+            LIMIT 1`;
+
         connection.query(davSql, (queryErr, davResults) => {
           if (queryErr) {
-            console.error("Database query error: 48", queryErr);
+            console.error("Database query error for DAV services:", queryErr);
             return callback(queryErr, null);
           }
+
           let digitalAddressID = null;
           const singleEntry = davResults.length > 0 ? davResults[0] : null;
 
@@ -311,287 +312,123 @@ const Customer = {
 
           const cmtPromises = results.map(async (candidateApp) => {
             const servicesResult = { cef: {}, dav: {} };
-            const services = candidateApp.services.split(",");
+            const serviceNames = [];
+            const servicesIds = candidateApp.services
+              ? candidateApp.services.split(",")
+              : [];
 
-            candidateApp.dav_exist = services.includes(digitalAddressID)
+            if (servicesIds.length === 0) {
+              serviceNames.push({ ...candidateApp, serviceNames: "" });
+            } else {
+              // Query for service titles
+              const servicesQuery = "SELECT title FROM `services` WHERE id IN (?)";
+              try {
+                const servicesResults = await new Promise((resolve, reject) => {
+                  connection.query(servicesQuery, [servicesIds], (err, results) => {
+                    if (err) {
+                      console.error("Database query error for services:", err);
+                      return reject(err);
+                    }
+                    resolve(results);
+                  });
+                });
+
+                const servicesTitles = servicesResults.map((service) => service.title);
+                candidateApp.serviceNames = servicesTitles;
+              } catch (error) {
+                console.error("Error fetching service titles:", error);
+              }
+            }
+
+            // Continue with existing processing for DAV and CEF
+            candidateApp.dav_exist = servicesIds.includes(digitalAddressID)
               ? 1
               : 0;
             // Handle DAV submitted cases
             if (candidateApp.dav_submitted === 1) {
               const checkDavSql = `
-                SELECT identity_proof, home_photo, locality
-                FROM \`dav_applications\`
-                WHERE \`candidate_application_id\` = ?
-              `;
+                            SELECT identity_proof, home_photo, locality
+                            FROM \`dav_applications\`
+                            WHERE \`candidate_application_id\` = ?`;
 
               try {
                 const davResults = await new Promise((resolve, reject) => {
-                  startConnection((err, connection) => {
-                    if (err) {
-                      console.error("Connection error:", err);
-                      return reject(err); // Reject if connection fails
+                  connection.query(checkDavSql, [candidateApp.main_id], (queryErr, results) => {
+                    if (queryErr) {
+                      console.error("Error querying DAV details:", queryErr);
+                      return reject(queryErr);
                     }
+                    resolve(results);
+                  });
+                });
 
-                    connection.query(
-                      checkDavSql,
-                      [candidateApp.main_id],
-                      (queryErr, results) => {
-                        connectionRelease(connection); // Always release connection after query
-                        if (queryErr) {
-                          console.error(
-                            "Database query error: Check DAV",
-                            queryErr
-                          );
-                          return reject(queryErr); // Reject on query error
-                        }
-                        resolve(results); // Resolve with query results
+                if (davResults.length > 0) {
+                  davResults.forEach((davResult) => {
+                    const mappings = {
+                      identity_proof: "Identity Proof",
+                      home_photo: "Home Photo",
+                      locality: "Locality",
+                    };
+
+                    Object.entries(mappings).forEach(([key, label]) => {
+                      if (davResult[key]) {
+                        servicesResult.dav[label] = davResult[key];
                       }
-                    );
+                    });
                   });
-                });
-
-                // Process DAV results
-                if (davResults.length === 0) {
-                  throw new Error("Candidate DAV form is not submitted yet");
+                  candidateApp.service_data = servicesResult;
                 }
-
-                davResults.forEach((davResult) => {
-                  // Define a mapping of keys to labels
-                  const mappings = {
-                    identity_proof: "Identity Proof",
-                    home_photo: "Home Photo",
-                    locality: "Locality",
-                  };
-
-                  // Iterate over the mappings and assign values if not null or empty
-                  Object.entries(mappings).forEach(([key, label]) => {
-                    if (davResult[key] != null && davResult[key] !== "") {
-                      servicesResult.dav[label] = davResult[key];
-                    }
-                  });
-                });
-
-                candidateApp.service_data = servicesResult;
               } catch (error) {
-                return Promise.reject(error); // Reject the promise if DAV check fails
+                console.error("Error processing DAV services:", error);
               }
             }
 
             // Handle CEF submitted cases
             if (candidateApp.cef_submitted === 1) {
-              let candidateBasicAttachments = [];
               const checkCefSql = `
-                SELECT 
-                  \`signature\`, 
-                  \`resume_file\`, 
-                  \`govt_id\`, 
-                  \`pan_card_image\`, 
-                  \`aadhar_card_image\`, 
-                  \`passport_photo\`
-                FROM 
-                  \`cef_applications\`
-                WHERE 
-                  \`candidate_application_id\` = ?;
-              `;
+                            SELECT 
+                                signature, resume_file, govt_id, 
+                                pan_card_image, aadhar_card_image, passport_photo
+                            FROM 
+                                \`cef_applications\`
+                            WHERE 
+                                \`candidate_application_id\` = ?`;
 
               try {
                 const cefResults = await new Promise((resolve, reject) => {
-                  startConnection((err, connection) => {
-                    if (err) {
-                      console.error("Connection error:", err);
-                      return reject(err);
+                  connection.query(checkCefSql, [candidateApp.main_id], (queryErr, results) => {
+                    if (queryErr) {
+                      console.error("Error querying CEF details:", queryErr);
+                      return reject(queryErr);
                     }
-
-                    connection.query(
-                      checkCefSql,
-                      [candidateApp.main_id],
-                      (queryErr, results) => {
-                        if (queryErr) {
-                          console.error("Database query error: Check DAV", queryErr);
-                          return reject(queryErr);
-                        }
-                        resolve(results);
-                      }
-                    );
+                    resolve(results);
                   });
                 });
 
-                // Process results
-                if (cefResults.length === 0) {
-                  throw new Error("Candidate DAV form is not submitted yet");
-                }
-
-                cefResults.forEach((cefResult) => {
-                  // Define a mapping of keys to labels
+                if (cefResults.length > 0) {
+                  const candidateBasicAttachments = [];
                   const mappings = {
                     signature: "Signature",
                     resume_file: "Resume File",
-                    govt_id: "GOVT ID",
-                    pan_card_image: "Pancard Image",
+                    govt_id: "Govt ID",
+                    pan_card_image: "Pan Card Image",
                     aadhar_card_image: "Aadhar Card Image",
                     passport_photo: "Passport Photo",
                   };
 
-                  // Iterate over the mappings and push key-value pairs as objects
-                  for (const [key, label] of Object.entries(mappings)) {
-                    if (cefResult[key]) {
-                      candidateBasicAttachments.push({
-                        [label]: cefResult[key],
-                      });
-                    }
-                  }
-                });
-
-                console.log("candidateBasicAttachments:", candidateBasicAttachments);
-                servicesResult.cef["Candidate Basic Attachments"] = candidateBasicAttachments;
-              } catch (error) {
-                console.error("Error processing candidate attachments:", error);
-                return Promise.reject(error); // Reject the promise if any error occurs
-              }
-
-              const dbTableFileInputs = {};
-              const dbTableColumnLabel = {};
-              let completedQueries = 0;
-              const dbTableWithHeadings = {};
-
-              try {
-                await Promise.all(
-                  services.map(async (service) => {
-                    const query =
-                      "SELECT `json` FROM `cef_service_forms` WHERE `service_id` = ?";
-                    const result = await new Promise((resolve, reject) => {
-                      connection.query(query, [service], (err, result) => {
-                        if (err) {
-                          return reject(err); // Reject if there is an error in the query
-                        }
-                        resolve(result); // Resolve with query result
-                      });
+                  cefResults.forEach((cefResult) => {
+                    Object.entries(mappings).forEach(([key, label]) => {
+                      if (cefResult[key]) {
+                        candidateBasicAttachments.push({ [label]: cefResult[key] });
+                      }
                     });
+                  });
 
-                    if (result.length > 0) {
-                      try {
-                        const rawJson = result[0].json;
-                        const sanitizedJson = rawJson
-                          .replace(/\\"/g, '"')
-                          .replace(/\\'/g, "'");
-                        const jsonData = JSON.parse(sanitizedJson);
-                        const dbTable = jsonData.db_table;
-                        const heading = jsonData.heading;
-
-                        if (dbTable && heading) {
-                          dbTableWithHeadings[dbTable] = heading;
-                        }
-
-                        if (!dbTableFileInputs[dbTable]) {
-                          dbTableFileInputs[dbTable] = [];
-                        }
-
-                        jsonData.rows.forEach((row) => {
-                          row.inputs.forEach((input) => {
-                            if (input.type === "file") {
-                              dbTableFileInputs[dbTable].push(input.name);
-                              dbTableColumnLabel[input.name] = input.label;
-                            }
-                          });
-                        });
-                      } catch (parseErr) {
-                        console.error("Error parsing JSON:", parseErr);
-                      }
-                    }
-                  })
-                );
-
-                let tableQueries = 0;
-                const totalTables = Object.keys(dbTableFileInputs).length;
-
-                if (totalTables === 0) {
-                  return; // If no tables to query, resolve immediately
+                  servicesResult.cef["Candidate Basic Attachments"] = candidateBasicAttachments;
+                  candidateApp.service_data = servicesResult;
                 }
-
-                await Promise.all(
-                  Object.entries(dbTableFileInputs).map(async ([dbTable, fileInputNames]) => {
-                    if (fileInputNames.length > 0) {
-                      try {
-                        // Fetch the column names of the table
-                        const existingColumns = await new Promise((resolve, reject) => {
-                          const describeQuery = `DESCRIBE cef_${dbTable}`;
-                          connection.query(describeQuery, (err, results) => {
-                            if (err) {
-                              console.error("Error describing table:", dbTable, err);
-                              return reject(err);
-                            }
-                            resolve(results.map((col) => col.Field)); // Extract column names
-                          });
-                        });
-
-                        // Get only the columns that exist in the table
-                        const validColumns = fileInputNames.filter((col) =>
-                          existingColumns.includes(col)
-                        );
-
-                        if (validColumns.length > 0) {
-                          // Create and execute the SELECT query
-                          const selectQuery = `SELECT ${validColumns.join(", ")} FROM cef_${dbTable} WHERE candidate_application_id = ?`;
-                          const rows = await new Promise((resolve, reject) => {
-                            connection.query(
-                              selectQuery,
-                              [candidateApp.main_id],
-                              (err, rows) => {
-                                if (err) {
-                                  console.error(
-                                    "Error querying database for table:",
-                                    dbTable,
-                                    err
-                                  );
-                                  return reject(err);
-                                }
-                                resolve(rows);
-                              }
-                            );
-                          });
-
-                          // Process and map the rows to replace column names with labels
-                          const updatedRows = rows.map((row) => {
-                            const updatedRow = {};
-                            for (const [key, value] of Object.entries(row)) {
-                              if (value != null && value !== "") {
-                                const label = dbTableColumnLabel[key];
-                                updatedRow[label || key] = value; // Use label if available, else keep original key
-                              }
-                            }
-                            return updatedRow;
-                          });
-
-                          if (
-                            updatedRows.length > 0 &&
-                            updatedRows.some((row) => Object.keys(row).length > 0)
-                          ) {
-                            servicesResult.cef[dbTableWithHeadings[dbTable]] = updatedRows;
-                          }
-                        } else {
-                          console.log(
-                            `Skipping table ${dbTable} as no valid columns exist in the table.`
-                          );
-                        }
-
-                        tableQueries++;
-                        if (tableQueries === totalTables) {
-                          console.log(`servicesResult.cef - `, servicesResult.cef);
-                          candidateApp.service_data = servicesResult;
-                        }
-                      } catch (error) {
-                        console.error(`Error processing table ${dbTable}:`, error);
-                      }
-                    } else {
-                      console.log(
-                        `Skipping table ${dbTable} as fileInputNames is empty.`
-                      );
-                    }
-                  })
-                );
-
               } catch (error) {
-                return Promise.reject(error); // Reject if any errors occur during CEF processing
+                console.error("Error processing CEF services:", error);
               }
             }
           });
@@ -601,15 +438,16 @@ const Customer = {
               connectionRelease(connection);
               callback(null, results);
             })
-            .catch((err) => {
-              console.error("Error processing candidate applications:", err);
+            .catch((promiseError) => {
+              console.error("Error processing candidate applications:", promiseError);
               connectionRelease(connection);
-              callback(err, null);
+              callback(promiseError, null);
             });
         });
       });
     });
   },
+
 
   applicationDataByClientApplicationID: (
     client_application_id,
