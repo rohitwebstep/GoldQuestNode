@@ -312,11 +312,12 @@ exports.annexureData = (req, res) => {
 };
 
 exports.annexureDataByServiceIds = (req, res) => {
-  const { service_ids, application_id, branch_id, _token } = req.query;
+  const { service_ids, application_id, sub_user_id, branch_id, _token } = req.query;
   let missingFields = [];
   if (!service_ids || service_ids === "" || service_ids === "undefined") {
     missingFields.push("Service ID");
   }
+  const subUserId = (!sub_user_id || sub_user_id === "" || sub_user_id === "undefined") ? null : sub_user_id;
   if (
     !application_id ||
     application_id === "" ||
@@ -347,10 +348,9 @@ exports.annexureDataByServiceIds = (req, res) => {
         message: authResult.message,
       });
     }
-    let sub_user_id;
     BranchCommon.isBranchTokenValid(
       _token,
-      sub_user_id || null,
+      subUserId || null,
       branch_id,
       (tokenErr, tokenResult) => {
         if (tokenErr) {
