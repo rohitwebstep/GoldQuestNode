@@ -113,6 +113,13 @@ const tatDelay = {
                       application_created_at,
                     } = row;
 
+                    // Ensure tat_days is a reasonable value to avoid memory issues
+                    const tatDays = parseInt(tat_days, 10) || 0;
+                    if (tatDays < 1 || tatDays > 365) {
+                      console.warn(`Skipping invalid TAT days value: ${tatDays}`);
+                      return accumulator;
+                    }
+
                     // Initialize customer entry if it doesn't exist
                     if (!accumulator[customer_id]) {
                       accumulator[customer_id] = {
@@ -121,7 +128,7 @@ const tatDelay = {
                         customer_emails,
                         customer_unique_id,
                         customer_mobile,
-                        tat_days: parseInt(tat_days, 10), // Parse TAT days as an integer
+                        tat_days: tatDays, // Parse TAT days as an integer
                         branches: {},
                       };
                     }
@@ -141,7 +148,6 @@ const tatDelay = {
 
                     // Calculate days out of TAT
                     const applicationDate = moment(application_created_at);
-                    const tatDays = parseInt(tat_days, 10);
                     const dueDate = calculateDueDate(
                       applicationDate,
                       tatDays,
@@ -213,89 +219,80 @@ const tatDelay = {
       );
     });
 
-
     function handleQueryError(error, connection, callback) {
       connectionRelease(connection); // Ensure the connection is released
       console.error("Database query error:", error);
       callback(error, null);
     }
 
-    function calculateDueDate(startDate, tatDays, holidayDates, weekendsSet) {
-      let count = 0;
-      let currentDate = startDate.clone();
-
-      console.log("Starting due date calculation...");
-      console.log("Start Date:", currentDate.format("YYYY-MM-DD"));
-      console.log("TAT Days:", tatDays);
-
-      while (count < tatDays) {
-        currentDate.add(1, "days");
-        console.log("Checking date:", currentDate.format("YYYY-MM-DD"));
-
-        // Skip weekends
-        if (weekendsSet.has(currentDate.format("dddd").toLowerCase())) {
-          console.log("Skipped weekend:", currentDate.format("dddd"));
-          continue;
-        }
-
-        // Skip holidays
-        if (
-          holidayDates.some((holiday) => holiday.isSame(currentDate, "day"))
-        ) {
-          console.log("Skipped holiday:", currentDate.format("YYYY-MM-DD"));
-          continue;
-        }
-
-        count++; // Only count valid business days
-        console.log(`Valid business day counted: ${currentDate.format("YYYY-MM-DD")}. Count: ${count}`);
-      }
-
-      console.log("Due date calculated:", currentDate.format("YYYY-MM-DD"));
-      return currentDate; // This will be the due date
-    }
-
-
-    function calculateDaysOutOfTat(
-      dueDate,
-      endDate,
-      holidayDates,
-      weekendsSet
-    ) {
-      let count = 0;
-      let currentDate = dueDate.clone();
-
+    function calculateDaysOutOfTat(dueDate, endDate, holidayDates, weekendsSet) {
       console.log("Starting days out of TAT calculation...");
       console.log("Due Date:", dueDate.format("YYYY-MM-DD"));
       console.log("End Date:", endDate.format("YYYY-MM-DD"));
 
-      // Count business days from dueDate to endDate
-      while (currentDate.isBefore(endDate, "day")) {
-        currentDate.add(1, "days");
-        console.log("Checking date:", currentDate.format("YYYY-MM-DD"));
+      // Calculate the number of days in the range, excluding the dueDate itself
+      const totalDays = endDate.diff(dueDate, "days") - 1;
+
+      // Generate all dates in the range (excluding dueDate)
+      const allDates = Array.from({ length: totalDays }, (_, i) => dueDate.clone().add(i + 1, "days"));
+
+      // Filter dates to include only valid business days (non-weekends, non-holidays)
+      const validBusinessDays = allDates.filter(date => {
+        const dayName = date.format("dddd").toLowerCase();
 
         // Skip weekends
-        if (weekendsSet.has(currentDate.format("dddd").toLowerCase())) {
-          console.log("Skipped weekend:", currentDate.format("dddd"));
-          continue;
+        if (weekendsSet.has(dayName)) {
+          console.log("Skipped weekend:", date.format("YYYY-MM-DD"));
+          return false;
         }
 
         // Skip holidays
-        if (
-          holidayDates.some((holiday) => holiday.isSame(currentDate, "day"))
-        ) {
-          console.log("Skipped holiday:", currentDate.format("YYYY-MM-DD"));
-          continue;
+        if (holidayDates.some(holiday => holiday.isSame(date, "day"))) {
+          console.log("Skipped holiday:", date.format("YYYY-MM-DD"));
+          return false;
         }
 
-        count++; // Count only valid business days
-        console.log(`Valid business day counted: ${currentDate.format("YYYY-MM-DD")}. Count: ${count}`);
-      }
+        console.log("Valid business day counted:", date.format("YYYY-MM-DD"));
+        return true;
+      });
 
-      console.log("Total days out of TAT:", count);
-      return count; // Return total days out of TAT
+      console.log("Total days out of TAT:", validBusinessDays.length);
+      return validBusinessDays.length;
     }
 
-  },
+    function calculateDueDate(startDate, tatDays, holidayDates, weekendsSet) {
+      console.log("Starting due date calculation...");
+      console.log("Start Date:", startDate.format("YYYY-MM-DD"));
+      console.log("TAT Days:", tatDays);
+
+      // Track remaining TAT days to process
+      let remainingDays = tatDays;
+
+      // Generate potential dates to check
+      const potentialDates = Array.from({ length: tatDays * 2 }, (_, i) => startDate.clone().add(i + 1, "days"));
+
+      // Calculate the final due date
+      let finalDueDate = potentialDates.find((date) => {
+        const dayName = date.format("dddd").toLowerCase();
+
+        // Skip weekends
+        if (weekendsSet.has(dayName)) {
+          return false;
+        }
+
+        // Skip holidays
+        if (holidayDates.some(holiday => holiday.isSame(date, "day"))) {
+          return false;
+        }
+
+        remainingDays--;
+        return remainingDays <= 0;
+      });
+
+      console.log("Due Date calculated:", finalDueDate.format("YYYY-MM-DD"));
+      return finalDueDate;
+    }
+  }
 };
 
 module.exports = tatDelay;
