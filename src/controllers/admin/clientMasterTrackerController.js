@@ -2271,7 +2271,7 @@ exports.annexureDataByServiceIds = (req, res) => {
       });
     }
 
-    Admin.fetchAllowedServiceIds(admin_id, async (err, allowedServiceIds) => {
+    Admin.fetchAllowedServiceIds(admin_id, async (err, allowedServiceIdsResult) => {
       if (err) {
         console.error("Error retrieving Admin:", err);
         return res.status(500).json({
@@ -2280,6 +2280,8 @@ exports.annexureDataByServiceIds = (req, res) => {
           token: newToken,
         });
       }
+      const allowedServiceIds = allowedServiceIdsResult.finalServiceIds;
+      const addressServicesPermission = allowedServiceIdsResult.addressServicesPermission;
 
       console.log(`allowedServiceIds - `, allowedServiceIds);
 
@@ -2287,11 +2289,11 @@ exports.annexureDataByServiceIds = (req, res) => {
       AdminCommon.isAdminTokenValid(_token, admin_id, (err, result) => {
         if (err) {
           console.error("Error checking token validity:", err);
-          return res.status(500).json({ status: false, message: err.message });
+          return res.status(500).json({ status: false, message: err.message, addressServicesPermission });
         }
 
         if (!result.status) {
-          return res.status(401).json({ status: false, message: result.message });
+          return res.status(401).json({ status: false, message: result.message, addressServicesPermission });
         }
 
         const newToken = result.newToken;
@@ -2320,6 +2322,7 @@ exports.annexureDataByServiceIds = (req, res) => {
             status: true,
             message: "No service IDs to process.",
             results: annexureResults,
+            addressServicesPermission,
             token: newToken,
           });
         }
@@ -2421,6 +2424,7 @@ exports.annexureDataByServiceIds = (req, res) => {
                     status: true,
                     message: "Applications fetched successfully.",
                     results: annexureResults,
+                    addressServicesPermission,
                     token: newToken,
                   });
                 }
@@ -2430,6 +2434,7 @@ exports.annexureDataByServiceIds = (req, res) => {
                 status: true,
                 message: "Applications fetched successfully.",
                 results: annexureResults,
+                addressServicesPermission,
                 token: newToken,
               });
             }

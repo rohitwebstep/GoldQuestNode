@@ -623,9 +623,9 @@ const Admin = {
 
   fetchAllowedServiceIds: (id, callback) => {
     const sql = `
-    SELECT \`service_groups\`, \`role\` FROM \`admins\`
-    WHERE \`id\` = ?
-  `;
+      SELECT \`service_groups\`, \`role\` FROM \`admins\`
+      WHERE \`id\` = ?
+    `;
 
     startConnection((err, connection) => {
       if (err) {
@@ -648,8 +648,9 @@ const Admin = {
 
         const role = results[0].role;
         const serviceGroups = results[0].service_groups;
-        let finalServiceIds = null; // Default to null
+        let finalServiceIds = []; // Initialize as an empty array
         let servicePromises = [];
+        let isaddressServiceAllowed = false;
 
         // Check if the role is not "admin"
         if (role !== 'admin') {
@@ -659,9 +660,13 @@ const Admin = {
 
             // Create promises for each service group query
             serviceGroupsArray.forEach((serviceGroup, index) => {
+              // Check if the service group contains 'address' (case-insensitive)
+              if (serviceGroup.toLowerCase().includes('address')) {
+                isaddressServiceAllowed = true;
+              }
               const serviceSql = `
-              SELECT id FROM services WHERE \`group\` = ?
-            `;
+                SELECT id FROM services WHERE \`group\` = ?
+              `;
 
               // Create a promise for the query
               const queryPromise = new Promise((resolve, reject) => {
@@ -688,7 +693,7 @@ const Admin = {
               .then(() => {
                 // Once all service IDs are fetched, release the connection and return the result
                 connectionRelease(connection);
-                callback(null, finalServiceIds); // Return the final service IDs
+                callback(null, { finalServiceIds, addressServicesPermission: isaddressServiceAllowed }); // Return the final service IDs and permission
               })
               .catch((err) => {
                 console.error("Error while fetching service IDs:", err);
@@ -705,14 +710,15 @@ const Admin = {
             );
           }
         } else {
-          // If the role is admin, set finalServiceIds to null and return it
-          console.log("Role is admin, returning null for service IDs.");
+          // If the role is admin, set finalServiceIds to an empty array and allow address services
+          console.log("Role is admin, returning empty service IDs array.");
           connectionRelease(connection);
-          return callback(null, finalServiceIds); // Return null for admin role
+          return callback(null, { finalServiceIds: [], addressServicesPermission: true }); // Return empty array and true for admin role
         }
       });
     });
   }
+
 
 
 
