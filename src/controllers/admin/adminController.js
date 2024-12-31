@@ -188,7 +188,7 @@ exports.create = (req, res) => {
       return typeof value === 'string' ? value.trim() === "" : !value;
     })
     .map((field) => field.replace(/_/g, " "));
-    
+
   if (missingFields.length > 0) {
     return res.status(400).json({
       status: false,
@@ -322,6 +322,7 @@ exports.update = (req, res) => {
     email,
     mobile,
     status,
+    service_group,
     employee_id,
   } = req.body;
 
@@ -338,9 +339,17 @@ exports.update = (req, res) => {
     employee_id,
   };
 
+  if (role.trim().toLowerCase() !== "admin") {
+    requiredFields.service_group = service_group;
+  }
+
   // Check for missing fields
   const missingFields = Object.keys(requiredFields)
-    .filter((field) => !requiredFields[field] || requiredFields[field] === "")
+    .filter((field) => {
+      const value = requiredFields[field];
+      // Ensure value is a string before calling .trim() and check for empty strings
+      return typeof value === 'string' ? value.trim() === "" : !value;
+    })
     .map((field) => field.replace(/_/g, " "));
 
   if (missingFields.length > 0) {
@@ -411,6 +420,7 @@ exports.update = (req, res) => {
             mobile,
             role: role.toLowerCase(),
             status,
+            service_group: service_group || "",
           },
           (err, result) => {
             if (err) {

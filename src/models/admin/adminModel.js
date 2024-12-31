@@ -106,7 +106,7 @@ const Admin = {
   },
 
   update: (data, callback) => {
-    const { id, name, mobile, email, employee_id, role, status } = data;
+    const { id, name, mobile, email, employee_id, role, status, service_group } = data;
 
     // SQL query to check if any field already exists in the admins table
     const checkExistingQuery = `
@@ -159,13 +159,14 @@ const Admin = {
               \`mobile\` = ?, 
               \`email\` = ?, 
               \`role\` = ?, 
+              \`service_groups\` = ?,
               \`status\` = ?
             WHERE \`id\` = ?
           `;
 
           connection.query(
             sql,
-            [name, employee_id, mobile, email, role, status, id],
+            [name, employee_id, mobile, email, role, service_group, status, id],
             (queryErr, results) => {
               connectionRelease(connection); // Release the connection
 
