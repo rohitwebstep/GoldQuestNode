@@ -46,7 +46,7 @@ exports.rolesList = (req, res) => {
         res.json({
           status: true,
           message: "Roles fetched successfully",
-          roles: result,
+          data: result,
           totalResults: result.length,
           token: newToken,
         });
