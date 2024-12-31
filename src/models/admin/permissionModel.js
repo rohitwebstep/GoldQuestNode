@@ -33,10 +33,14 @@ const Permission = {
             return callback(groupsErr, null);
           }
 
-          // Combine both results
+          // Extract just the role and group values into arrays
+          const roles = rolesResults.map(role => role.role);
+          const groups = groupsResults.map(group => group.group);
+
+          // Return the response with roles and groups as arrays
           const response = {
-            roles: rolesResults,
-            groups: groupsResults,
+            roles: roles,
+            groups: groups,
           };
 
           callback(null, response);
@@ -44,7 +48,6 @@ const Permission = {
       });
     });
   },
-
 
   list: (callback) => {
     const sql = `
