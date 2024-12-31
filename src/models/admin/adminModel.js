@@ -89,7 +89,7 @@ const Admin = {
           `;
           connection.query(
             sql,
-            [name, employee_id, mobile, email, role, service_groups, "1", password],
+            [name, employee_id, mobile, email, role, JSON.stringify(service_groups), "1", password],
             (queryErr, results) => {
               connectionRelease(connection); // Release the connection
 
