@@ -2,7 +2,7 @@ const { pool, startConnection, connectionRelease } = require("../../config/db");
 
 const Admin = {
   list: (callback) => {
-    const sql = `SELECT \`id\`, \`emp_id\`, \`name\`, \`role\`, \`profile_picture\`, \`email\`, \`mobile\` FROM \`admins\``;
+    const sql = `SELECT \`id\`, \`emp_id\`, \`name\`, \`role\`, \`profile_picture\`, \`email\`, \`service_groups\`, \`mobile\` FROM \`admins\``;
 
     startConnection((err, connection) => {
       if (err) {
