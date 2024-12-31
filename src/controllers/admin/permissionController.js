@@ -45,7 +45,7 @@ exports.rolesList = (req, res) => {
 
         res.json({
           status: true,
-          message: "Roles fetched successfully",
+          message: "Roles and Service Groups fetched successfully",
           data: result,
           totalResults: result.length,
           token: newToken,
