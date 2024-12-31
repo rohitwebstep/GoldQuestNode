@@ -61,7 +61,7 @@ const Service = {
 
               if (insertErr) {
                 console.error("Database query error: 46", insertErr);
-                return callback({ insertErr }, null);
+                return callback(insertErr, null);
               }
               callback(null, results);
             }

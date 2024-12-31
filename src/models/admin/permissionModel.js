@@ -2,10 +2,15 @@ const { pool, startConnection, connectionRelease } = require("../../config/db");
 
 const Permission = {
   rolesList: (callback) => {
-    const sql = `
+    const rolesSql = `
       SELECT 
         role
       FROM \`permissions\`
+    `;
+
+    const groupsSql = `
+      SELECT DISTINCT \`group\` 
+      FROM \`services\`
     `;
 
     startConnection((err, connection) => {
@@ -13,18 +18,33 @@ const Permission = {
         return callback(err, null);
       }
 
-      connection.query(sql, (queryErr, results) => {
-        connectionRelease(connection); // Release the connection
-
-        if (queryErr) {
-          console.error("Database query error: 47", queryErr);
-          return callback(queryErr, null);
+      connection.query(rolesSql, (rolesErr, rolesResults) => {
+        if (rolesErr) {
+          console.error("Database query error: Roles", rolesErr);
+          connectionRelease(connection); // Release the connection
+          return callback(rolesErr, null);
         }
 
-        callback(null, results);
+        connection.query(groupsSql, (groupsErr, groupsResults) => {
+          connectionRelease(connection); // Release the connection
+
+          if (groupsErr) {
+            console.error("Database query error: Groups", groupsErr);
+            return callback(groupsErr, null);
+          }
+
+          // Combine both results
+          const response = {
+            roles: rolesResults,
+            groups: groupsResults,
+          };
+
+          callback(null, response);
+        });
       });
     });
   },
+
 
   list: (callback) => {
     const sql = `
