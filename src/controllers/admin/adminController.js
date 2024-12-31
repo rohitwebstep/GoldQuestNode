@@ -182,9 +182,13 @@ exports.create = (req, res) => {
 
   // Check for missing fields
   const missingFields = Object.keys(requiredFields)
-    .filter((field) => !requiredFields[field] || requiredFields[field].trim() === "")
+    .filter((field) => {
+      const value = requiredFields[field];
+      // Ensure value is a string before calling .trim() and check for empty strings
+      return typeof value === 'string' ? value.trim() === "" : !value;
+    })
     .map((field) => field.replace(/_/g, " "));
-
+    
   if (missingFields.length > 0) {
     return res.status(400).json({
       status: false,
