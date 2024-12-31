@@ -24,7 +24,6 @@ App.appInfo("backend", (err, appInfo) => {
     console.error("FTP configuration missing required details.");
     return;
   }
-
   // Set cloudImageFTPSecure based on its value (0 = false, anything else = true)
   cloudImageFTPSecure = cloudImageFTPSecure === 0 ? false : true;
 });
@@ -159,6 +158,7 @@ const saveZip = async (file, targetDir) => {
 const uploadToFtp = async (filePath) => {
   const client = new ftp.Client();
   client.ftp.verbose = true; // Enable verbose logging for FTP connection
+  client.ftp.timeout = 300000;
 
   try {
     // Connect to FTP server using previously fetched app information
@@ -202,6 +202,7 @@ const savePdf = async (doc, pdfFileName, targetDir) => {
   const dirs = targetDir.split(path.sep); // Split targetDir into directory parts
   const client = new ftp.Client();
   client.ftp.verbose = true; // Enable verbose logging for FTP connection
+  client.ftp.timeout = 300000;
 
   try {
     // Connect to FTP server using previously fetched app information

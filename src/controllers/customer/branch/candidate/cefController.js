@@ -596,16 +596,20 @@ const sendNotificationEmails = (
 };
 
 exports.upload = async (req, res) => {
+  console.log("Starting upload process...");
+
   // Use multer to handle the upload
   upload(req, res, async (err) => {
+    console.log("File upload middleware executed.");
     if (err) {
-      console.log(`err - `, err);
+      console.error(`Upload error:`, err);
       return res.status(400).json({
         status: false,
         message: "Error uploading file.",
       });
     }
 
+    console.log("Extracting fields from request body...");
     const {
       cef_id: CefID,
       branch_id: branchId,
@@ -616,16 +620,9 @@ exports.upload = async (req, res) => {
       send_mail,
     } = req.body;
 
-    // Validate required fields and collect missing ones
-    const requiredFields = {
-      branchId,
-      customerID,
-      candidateAppId,
-      dbTable,
-      dbColumn,
-    };
+    console.log("Validating required fields...");
+    const requiredFields = { branchId, customerID, candidateAppId, dbTable, dbColumn };
 
-    // Check for missing fields
     const missingFields = Object.keys(requiredFields)
       .filter(
         (field) =>
@@ -637,19 +634,21 @@ exports.upload = async (req, res) => {
       .map((field) => field.replace(/_/g, " "));
 
     if (missingFields.length > 0) {
+      console.warn("Missing required fields:", missingFields);
       return res.status(400).json({
         status: false,
         message: `Missing required fields: ${missingFields.join(", ")}`,
       });
     }
 
+    console.log("Checking if candidate application exists...");
     Candidate.isApplicationExist(
       candidateAppId,
       branchId,
       customerID,
       (err, currentCandidateApplication) => {
         if (err) {
-          console.error("Database error:", err);
+          console.error("Database error during application existence check:", err);
           return res.status(500).json({
             status: false,
             message: "An error occurred while checking application existence.",
@@ -657,6 +656,7 @@ exports.upload = async (req, res) => {
         }
 
         if (currentCandidateApplication) {
+          console.log("Candidate application exists. Retrieving branch details...");
           Branch.getBranchById(branchId, (err, currentBranch) => {
             if (err) {
               console.error("Database error during branch retrieval:", err);
@@ -670,144 +670,114 @@ exports.upload = async (req, res) => {
               !currentBranch ||
               parseInt(currentBranch.customer_id) !== parseInt(customerID)
             ) {
+              console.warn("Branch not found or customer mismatch.");
               return res.status(404).json({
                 status: false,
                 message: "Branch not found or customer mismatch.",
               });
             }
-            // Retrieve customer details
-            Customer.getCustomerById(
-              customerID,
-              async (err, currentCustomer) => {
-                if (err) {
-                  console.error(
-                    "Database error during customer retrieval:",
-                    err
-                  );
-                  return res.status(500).json({
-                    status: false,
-                    message: "Failed to retrieve Customer. Please try again.",
-                  });
-                }
 
-                if (!currentCustomer) {
-                  return res.status(404).json({
-                    status: false,
-                    message: "Customer not found.",
-                  });
-                }
-                // Define the target directory for uploads
-                const modifiedDbTable = dbTable
-                  .replace(/-/g, "_")
-                  .toLowerCase();
-                const cleanDBColumnForQry = dbColumn
-                  .replace(/-/g, "_")
-                  .toLowerCase();
-                const modifiedDbTableForDbQuery = `cef_${dbTable.replace(
-                  /-/g,
-                  "_"
-                )}`;
-                const targetDirectory = `uploads/customers/${currentCustomer.client_unique_id}/candidate-applications/CD-${currentCustomer.client_unique_id}-${candidateAppId}/annexures/${modifiedDbTable}`;
-
-                // Create the target directory for uploads
-                await fs.promises.mkdir(targetDirectory, {
-                  recursive: true,
-                });
-                App.appInfo("backend", async (err, appInfo) => {
-                  if (err) {
-                    console.error("Database error:", err);
-                    return res.status(500).json({
-                      status: false,
-                      err,
-                      message: err.message,
-                    });
-                  }
-
-                  let imageHost = "www.example.in";
-
-                  if (appInfo) {
-                    imageHost = appInfo.cloud_host || "www.example.in";
-                  }
-                  let savedImagePaths = [];
-
-                  // Check for multiple files under the "images" field
-                  if (req.files.images && req.files.images.length > 0) {
-                    const uploadedImages = await saveImages(
-                      req.files.images,
-                      targetDirectory
-                    );
-                    uploadedImages.forEach((imagePath) => {
-                      savedImagePaths.push(`${imageHost}/${imagePath}`);
-                    });
-                  }
-
-                  // Process single file upload
-                  if (req.files.image && req.files.image.length > 0) {
-                    const uploadedImage = await saveImage(
-                      req.files.image[0],
-                      targetDirectory
-                    );
-                    savedImagePaths.push(`${imageHost}/${uploadedImage}`);
-                  }
-                  CEF.upload(
-                    CefID,
-                    candidateAppId,
-                    modifiedDbTableForDbQuery,
-                    cleanDBColumnForQry,
-                    savedImagePaths,
-                    async (success, result) => {
-                      if (!success) {
-                        // If an error occurred, return the error details in the response
-                        return res.status(500).json({
-                          status: false,
-                          message:
-                            result ||
-                            "An error occurred while saving the image.",
-                          savedImagePaths,
-                          // details: result.details,
-                          // query: result.query,
-                          // params: result.params,
-                        });
-                      }
-
-                      if (parseInt(send_mail) === 1) {
-                        sendNotificationEmails(
-                          candidateAppId,
-                          CefID,
-                          currentCandidateApplication.name,
-                          branchId,
-                          customerID,
-                          currentCustomer.client_unique_id,
-                          currentCustomer.name,
-                          res
-                        );
-                      } else {
-                        // Handle the case where the upload was successful
-                        if (result && result.affectedRows > 0) {
-                          return res.status(201).json({
-                            status: true,
-                            message:
-                              "Candidate background Form submitted successfully.",
-                            savedImagePaths,
-                          });
-                        } else {
-                          // If no rows were affected, indicate that no changes were made
-                          return res.status(400).json({
-                            status: false,
-                            message:
-                              "Candidate background Form submitted successfully.",
-                            result,
-                            savedImagePaths,
-                          });
-                        }
-                      }
-                    }
-                  );
+            console.log("Retrieving customer details...");
+            Customer.getCustomerById(customerID, async (err, currentCustomer) => {
+              if (err) {
+                console.error("Database error during customer retrieval:", err);
+                return res.status(500).json({
+                  status: false,
+                  message: "Failed to retrieve Customer. Please try again.",
                 });
               }
-            );
+
+              if (!currentCustomer) {
+                console.warn("Customer not found.");
+                return res.status(404).json({
+                  status: false,
+                  message: "Customer not found.",
+                });
+              }
+
+              console.log("Defining target directory for uploads...");
+              const modifiedDbTable = dbTable.replace(/-/g, "_").toLowerCase();
+              const cleanDBColumnForQry = dbColumn.replace(/-/g, "_").toLowerCase();
+              const modifiedDbTableForDbQuery = `cef_${dbTable.replace(/-/g, "_")}`;
+              const targetDirectory = `uploads/customers/${currentCustomer.client_unique_id}/candidate-applications/CD-${currentCustomer.client_unique_id}-${candidateAppId}/annexures/${modifiedDbTable}`;
+
+              console.log("Creating target directory...");
+              await fs.promises.mkdir(targetDirectory, { recursive: true });
+
+              console.log("Retrieving app info...");
+              App.appInfo("backend", async (err, appInfo) => {
+                if (err) {
+                  console.error("Database error during app info retrieval:", err);
+                  return res.status(500).json({
+                    status: false,
+                    err,
+                    message: err.message,
+                  });
+                }
+
+                let imageHost = appInfo?.cloud_host || "www.example.in";
+                let savedImagePaths = [];
+
+                console.log("Handling file uploads...");
+                if (req.files.images && req.files.images.length > 0) {
+                  console.log("Processing multiple images...");
+                  const uploadedImages = await saveImages(req.files.images, targetDirectory);
+                  uploadedImages.forEach((imagePath) => {
+                    savedImagePaths.push(`${imageHost}/${imagePath}`);
+                  });
+                }
+
+                if (req.files.image && req.files.image.length > 0) {
+                  console.log("Processing single image...");
+                  const uploadedImage = await saveImage(req.files.image[0], targetDirectory);
+                  savedImagePaths.push(`${imageHost}/${uploadedImage}`);
+                }
+
+                console.log("Uploading data to CEF...");
+                CEF.upload(
+                  CefID,
+                  candidateAppId,
+                  modifiedDbTableForDbQuery,
+                  cleanDBColumnForQry,
+                  savedImagePaths,
+                  async (success, result) => {
+                    if (!success) {
+                      console.error("CEF upload failed:", result);
+                      return res.status(500).json({
+                        status: false,
+                        message: result || "An error occurred while saving the image.",
+                        savedImagePaths,
+                      });
+                    }
+
+                    console.log("Checking if notification email needs to be sent...");
+                    if (parseInt(send_mail) === 1) {
+                      console.log("Sending notification email...");
+                      sendNotificationEmails(
+                        candidateAppId,
+                        CefID,
+                        currentCandidateApplication.name,
+                        branchId,
+                        customerID,
+                        currentCustomer.client_unique_id,
+                        currentCustomer.name,
+                        res
+                      );
+                    } else {
+                      console.log("Upload successful. Returning response...");
+                      return res.status(201).json({
+                        status: true,
+                        message: "Candidate background Form submitted successfully.",
+                        savedImagePaths,
+                      });
+                    }
+                  }
+                );
+              });
+            });
           });
         } else {
+          console.warn("Candidate application does not exist.");
           return res.status(404).json({
             status: false,
             message: "Application does not exist.",
@@ -817,3 +787,4 @@ exports.upload = async (req, res) => {
     );
   });
 };
+
