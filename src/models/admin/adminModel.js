@@ -22,7 +22,7 @@ const Admin = {
   },
 
   create: (data, callback) => {
-    const { name, mobile, email, employee_id, role, password } = data;
+    const { name, mobile, email, employee_id, role, password, service_group } = data;
 
     // SQL query to check if any field already exists in the admins table
     const checkExistingQuery = `
@@ -84,12 +84,12 @@ const Admin = {
 
           // If no duplicates are found, proceed with inserting the new admin
           const sql = `
-            INSERT INTO \`admins\` (\`name\`, \`emp_id\`, \`mobile\`, \`email\`, \`role\`, \`status\`, \`password\`) 
+            INSERT INTO \`admins\` (\`name\`, \`emp_id\`, \`mobile\`, \`email\`, \`role\`, \`service_group\`, \`status\`, \`password\`) 
             VALUES (?, ?, ?, ?, ?, ?, md5(?))
           `;
           connection.query(
             sql,
-            [name, employee_id, mobile, email, role, "1", password],
+            [name, employee_id, mobile, email, role, service_group, "1", password],
             (queryErr, results) => {
               connectionRelease(connection); // Release the connection
 

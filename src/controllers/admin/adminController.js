@@ -161,6 +161,7 @@ exports.create = (req, res) => {
     password,
     employee_id,
     send_mail,
+    service_group,
   } = req.body;
 
   // Define required fields for creating a new admin
@@ -175,9 +176,13 @@ exports.create = (req, res) => {
     employee_id,
   };
 
+  if (role.trim().toLowerCase() !== "admin") {
+    requiredFields.service_group = service_group;
+  }
+
   // Check for missing fields
   const missingFields = Object.keys(requiredFields)
-    .filter((field) => !requiredFields[field] || requiredFields[field] === "")
+    .filter((field) => !requiredFields[field] || requiredFields[field].trim() === "")
     .map((field) => field.replace(/_/g, " "));
 
   if (missingFields.length > 0) {
@@ -186,13 +191,15 @@ exports.create = (req, res) => {
       message: `Missing required fields: ${missingFields.join(", ")}`,
     });
   }
+
   const action = "internal_login_credentials";
+
   Common.isAdminAuthorizedForAction(admin_id, action, (authResult) => {
     if (!authResult.status) {
       return res.status(403).json({
         status: false,
         err: authResult,
-        message: authResult.message, // Return the message from the authorization check
+        message: authResult.message,
       });
     }
 
@@ -200,9 +207,10 @@ exports.create = (req, res) => {
     Common.isAdminTokenValid(_token, admin_id, (err, tokenResult) => {
       if (err) {
         console.error("Error checking token validity:", err);
-        return res
-          .status(500)
-          .json({ status: false, message: "Internal server error" });
+        return res.status(500).json({
+          status: false,
+          message: "Internal server error",
+        });
       }
 
       if (!tokenResult.status) {
@@ -223,6 +231,7 @@ exports.create = (req, res) => {
           mobile,
           role: role.toLowerCase(),
           password,
+          service_group: service_group || "",
         },
         (err, result) => {
           if (err) {
@@ -234,16 +243,17 @@ exports.create = (req, res) => {
               "0",
               null,
               err.message,
-              () => {}
+              () => { }
             );
             return res.status(500).json({
               status: false,
-              message: err.message,
+              message: "Failed to create admin.",
+              error: err.message,
               token: newToken,
             });
           }
 
-          // Log the successful creation of the Admin
+          // Log the successful creation of the admin
           Common.adminActivityLog(
             admin_id,
             "Admin",
@@ -251,10 +261,9 @@ exports.create = (req, res) => {
             "1",
             `{id: ${result.insertId}}`,
             null,
-            () => {}
+            () => { }
           );
 
-          // If email sending is not required
           if (send_mail == 0) {
             return res.status(201).json({
               status: true,
@@ -264,11 +273,8 @@ exports.create = (req, res) => {
             });
           }
 
-          const newAttachedDocsString = "";
-          // Prepare the recipient and CC list for the email
           const toArr = [{ name, email }];
 
-          // Send an email notification
           createMail(
             "Admin",
             "create",
@@ -276,7 +282,7 @@ exports.create = (req, res) => {
             mobile,
             email,
             role.toUpperCase(),
-            newAttachedDocsString,
+            "",
             password,
             toArr
           )
@@ -291,9 +297,8 @@ exports.create = (req, res) => {
               console.error("Error sending email:", emailError);
               return res.status(201).json({
                 status: true,
-                message:
-                  "Admin created successfully, but failed to send email.",
-                client: result,
+                message: "Admin created successfully, but failed to send email.",
+                result,
                 token: newToken,
               });
             });
@@ -413,7 +418,7 @@ exports.update = (req, res) => {
                 "0",
                 null,
                 err,
-                () => {}
+                () => { }
               );
               return res.status(500).json({
                 status: false,
@@ -431,7 +436,7 @@ exports.update = (req, res) => {
               "1",
               `{id: ${id}}`,
               null,
-              () => {}
+              () => { }
             );
 
             return res.status(201).json({
@@ -525,7 +530,7 @@ exports.delete = (req, res) => {
               "0",
               JSON.stringify({ id }),
               err,
-              () => {}
+              () => { }
             );
             return res.status(500).json({
               status: false,
@@ -541,7 +546,7 @@ exports.delete = (req, res) => {
             "1",
             JSON.stringify({ id }),
             null,
-            () => {}
+            () => { }
           );
 
           res.status(200).json({
