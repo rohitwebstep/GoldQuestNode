@@ -161,7 +161,7 @@ exports.create = (req, res) => {
     password,
     employee_id,
     send_mail,
-    service_group,
+    service_groups,
   } = req.body;
 
   // Define required fields for creating a new admin
@@ -177,7 +177,7 @@ exports.create = (req, res) => {
   };
 
   if (role.trim().toLowerCase() !== "admin") {
-    requiredFields.service_group = service_group;
+    requiredFields.service_groups = service_groups;
   }
 
   // Check for missing fields
@@ -235,7 +235,7 @@ exports.create = (req, res) => {
           mobile,
           role: role.toLowerCase(),
           password,
-          service_group: service_group || "",
+          service_groups: service_groups || "",
         },
         (err, result) => {
           if (err) {
@@ -322,7 +322,7 @@ exports.update = (req, res) => {
     email,
     mobile,
     status,
-    service_group,
+    service_groups,
     employee_id,
   } = req.body;
 
@@ -340,7 +340,7 @@ exports.update = (req, res) => {
   };
 
   if (role.trim().toLowerCase() !== "admin") {
-    requiredFields.service_group = service_group;
+    requiredFields.service_groups = service_groups;
   }
 
   // Check for missing fields
@@ -420,7 +420,7 @@ exports.update = (req, res) => {
             mobile,
             role: role.toLowerCase(),
             status,
-            service_group: service_group || "",
+            service_groups: service_groups || "",
           },
           (err, result) => {
             if (err) {
