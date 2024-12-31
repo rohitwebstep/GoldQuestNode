@@ -36,28 +36,40 @@ const tatDelay = {
     const weekendsQuery = `SELECT weekends FROM company_info WHERE status = 1;`;
 
     startConnection((connectionError, connection) => {
+      console.log("Connection attempt started...");
+
       if (connectionError) {
+        console.error("Connection error:", connectionError);
         return callback(connectionError, null);
       }
+
+      console.log("Connection established successfully.");
 
       // Execute the applications query
       connection.query(
         applicationsQuery,
         (appQueryError, applicationResults) => {
           if (appQueryError) {
+            console.error("Application query error:", appQueryError);
             return handleQueryError(appQueryError, connection, callback);
           }
+
+          console.log("Applications query executed successfully.");
 
           // Execute the holidays query
           connection.query(holidaysQuery, (holQueryError, holidayResults) => {
             if (holQueryError) {
+              console.error("Holidays query error:", holQueryError);
               return handleQueryError(holQueryError, connection, callback);
             }
+
+            console.log("Holidays query executed successfully.");
 
             // Prepare holiday dates for calculations
             const holidayDates = holidayResults.map((holiday) =>
               moment(holiday.holiday_date).startOf("day")
             );
+            console.log("Holiday dates prepared:", holidayDates);
 
             // Execute the weekends query
             connection.query(
@@ -66,12 +78,11 @@ const tatDelay = {
                 connectionRelease(connection); // Always release the connection
 
                 if (weekendQueryError) {
-                  console.error(
-                    "Database query error: Weekends",
-                    weekendQueryError
-                  );
+                  console.error("Database query error: Weekends", weekendQueryError);
                   return callback(weekendQueryError, null);
                 }
+
+                console.log("Weekends query executed successfully.");
 
                 const weekends = weekendResults[0]?.weekends
                   ? JSON.parse(weekendResults[0].weekends)
@@ -79,6 +90,8 @@ const tatDelay = {
                 const weekendsSet = new Set(
                   weekends.map((day) => day.toLowerCase())
                 );
+
+                console.log("Weekends processed:", weekendsSet);
 
                 // Construct the hierarchical structure for applications
                 const applicationHierarchy = applicationResults.reduce(
@@ -124,6 +137,8 @@ const tatDelay = {
                       };
                     }
 
+                    console.log(`Processing application for customer ${customer_id}, branch ${branch_id}`);
+
                     // Calculate days out of TAT
                     const applicationDate = moment(application_created_at);
                     const tatDays = parseInt(tat_days, 10);
@@ -142,23 +157,26 @@ const tatDelay = {
                       weekendsSet
                     );
 
+                    console.log(`Calculated days out of TAT: ${daysOutOfTat} for application ${application_id}`);
+
                     // Only add application information if days out of TAT is greater than 0
                     if (daysOutOfTat > 0) {
-                      accumulator[customer_id].branches[
-                        branch_id
-                      ].applications.push({
+                      accumulator[customer_id].branches[branch_id].applications.push({
                         client_application_id,
                         application_id,
                         application_name,
                         application_created_at,
                         days_out_of_tat: daysOutOfTat, // Include days out of TAT
                       });
+                      console.log(`Application added to hierarchy: ${application_name}`);
                     }
 
                     return accumulator;
                   },
                   {}
                 );
+
+                console.log("Application hierarchy constructed:", applicationHierarchy);
 
                 // Convert the application hierarchy object to an array with nested branches and applications
                 const applicationHierarchyArray = Object.values(
@@ -172,12 +190,16 @@ const tatDelay = {
                   }))
                   .filter((customer) => customer.branches.length > 0); // Only include customers with branches
 
+                console.log("Application hierarchy array created:", applicationHierarchyArray);
+
                 // Map holiday results into a structured array
                 const holidaysArray = holidayResults.map((holiday) => ({
                   id: holiday.holiday_id,
                   title: holiday.holiday_title,
                   date: holiday.holiday_date,
                 }));
+
+                console.log("Holiday results mapped:", holidaysArray);
 
                 // Callback with both the application hierarchy and holidays array
                 callback(null, {
@@ -191,6 +213,7 @@ const tatDelay = {
       );
     });
 
+
     function handleQueryError(error, connection, callback) {
       connectionRelease(connection); // Ensure the connection is released
       console.error("Database query error:", error);
@@ -201,11 +224,17 @@ const tatDelay = {
       let count = 0;
       let currentDate = startDate.clone();
 
+      console.log("Starting due date calculation...");
+      console.log("Start Date:", currentDate.format("YYYY-MM-DD"));
+      console.log("TAT Days:", tatDays);
+
       while (count < tatDays) {
         currentDate.add(1, "days");
+        console.log("Checking date:", currentDate.format("YYYY-MM-DD"));
 
         // Skip weekends
         if (weekendsSet.has(currentDate.format("dddd").toLowerCase())) {
+          console.log("Skipped weekend:", currentDate.format("dddd"));
           continue;
         }
 
@@ -213,14 +242,18 @@ const tatDelay = {
         if (
           holidayDates.some((holiday) => holiday.isSame(currentDate, "day"))
         ) {
+          console.log("Skipped holiday:", currentDate.format("YYYY-MM-DD"));
           continue;
         }
 
         count++; // Only count valid business days
+        console.log(`Valid business day counted: ${currentDate.format("YYYY-MM-DD")}. Count: ${count}`);
       }
 
+      console.log("Due date calculated:", currentDate.format("YYYY-MM-DD"));
       return currentDate; // This will be the due date
     }
+
 
     function calculateDaysOutOfTat(
       dueDate,
@@ -231,12 +264,18 @@ const tatDelay = {
       let count = 0;
       let currentDate = dueDate.clone();
 
+      console.log("Starting days out of TAT calculation...");
+      console.log("Due Date:", dueDate.format("YYYY-MM-DD"));
+      console.log("End Date:", endDate.format("YYYY-MM-DD"));
+
       // Count business days from dueDate to endDate
       while (currentDate.isBefore(endDate, "day")) {
         currentDate.add(1, "days");
+        console.log("Checking date:", currentDate.format("YYYY-MM-DD"));
 
         // Skip weekends
         if (weekendsSet.has(currentDate.format("dddd").toLowerCase())) {
+          console.log("Skipped weekend:", currentDate.format("dddd"));
           continue;
         }
 
@@ -244,13 +283,18 @@ const tatDelay = {
         if (
           holidayDates.some((holiday) => holiday.isSame(currentDate, "day"))
         ) {
+          console.log("Skipped holiday:", currentDate.format("YYYY-MM-DD"));
           continue;
         }
 
         count++; // Count only valid business days
+        console.log(`Valid business day counted: ${currentDate.format("YYYY-MM-DD")}. Count: ${count}`);
       }
+
+      console.log("Total days out of TAT:", count);
       return count; // Return total days out of TAT
     }
+
   },
 };
 
