@@ -1,4 +1,5 @@
 const Candidate = require("../../../../models/customer/branch/candidateApplicationModel");
+const CandidateMasterTrackerModel = require("../../../../models/admin/candidateMasterTrackerModel");
 const BranchCommon = require("../../../../models/customer/branch/commonModel");
 const Service = require("../../../../models/admin/serviceModel");
 const Customer = require("../../../../models/customer/customerModel");
@@ -969,12 +970,17 @@ exports.list = (req, res) => {
         const newToken = result.newToken;
 
         // Fetch all required data
+        let filter_status;
+        let modelStatus;
         const dataPromises = [
           new Promise((resolve) =>
-            Candidate.list(branch_id, (err, result) => {
-              if (err) return resolve([]);
-              resolve(result);
-            })
+            CandidateMasterTrackerModel.applicationListByBranch(
+              filter_status,
+              branch_id,
+              modelStatus, (err, result) => {
+                if (err) return resolve([]);
+                resolve(result);
+              })
           ),
           new Promise((resolve) =>
             Customer.basicInfoByID(customer_id, (err, result) => {
