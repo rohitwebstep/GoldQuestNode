@@ -620,6 +620,103 @@ const Admin = {
       });
     });
   },
+
+  fetchAllowedServiceIds: (id, callback) => {
+    const sql = `
+    SELECT \`service_groups\`, \`role\` FROM \`admins\`
+    WHERE \`id\` = ?
+  `;
+
+    startConnection((err, connection) => {
+      if (err) {
+        console.error("Connection error:", err);
+        return callback(err, null);
+      }
+
+      connection.query(sql, [id], (queryErr, results) => {
+        if (queryErr) {
+          console.error("Database query error: 13", queryErr);
+          return callback(
+            { message: "Database query error", error: queryErr },
+            null
+          );
+        }
+
+        if (results.length === 0) {
+          return callback({ message: "Admin not found" }, null);
+        }
+
+        const role = results[0].role;
+        const serviceGroups = results[0].service_groups;
+        let finalServiceIds = null; // Default to null
+        let servicePromises = [];
+
+        // Check if the role is not "admin"
+        if (role !== 'admin') {
+          try {
+            // Parse the service_groups JSON string to an array
+            const serviceGroupsArray = JSON.parse(serviceGroups);
+
+            // Create promises for each service group query
+            serviceGroupsArray.forEach((serviceGroup, index) => {
+              const serviceSql = `
+              SELECT id FROM services WHERE \`group\` = ?
+            `;
+
+              // Create a promise for the query
+              const queryPromise = new Promise((resolve, reject) => {
+                connection.query(serviceSql, [serviceGroup], (serviceQueryErr, serviceResults) => {
+                  if (serviceQueryErr) {
+                    console.error("Error fetching service IDs for group:", serviceQueryErr);
+                    reject(serviceQueryErr); // Reject on error
+                  } else {
+                    if (serviceResults.length > 0) {
+                      serviceResults.forEach(service => {
+                        finalServiceIds.push(service.id); // Add service ID to finalServiceIds
+                      });
+                    }
+                    resolve(); // Resolve once the results are processed
+                  }
+                });
+              });
+
+              servicePromises.push(queryPromise); // Push promise into array
+            });
+
+            // Wait for all promises to resolve before calling callback
+            Promise.all(servicePromises)
+              .then(() => {
+                // Once all service IDs are fetched, release the connection and return the result
+                connectionRelease(connection);
+                callback(null, finalServiceIds); // Return the final service IDs
+              })
+              .catch((err) => {
+                console.error("Error while fetching service IDs:", err);
+                connectionRelease(connection);
+                callback({ message: "Error fetching service IDs", error: err }, null);
+              });
+
+          } catch (parseErr) {
+            console.error("Error parsing service_groups JSON:", parseErr);
+            connectionRelease(connection);
+            return callback(
+              { message: "Error parsing service_groups data", error: parseErr },
+              null
+            );
+          }
+        } else {
+          // If the role is admin, set finalServiceIds to null and return it
+          console.log("Role is admin, returning null for service IDs.");
+          connectionRelease(connection);
+          return callback(null, finalServiceIds); // Return null for admin role
+        }
+      });
+    });
+  }
+
+
+
+
 };
 
 module.exports = Admin;
