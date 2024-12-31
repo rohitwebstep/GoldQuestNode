@@ -240,15 +240,9 @@ const tatDelay = {
       const validBusinessDays = allDates.filter(date => {
         const dayName = date.format("dddd").toLowerCase();
 
-        // Skip weekends
-        if (weekendsSet.has(dayName)) {
-          console.log("Skipped weekend:", date.format("YYYY-MM-DD"));
-          return false;
-        }
-
-        // Skip holidays
-        if (holidayDates.some(holiday => holiday.isSame(date, "day"))) {
-          console.log("Skipped holiday:", date.format("YYYY-MM-DD"));
+        // Skip weekends and holidays in a single check
+        if (weekendsSet.has(dayName) || holidayDates.some(holiday => holiday.isSame(date, "day"))) {
+          console.log(weekendsSet.has(dayName) ? `Skipped weekend: ${date.format("YYYY-MM-DD")}` : `Skipped holiday: ${date.format("YYYY-MM-DD")}`);
           return false;
         }
 
