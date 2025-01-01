@@ -181,7 +181,7 @@ const Customer = {
       const sqlUpdateCustomer = `
         UPDATE customer_metas 
         SET ${db_column} = ?
-        WHERE id = ?
+        WHERE customer_id = ?
       `;
 
       connection.query(
