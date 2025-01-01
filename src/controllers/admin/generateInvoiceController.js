@@ -1,5 +1,5 @@
 const crypto = require("crypto");
-const generategenerate_invoiceModel = require("../../models/admin/generateInvoiceModel");
+const GenerateInvoice = require("../../models/admin/generateInvoiceModel");
 const Customer = require("../../models/customer/customerModel");
 const ClientApplication = require("../../models/customer/branch/clientApplicationModel");
 const Branch = require("../../models/customer/branch/branchModel");
@@ -216,7 +216,7 @@ exports.generateInvoice = async (req, res) => {
           }
 
           // Fetch customer information and applications
-          generategenerate_invoiceModel.generategenerate_invoice(
+          GenerateInvoice.generateInvoice(
             customer_id,
             month,
             year,
