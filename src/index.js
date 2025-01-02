@@ -57,7 +57,11 @@ app.use((err, req, res, next) => {
   res.status(500).send("Something broke!"); // Send a generic error message
 });
 
+
 // Start the server
-app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
+//app.listen(port, () => {
+//  console.log(`Server running on port ${port}`);
+//});
+app.listen(port, '0.0.0.0', () => {
+    console.log(`Server running on port ${port}`);
 });
