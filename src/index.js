@@ -45,15 +45,16 @@ const corsOptions = {
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true); // Allow the origin
     } else {
-      callback(new Error("Not allowed by CORS")); // Deny the origin
+      callback(new Error("Not allowed by CORS"));
     }
   },
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
-  credentials: true, // Allow cookies if necessary
+  credentials: true,
 };
 
-app.use(cors(corsOptions)); // Apply the custom CORS configuration
+// app.use(cors(corsOptions));
+// app.use(cors());
 
 // Middleware
 app.use(bodyParser.json());
