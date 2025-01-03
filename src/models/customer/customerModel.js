@@ -5,6 +5,14 @@ const { pool, startConnection, connectionRelease } = require("../../config/db");
 const hashPassword = (password) =>
   crypto.createHash("md5").update(password).digest("hex");
 
+// Utility function to format dates to 'YYYY-MM-DD' format
+const formatDate = (date) => {
+  if (!date) return null; // Return null if the date is undefined or null
+  const dateObj = new Date(date);
+  if (isNaN(dateObj)) return null; // Check if the date is invalid
+  return dateObj.toISOString().split("T")[0]; // Format to 'YYYY-MM-DD'
+};
+
 const Customer = {
   checkUniqueId: (clientUniqueId, callback) => {
     startConnection((err, connection) => {
@@ -319,6 +327,8 @@ const Customer = {
   },
 
   updateCustomerMetaByCustomerId: (customerId, metaData, callback) => {
+    const formattedAgreementDate = formatDate(metaData.agreement_date);
+
     const sqlUpdateCustomerMetas = `
       UPDATE \`customer_metas\` 
       SET 
@@ -346,7 +356,7 @@ const Customer = {
       metaData.contact_person,
       metaData.gst_number,
       metaData.tat_days,
-      metaData.agreement_date,
+      metaData.formattedAgreementDate,
       metaData.agreement_duration,
       metaData.custom_template || "no",
       metaData.custom_address || null,
