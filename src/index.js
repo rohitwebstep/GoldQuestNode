@@ -26,8 +26,34 @@ const weeklyReportRoutes = require("./routes/admin/weeklyReportRoutes");
 const app = express();
 const port = process.env.PORT || 3000;
 
+// Configure CORS
+const allowedOrigins = [
+  "http://bgvadmin.goldquestglobal.in",
+  "https://bgvadmin.goldquestglobal.in:3000",
+  "http://147.93.29.154:3000/",
+  "https://147.93.29.154:3000/",
+  "http://localhost:3000",
+  "https://localhost:3000",
+  "http://localhost",
+  "https://localhost",
+]
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true); // Allow the origin
+    } else {
+      callback(new Error("Not allowed by CORS")); // Deny the origin
+    }
+  },
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true, // Allow cookies if necessary
+};
+
+app.use(cors(corsOptions)); // Apply the custom CORS configuration
+
 // Middleware
-app.use(cors());
 app.use(bodyParser.json());
 app.use("/uploads", express.static("uploads"));
 
@@ -57,8 +83,7 @@ app.use((err, req, res, next) => {
   res.status(500).send("Something broke!"); // Send a generic error message
 });
 
-
 // Start the server
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
-})
+});
