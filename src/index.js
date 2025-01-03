@@ -29,14 +29,16 @@ const port = process.env.PORT || 3000;
 // Configure CORS
 const allowedOrigins = [
   "http://bgvadmin.goldquestglobal.in",
+  "https://bgvadmin.goldquestglobal.in",
+  "http://bgvadmin.goldquestglobal.in:3000",
   "https://bgvadmin.goldquestglobal.in:3000",
-  "http://147.93.29.154:3000/",
-  "https://147.93.29.154:3000/",
+  "http://147.93.29.154",
+  "https://147.93.29.154",
+  "http://147.93.29.154:3000",
+  "https://147.93.29.154:3000",
   "http://localhost:3000",
-  "https://localhost:3000",
-  "http://localhost",
-  "https://localhost",
-]
+  "https://localhost:3000"
+];
 
 const corsOptions = {
   origin: (origin, callback) => {
