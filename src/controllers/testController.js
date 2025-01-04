@@ -1,7 +1,8 @@
 const fs = require("fs");
 const path = require("path");
 const Test = require("../models/testModel");
-
+const axios = require("axios");
+const sharp = require("sharp");
 const { upload, saveImage, saveImages } = require("../utils/cloudImageSave");
 
 exports.uploadImage = (req, res) => {
@@ -58,22 +59,22 @@ exports.uploadImage = (req, res) => {
   });
 };
 exports.connectionCheck = (req, res) => {
-
   // Get the IP address from the X-Forwarded-For header or req.ip
-  let ipAddress = req.headers['x-forwarded-for'] || req.connection.remoteAddress || req.ip;
+  let ipAddress =
+    req.headers["x-forwarded-for"] || req.connection.remoteAddress || req.ip;
 
   // If there are multiple IPs in X-Forwarded-For, take the first one (the real client's IP)
-  if (ipAddress.includes(',')) {
-    ipAddress = ipAddress.split(',')[0].trim();  // Take the first IP in the list
+  if (ipAddress.includes(",")) {
+    ipAddress = ipAddress.split(",")[0].trim(); // Take the first IP in the list
   }
 
   // If the IP address is IPv6-mapped IPv4 (::ffff:), extract the real IPv4 address
-  if (ipAddress.startsWith('::ffff:')) {
-    ipAddress = ipAddress.slice(7);  // Remove "::ffff:" to get the correct IPv4 address
+  if (ipAddress.startsWith("::ffff:")) {
+    ipAddress = ipAddress.slice(7); // Remove "::ffff:" to get the correct IPv4 address
   }
 
   ipAddress = ipAddress.trim();
-  
+
   Test.connectionCheck((err, result) => {
     if (err) {
       console.error("Database error:", err);
@@ -87,14 +88,128 @@ exports.connectionCheck = (req, res) => {
       return res.json({
         status: true,
         message: "No matching customers found",
-        ipAddress
+        ipAddress,
       });
     }
 
     res.json({
       status: true,
       message: "Customers fetched successfully",
-      ipAddress
+      ipAddress,
     });
   });
+};
+
+exports.imageUrlToBase = async (req, res) => {
+  const getImageFormat = (url) => {
+    const ext = url.split(".").pop().toLowerCase();
+    if (ext === "png") return "PNG";
+    if (ext === "jpg" || ext === "jpeg") return "JPEG";
+    if (ext === "webp") return "WEBP";
+    return "PNG"; // Default to PNG if not recognized
+  };
+
+  async function checkImageExists(url) {
+    try {
+      const response = await fetch(url, { method: "HEAD" });
+      return response.ok; // Returns true if HTTP status is 200-299
+    } catch (error) {
+      console.error(`Error checking image existence at ${url}:`, error);
+      return false;
+    }
+  }
+
+  async function validateImage(url) {
+    try {
+      const response = await axios.get(url, { responseType: "arraybuffer" });
+      if (response.status !== 200) {
+        console.warn(
+          `Image fetch failed for URL: ${url} with status: ${response.status}`
+        );
+        return null;
+      }
+
+      if (!response.data) {
+        console.warn(`No data found in the response for URL: ${url}`);
+        return null;
+      }
+
+      const buffer = Buffer.from(response.data);
+      const metadata = await sharp(buffer).metadata();
+
+      if (!metadata) {
+        console.warn(`Unable to fetch metadata for image from URL: ${url}`);
+        return null;
+      }
+
+      return {
+        src: url,
+        width: metadata.width,
+        height: metadata.height,
+        format: metadata.format,
+      };
+    } catch (error) {
+      console.error(`Error validating image from ${url}:`, error);
+      return null;
+    }
+  }
+
+  async function fetchImageAsBase64(imageUrl) {
+    try {
+      const response = await axios.get(imageUrl, {
+        responseType: "arraybuffer",
+      });
+      return `data:image/png;base64,${Buffer.from(
+        response.data,
+        "binary"
+      ).toString("base64")}`;
+    } catch (error) {
+      console.error("Error fetching or converting image:", error.message);
+      return null;
+    }
+  }
+
+  // Expecting a comma-separated string of image URLs in req.body.image_urls
+  const { image_urls } = req.body;
+
+  if (!image_urls) {
+    return res.status(400).send("Missing image URLs");
+  }
+
+  // Split the comma-separated string into an array of image URLs
+  const imageUrlsArray = image_urls.split(",").map((url) => url.trim());
+
+  const base64Images = [];
+
+  for (const imageUrl of imageUrlsArray) {
+    const imageFormat = getImageFormat(imageUrl);
+
+    if (!(await checkImageExists(imageUrl))) {
+      continue;
+    }
+
+    const img = await validateImage(imageUrl);
+    if (!img) {
+      console.log(`img - `, img);
+      console.warn(`Invalid image: ${imageUrl}`);
+      continue;
+    }
+
+    const base64Image = await fetchImageAsBase64(img.src);
+    if (!base64Image) {
+      console.error("Failed to convert image to base64:", imageUrl);
+      continue;
+    }
+
+    // Add image format, width, and height to the response
+    base64Images.push({
+      imageUrl: img.src,
+      base64: base64Image,
+      type: img.format, // Image format (e.g., PNG, JPEG)
+      width: img.width, // Image width
+      height: img.height, // Image height
+    });
+  }
+
+  res.status(200).json({ images: base64Images });
 };
