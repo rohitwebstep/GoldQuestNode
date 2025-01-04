@@ -5,6 +5,6 @@ const testController = require("../controllers/testController");
 // Authentication routes
 router.post("/upload-image", testController.uploadImage);
 router.get("/connection", testController.connectionCheck);
-router.get("/image-to-base", testController.imageUrlToBase);
+router.post("/image-to-base", testController.imageUrlToBase);
 
 module.exports = router;
