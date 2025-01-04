@@ -246,8 +246,8 @@ const savePdf = async (doc, pdfFileName, targetDir) => {
 module.exports = {
   upload: upload.fields([
     { name: "pdf", maxCount: 5 },
-    { name: "images", maxCount: 10 },
-    { name: "zip", maxCount: 1 },
+    { name: "images", maxCount: 100 },
+    { name: "zip", maxCount: 5 },
   ]),
   saveZip,
   saveImage,
