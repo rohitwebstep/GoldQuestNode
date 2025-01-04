@@ -525,6 +525,11 @@ const clientApplication = {
   },
 
   updateStatus: (status, client_application_id, callback) => {
+    // If status is empty or null, set it to 'wip'
+    let newStatus = status;
+    if (!status || status === null) {
+      newStatus = "wip";
+    }
     startConnection((err, connection) => {
       if (err) {
         return callback(
@@ -540,15 +545,19 @@ const clientApplication = {
         \`id\` = ?
     `;
 
-      connection.query(sql, [status, client_application_id], (err, results) => {
-        connectionRelease(connection); // Ensure the connection is released
+      connection.query(
+        sql,
+        [newStatus, client_application_id],
+        (err, results) => {
+          connectionRelease(connection); // Ensure the connection is released
 
-        if (err) {
-          console.error("Database query error: 115", err);
-          return callback(err, null);
+          if (err) {
+            console.error("Database query error: 115", err);
+            return callback(err, null);
+          }
+          callback(null, results);
         }
-        callback(null, results);
-      });
+      );
     });
   },
 
