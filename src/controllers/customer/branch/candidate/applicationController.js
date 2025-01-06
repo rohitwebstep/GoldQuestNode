@@ -98,7 +98,7 @@ exports.create = (req, res) => {
 
         const newToken = result.newToken;
 
-        Candidate.checkUniqueEmpId(employee_id, (err, exists) => {
+        Candidate.checkUniqueEmpId(branch_id, employee_id, (err, exists) => {
           if (err) {
             console.error("Error checking unique ID:", err);
             return res
@@ -158,7 +158,7 @@ exports.create = (req, res) => {
                       "0",
                       null,
                       err,
-                      () => { }
+                      () => {}
                     );
                     return res.status(500).json({
                       status: false,
@@ -174,7 +174,7 @@ exports.create = (req, res) => {
                     "1",
                     `{id: ${result.insertId}}`,
                     null,
-                    () => { }
+                    () => {}
                   );
 
                   BranchCommon.getBranchandCustomerEmailsForNotification(
@@ -207,28 +207,41 @@ exports.create = (req, res) => {
                         const toArr = [{ name, email }];
 
                         const emailList = JSON.parse(customer.emails);
-                        const ccArr1 = emailList.map(email => ({ name: customer.name, email }));
+                        const ccArr1 = emailList.map((email) => ({
+                          name: customer.name,
+                          email,
+                        }));
 
                         const mergedEmails = [
                           { name: branch.name, email: branch.email },
                           ...ccArr1,
-                          ...adminResult.map(admin => ({ name: admin.name, email: admin.email }))
+                          ...adminResult.map((admin) => ({
+                            name: admin.name,
+                            email: admin.email,
+                          })),
                         ];
 
                         const uniqueEmails = [
-                          ...new Map(mergedEmails.map(item => [item.email, item])).values()
+                          ...new Map(
+                            mergedEmails.map((item) => [item.email, item])
+                          ).values(),
                         ];
 
                         const ccArr2 = uniqueEmails;
                         const ccArr = [
-                          ...new Map([...ccArr1, ...ccArr2].map(item => [item.email, item])).values()
+                          ...new Map(
+                            [...ccArr1, ...ccArr2].map((item) => [
+                              item.email,
+                              item,
+                            ])
+                          ).values(),
                         ];
 
                         const serviceIds = services
                           ? services
-                            .split(",")
-                            .map((id) => parseInt(id.trim(), 10))
-                            .filter(Number.isInteger)
+                              .split(",")
+                              .map((id) => parseInt(id.trim(), 10))
+                              .filter(Number.isInteger)
                           : [];
 
                         const serviceNames = [];
@@ -275,7 +288,9 @@ exports.create = (req, res) => {
                                         serviceEntry.id,
                                         10
                                       );
-                                      if (serviceIds.includes(digitalAddressID)) {
+                                      if (
+                                        serviceIds.includes(digitalAddressID)
+                                      ) {
                                         davMail(
                                           "candidate application",
                                           "dav",
@@ -473,7 +488,8 @@ exports.bulkCreate = (req, res) => {
 
           if (missingFields.length > 0) {
             emptyValues.push(
-              `${app.applicant_full_name || "Unnamed applicant"
+              `${
+                app.applicant_full_name || "Unnamed applicant"
               } (missing fields: ${missingFields.join(", ")})`
             );
             return false; // Exclude applications with missing fields
@@ -489,7 +505,8 @@ exports.bulkCreate = (req, res) => {
 
           if (emptyFields.length > 0) {
             emptyValues.push(
-              `${app.applicant_full_name || "Unnamed applicant"
+              `${
+                app.applicant_full_name || "Unnamed applicant"
               } (empty fields: ${emptyFields.join(", ")})`
             );
           }
@@ -604,7 +621,7 @@ exports.bulkCreate = (req, res) => {
                         "1",
                         `{id: ${result.insertId}}`,
                         null,
-                        () => { }
+                        () => {}
                       );
                       app.insertId = result.insertId;
                       resolve(app);
@@ -882,7 +899,7 @@ function sendNotificationEmails(
                             // After processing each application, check if all are processed
                             if (
                               processedApplications + failedApplications ===
-                              updatedApplications.length &&
+                                updatedApplications.length &&
                               !responseSent
                             ) {
                               responseSent = true; // Ensure the response is only sent once
@@ -977,10 +994,12 @@ exports.list = (req, res) => {
             CandidateMasterTrackerModel.applicationListByBranch(
               filter_status,
               branch_id,
-              modelStatus, (err, result) => {
+              modelStatus,
+              (err, result) => {
                 if (err) return resolve([]);
                 resolve(result);
-              })
+              }
+            )
           ),
           new Promise((resolve) =>
             Customer.basicInfoByID(customer_id, (err, result) => {
@@ -1142,6 +1161,7 @@ exports.update = (req, res) => {
             }
 
             Candidate.checkUniqueEmpIdByCandidateApplicationID(
+              branch_id,
               employee_id,
               candidate_application_id,
               (err, exists) => {
@@ -1191,7 +1211,7 @@ exports.update = (req, res) => {
                           ...changes,
                         }),
                         err,
-                        () => { }
+                        () => {}
                       );
                       return res.status(500).json({
                         status: false,
@@ -1207,7 +1227,7 @@ exports.update = (req, res) => {
                       "1",
                       JSON.stringify({ candidate_application_id, ...changes }),
                       null,
-                      () => { }
+                      () => {}
                     );
 
                     res.status(200).json({
@@ -1315,7 +1335,7 @@ exports.delete = (req, res) => {
                   "0",
                   JSON.stringify({ id }),
                   err,
-                  () => { }
+                  () => {}
                 );
                 return res.status(500).json({
                   status: false,
@@ -1331,7 +1351,7 @@ exports.delete = (req, res) => {
                 "1",
                 JSON.stringify({ id }),
                 null,
-                () => { }
+                () => {}
               );
 
               res.status(200).json({

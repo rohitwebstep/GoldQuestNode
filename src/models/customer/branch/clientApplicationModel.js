@@ -311,7 +311,7 @@ const clientApplication = {
     });
   },
 
-  checkUniqueEmpId: (clientUniqueEmpId, callback) => {
+  checkUniqueEmpId: (branch_id, clientUniqueEmpId, callback) => {
     startConnection((err, connection) => {
       if (err) {
         return callback(
@@ -322,9 +322,9 @@ const clientApplication = {
       const sql = `
       SELECT COUNT(*) AS count
       FROM \`client_applications\`
-      WHERE \`employee_id\` = ?
+      WHERE \`employee_id\` = ? AND \`branch_id\` = ?
     `;
-      connection.query(sql, [clientUniqueEmpId], (err, results) => {
+      connection.query(sql, [clientUniqueEmpId, branch_id], (err, results) => {
         connectionRelease(connection); // Ensure the connection is released
 
         if (err) {
@@ -342,6 +342,7 @@ const clientApplication = {
   },
 
   checkUniqueEmpIdByClientApplicationID: (
+    branch_id,
     application_id,
     clientUniqueEmpId,
     callback
@@ -356,11 +357,11 @@ const clientApplication = {
       const sql = `
       SELECT COUNT(*) AS count
       FROM \`client_applications\`
-      WHERE \`employee_id\` = ? AND id = ?
+      WHERE \`employee_id\` = ? AND \`id\` != ? AND \`branch_id\` = ?
     `;
       connection.query(
         sql,
-        [clientUniqueEmpId, application_id],
+        [clientUniqueEmpId, application_id, branch_id],
         (err, results) => {
           connectionRelease(connection); // Ensure the connection is released
 

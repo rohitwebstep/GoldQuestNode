@@ -83,7 +83,7 @@ exports.list = (req, res) => {
       Promise.all(dataPromises).then(([customers, filterOptions]) => {
         res.json({
           status: true,
-          message: "Client Applications fetched successfully",
+          message: "Customers fetched successfully",
           data: {
             customers,
             filterOptions,

@@ -95,255 +95,269 @@ exports.create = (req, res) => {
         const newToken = result.newToken;
 
         // Check if employee ID is unique
-        ClientApplication.checkUniqueEmpId(employee_id, (err, exists) => {
-          if (err) {
-            console.error("Error checking unique ID:", err);
-            return res
-              .status(500)
-              .json({ status: false, message: err.message, token: newToken });
-          }
+        ClientApplication.checkUniqueEmpId(
+          branch_id,
+          employee_id,
+          (err, exists) => {
+            if (err) {
+              console.error("Error checking unique ID:", err);
+              return res
+                .status(500)
+                .json({ status: false, message: err.message, token: newToken });
+            }
 
-          if (exists) {
-            return res.status(400).json({
-              status: false,
-              message: `Client Employee ID '${employee_id}' already exists.`,
-              token: newToken,
-            });
-          }
+            if (exists) {
+              return res.status(400).json({
+                status: false,
+                message: `Client Employee ID '${employee_id}' already exists.`,
+                token: newToken,
+              });
+            }
 
-          // Create client application
-          ClientApplication.create(
-            {
-              name,
-              employee_id,
-              spoc,
-              batch_number,
-              sub_client,
-              location,
-              branch_id,
-              services,
-              packages: package,
-              customer_id,
-            },
-            (err, result) => {
-              if (err) {
-                console.error(
-                  "Database error during client application creation:",
-                  err
-                );
+            // Create client application
+            ClientApplication.create(
+              {
+                name,
+                employee_id,
+                spoc,
+                batch_number,
+                sub_client,
+                location,
+                branch_id,
+                services,
+                packages: package,
+                customer_id,
+              },
+              (err, result) => {
+                if (err) {
+                  console.error(
+                    "Database error during client application creation:",
+                    err
+                  );
+                  BranchCommon.branchActivityLog(
+                    branch_id,
+                    "Client Application",
+                    "Create",
+                    "0",
+                    null,
+                    err,
+                    () => {}
+                  );
+                  return res.status(500).json({
+                    status: false,
+                    message:
+                      "Failed to create client application. Please try again.",
+                    token: newToken,
+                    err,
+                  });
+                }
+
                 BranchCommon.branchActivityLog(
                   branch_id,
                   "Client Application",
                   "Create",
-                  "0",
+                  "1",
+                  `{id: ${result.insertId}}`,
                   null,
-                  err,
-                  () => { }
+                  () => {}
                 );
-                return res.status(500).json({
-                  status: false,
-                  message:
-                    "Failed to create client application. Please try again.",
-                  token: newToken,
-                  err,
-                });
-              }
 
-              BranchCommon.branchActivityLog(
-                branch_id,
-                "Client Application",
-                "Create",
-                "1",
-                `{id: ${result.insertId}}`,
-                null,
-                () => { }
-              );
+                if (send_mail == 0) {
+                  return res.status(201).json({
+                    status: true,
+                    message: "Client application created successfully.",
+                    token: newToken,
+                    result,
+                  });
+                }
+                let newAttachedDocsString = "";
+                BranchCommon.getBranchandCustomerEmailsForNotification(
+                  branch_id,
+                  (emailError, emailData) => {
+                    if (emailError) {
+                      console.error("Error fetching emails:", emailError);
+                      return res.status(500).json({
+                        status: false,
+                        message: "Failed to retrieve email addresses.",
+                        token: newToken,
+                      });
+                    }
 
-              if (send_mail == 0) {
-                return res.status(201).json({
-                  status: true,
-                  message: "Client application created successfully.",
-                  token: newToken,
-                  result,
-                });
-              }
-              let newAttachedDocsString = "";
-              BranchCommon.getBranchandCustomerEmailsForNotification(
-                branch_id,
-                (emailError, emailData) => {
-                  if (emailError) {
-                    console.error("Error fetching emails:", emailError);
-                    return res.status(500).json({
-                      status: false,
-                      message: "Failed to retrieve email addresses.",
-                      token: newToken,
-                    });
-                  }
+                    const { branch, customer } = emailData;
 
-                  const { branch, customer } = emailData;
+                    // Prepare recipient and CC lists
+                    const toArr = [{ name: branch.name, email: branch.email }];
+                    const ccArr = JSON.parse(customer.emails).map((email) => ({
+                      name: customer.name,
+                      email: email.trim(),
+                    }));
 
-                  // Prepare recipient and CC lists
-                  const toArr = [{ name: branch.name, email: branch.email }];
-                  const ccArr = JSON.parse(customer.emails).map((email) => ({
-                    name: customer.name,
-                    email: email.trim(),
-                  }));
+                    Branch.getClientUniqueIDByBranchId(
+                      branch_id,
+                      (err, clientCode) => {
+                        if (err) {
+                          console.error("Error checking unique ID:", err);
+                          return res.status(500).json({
+                            status: false,
+                            message: err.message,
+                            token: newToken,
+                          });
+                        }
 
-                  Branch.getClientUniqueIDByBranchId(
-                    branch_id,
-                    (err, clientCode) => {
-                      if (err) {
-                        console.error("Error checking unique ID:", err);
-                        return res.status(500).json({
-                          status: false,
-                          message: err.message,
-                          token: newToken,
-                        });
-                      }
+                        // Check if the unique ID exists
+                        if (!clientCode) {
+                          return res.status(400).json({
+                            status: false,
+                            message: `Customer Unique ID not Found`,
+                            token: newToken,
+                          });
+                        }
 
-                      // Check if the unique ID exists
-                      if (!clientCode) {
-                        return res.status(400).json({
-                          status: false,
-                          message: `Customer Unique ID not Found`,
-                          token: newToken,
-                        });
-                      }
-
-                      Branch.getClientNameByBranchId(
-                        branch_id,
-                        (err, clientName) => {
-                          if (err) {
-                            console.error("Error checking client name:", err);
-                            return res.status(500).json({
-                              status: false,
-                              message: err.message,
-                              token: newToken,
-                            });
-                          }
-
-                          // Check if the client name exists
-                          if (!clientName) {
-                            return res.status(400).json({
-                              status: false,
-                              message: "Customer Unique ID not found",
-                              token: newToken,
-                            });
-                          }
-
-                          const serviceIds =
-                            typeof services === "string" &&
-                              services.trim() !== ""
-                              ? services.split(",").map((id) => id.trim())
-                              : services;
-
-                          const serviceNames = [];
-
-                          // Function to fetch service names
-                          const fetchServiceNames = (index = 0) => {
-                            if (index >= serviceIds.length) {
-                              AppModel.appInfo("frontend", async (err, appInfo) => {
-                                if (err) {
-                                  console.error("Database error:", err);
-                                  return res.status(500).json({
-                                    status: false,
-                                    message:
-                                      "An error occurred while retrieving application information. Please try again.",
-                                  });
-                                }
-
-                                if (!appInfo) {
-                                  console.error(
-                                    "Database error during app info retrieval:",
-                                    err
-                                  );
-                                  return reject(
-                                    new Error("Information of the application not found.")
-                                  );
-                                }
-                                const appHost = appInfo.host || 'www.example.com';
-                                const appName = appInfo.name || 'Example Company';
-                                // Once all services have been processed, send email notification
-                                createMail(
-                                  "client application",
-                                  "create",
-                                  name,
-                                  result.insertId,
-                                  clientName,
-                                  clientCode,
-                                  serviceNames,
-                                  newAttachedDocsString,
-                                  appHost,
-                                  toArr,
-                                  ccArr
-                                )
-                                  .then(() => {
-                                    return res.status(201).json({
-                                      status: true,
-                                      message:
-                                        "Client application created successfully and email sent.",
-                                      token: newToken,
-                                    });
-                                  })
-                                  .catch((emailError) => {
-                                    console.error(
-                                      "Error sending email:",
-                                      emailError
-                                    );
-                                    return res.status(201).json({
-                                      status: true,
-                                      message:
-                                        "Client application created successfully, but failed to send email.",
-                                      client: result,
-                                      token: newToken,
-                                    });
-                                  });
-                                return;
+                        Branch.getClientNameByBranchId(
+                          branch_id,
+                          (err, clientName) => {
+                            if (err) {
+                              console.error("Error checking client name:", err);
+                              return res.status(500).json({
+                                status: false,
+                                message: err.message,
+                                token: newToken,
                               });
                             }
 
-                            const id = serviceIds[index];
+                            // Check if the client name exists
+                            if (!clientName) {
+                              return res.status(400).json({
+                                status: false,
+                                message: "Customer Unique ID not found",
+                                token: newToken,
+                              });
+                            }
 
-                            Service.getServiceById(
-                              id,
-                              (err, currentService) => {
-                                if (err) {
-                                  console.error(
-                                    "Error fetching service data:",
-                                    err
-                                  );
-                                  return res.status(500).json({
-                                    status: false,
-                                    message: err.message,
-                                    token: newToken,
-                                  });
-                                }
+                            const serviceIds =
+                              typeof services === "string" &&
+                              services.trim() !== ""
+                                ? services.split(",").map((id) => id.trim())
+                                : services;
 
-                                // Skip invalid services and continue to the next index
-                                if (!currentService || !currentService.title) {
-                                  return fetchServiceNames(index + 1);
-                                }
+                            const serviceNames = [];
 
-                                // Add the current service name to the array
-                                serviceNames.push(currentService.title);
+                            // Function to fetch service names
+                            const fetchServiceNames = (index = 0) => {
+                              if (index >= serviceIds.length) {
+                                AppModel.appInfo(
+                                  "frontend",
+                                  async (err, appInfo) => {
+                                    if (err) {
+                                      console.error("Database error:", err);
+                                      return res.status(500).json({
+                                        status: false,
+                                        message:
+                                          "An error occurred while retrieving application information. Please try again.",
+                                      });
+                                    }
 
-                                // Recursively fetch the next service
-                                fetchServiceNames(index + 1);
+                                    if (!appInfo) {
+                                      console.error(
+                                        "Database error during app info retrieval:",
+                                        err
+                                      );
+                                      return reject(
+                                        new Error(
+                                          "Information of the application not found."
+                                        )
+                                      );
+                                    }
+                                    const appHost =
+                                      appInfo.host || "www.example.com";
+                                    const appName =
+                                      appInfo.name || "Example Company";
+                                    // Once all services have been processed, send email notification
+                                    createMail(
+                                      "client application",
+                                      "create",
+                                      name,
+                                      result.insertId,
+                                      clientName,
+                                      clientCode,
+                                      serviceNames,
+                                      newAttachedDocsString,
+                                      appHost,
+                                      toArr,
+                                      ccArr
+                                    )
+                                      .then(() => {
+                                        return res.status(201).json({
+                                          status: true,
+                                          message:
+                                            "Client application created successfully and email sent.",
+                                          token: newToken,
+                                        });
+                                      })
+                                      .catch((emailError) => {
+                                        console.error(
+                                          "Error sending email:",
+                                          emailError
+                                        );
+                                        return res.status(201).json({
+                                          status: true,
+                                          message:
+                                            "Client application created successfully, but failed to send email.",
+                                          client: result,
+                                          token: newToken,
+                                        });
+                                      });
+                                    return;
+                                  }
+                                );
                               }
-                            );
-                          };
 
-                          // Start fetching service names
-                          fetchServiceNames();
-                        }
-                      );
-                    }
-                  );
-                }
-              );
-            }
-          );
-        });
+                              const id = serviceIds[index];
+
+                              Service.getServiceById(
+                                id,
+                                (err, currentService) => {
+                                  if (err) {
+                                    console.error(
+                                      "Error fetching service data:",
+                                      err
+                                    );
+                                    return res.status(500).json({
+                                      status: false,
+                                      message: err.message,
+                                      token: newToken,
+                                    });
+                                  }
+
+                                  // Skip invalid services and continue to the next index
+                                  if (
+                                    !currentService ||
+                                    !currentService.title
+                                  ) {
+                                    return fetchServiceNames(index + 1);
+                                  }
+
+                                  // Add the current service name to the array
+                                  serviceNames.push(currentService.title);
+
+                                  // Recursively fetch the next service
+                                  fetchServiceNames(index + 1);
+                                }
+                              );
+                            };
+
+                            // Start fetching service names
+                            fetchServiceNames();
+                          }
+                        );
+                      }
+                    );
+                  }
+                );
+              }
+            );
+          }
+        );
       }
     );
   });
@@ -447,7 +461,8 @@ exports.bulkCreate = (req, res) => {
 
             if (missingFields.length > 0) {
               emptyValues.push(
-                `${app.applicant_full_name || "Unnamed applicant"
+                `${
+                  app.applicant_full_name || "Unnamed applicant"
                 } (missing fields: ${missingFields.join(", ")})`
               );
               return false; // Exclude applications with missing fields
@@ -465,7 +480,8 @@ exports.bulkCreate = (req, res) => {
 
             if (emptyFields.length > 0) {
               emptyValues.push(
-                `${app.applicant_full_name || "Unnamed applicant"
+                `${
+                  app.applicant_full_name || "Unnamed applicant"
                 } (empty fields: ${emptyFields.join(", ")})`
               );
             }
@@ -488,15 +504,19 @@ exports.bulkCreate = (req, res) => {
 
           const employeeIdChecks = employeeIds.map((employee_id) => {
             return new Promise((resolve, reject) => {
-              ClientApplication.checkUniqueEmpId(employee_id, (err, exists) => {
-                if (err) {
-                  reject(err);
-                } else if (exists) {
-                  reject(`Employee ID '${employee_id}' already exists.`);
-                } else {
-                  resolve(employee_id); // Pass the unique employee ID to the resolve
+              ClientApplication.checkUniqueEmpId(
+                branch_id,
+                employee_id,
+                (err, exists) => {
+                  if (err) {
+                    reject(err);
+                  } else if (exists) {
+                    reject(`Employee ID '${employee_id}' already exists.`);
+                  } else {
+                    resolve(employee_id); // Pass the unique employee ID to the resolve
+                  }
                 }
-              });
+              );
             });
           });
 
@@ -550,7 +570,7 @@ exports.bulkCreate = (req, res) => {
                           "1",
                           `{id: ${result.insertId}}`,
                           null,
-                          () => { }
+                          () => {}
                         );
 
                         // Assign the new application ID to the corresponding app object
@@ -707,8 +727,8 @@ function sendNotificationEmails(
                     new Error("Information of the application not found.")
                   );
                 }
-                const appHost = appInfo.host || 'www.example.com';
-                const appName = appInfo.name || 'Example Company';
+                const appHost = appInfo.host || "www.example.com";
+                const appName = appInfo.name || "Example Company";
                 bulkCreateMail(
                   "client application",
                   "bulk-create",
@@ -1019,7 +1039,9 @@ exports.update = (req, res) => {
               };
             }
 
+            // Check if employee ID is unique
             ClientApplication.checkUniqueEmpIdByClientApplicationID(
+              branch_id,
               employee_id,
               client_application_id,
               (err, exists) => {
@@ -1032,10 +1054,7 @@ exports.update = (req, res) => {
                   });
                 }
 
-                if (
-                  exists &&
-                  exists.client_application_id !== client_application_id
-                ) {
+                if (exists) {
                   return res.status(400).json({
                     status: false,
                     message: `Client Employee ID '${employee_id}' already exists.`,
@@ -1068,7 +1087,7 @@ exports.update = (req, res) => {
                         "0",
                         JSON.stringify({ client_application_id, ...changes }),
                         err,
-                        () => { }
+                        () => {}
                       );
                       return res.status(500).json({
                         status: false,
@@ -1084,7 +1103,7 @@ exports.update = (req, res) => {
                       "1",
                       JSON.stringify({ client_application_id, ...changes }),
                       null,
-                      () => { }
+                      () => {}
                     );
 
                     res.status(200).json({
@@ -1301,7 +1320,7 @@ exports.upload = async (req, res) => {
                         if (
                           currentClientApplication.attach_documents &&
                           currentClientApplication.attach_documents.trim() !==
-                          ""
+                            ""
                         ) {
                           AppModel.appInfo("backend", (err, appInfo) => {
                             if (err) {
@@ -1315,8 +1334,7 @@ exports.upload = async (req, res) => {
                             }
 
                             if (appInfo) {
-                              const appHost =
-                                appInfo.host || "www.example.com";
+                              const appHost = appInfo.host || "www.example.com";
                               const documentsArray =
                                 currentClientApplication.attach_documents
                                   .split(",")
@@ -1411,9 +1429,13 @@ exports.upload = async (req, res) => {
                                     }
 
                                     const serviceIds =
-                                      typeof currentClientApplication.services === "string" &&
-                                        currentClientApplication.services.trim() !== ""
-                                        ? currentClientApplication.services.split(",").map((id) => id.trim())
+                                      typeof currentClientApplication.services ===
+                                        "string" &&
+                                      currentClientApplication.services.trim() !==
+                                        ""
+                                        ? currentClientApplication.services
+                                            .split(",")
+                                            .map((id) => id.trim())
                                         : currentClientApplication.services;
 
                                     const serviceNames = [];
@@ -1421,107 +1443,136 @@ exports.upload = async (req, res) => {
                                     // Function to fetch service names
                                     const fetchServiceNames = (index = 0) => {
                                       if (index >= serviceIds.length) {
-                                        AppModel.appInfo("frontend", async (err, appInfo) => {
-                                          if (err) {
-                                            console.error("Database error:", err);
-                                            if (!res.headersSent) {
-                                              return res.status(500).json({
-                                                status: false,
-                                                message:
-                                                  "An error occurred while retrieving application information. Please try again.",
-                                              });
+                                        AppModel.appInfo(
+                                          "frontend",
+                                          async (err, appInfo) => {
+                                            if (err) {
+                                              console.error(
+                                                "Database error:",
+                                                err
+                                              );
+                                              if (!res.headersSent) {
+                                                return res.status(500).json({
+                                                  status: false,
+                                                  message:
+                                                    "An error occurred while retrieving application information. Please try again.",
+                                                });
+                                              }
+                                              return;
                                             }
-                                            return;
-                                          }
 
-                                          if (!appInfo) {
-                                            console.error("Database error during app info retrieval:", err);
-                                            if (!res.headersSent) {
-                                              return res.status(404).json({
-                                                status: false,
-                                                message: "Information of the application not found.",
-                                              });
+                                            if (!appInfo) {
+                                              console.error(
+                                                "Database error during app info retrieval:",
+                                                err
+                                              );
+                                              if (!res.headersSent) {
+                                                return res.status(404).json({
+                                                  status: false,
+                                                  message:
+                                                    "Information of the application not found.",
+                                                });
+                                              }
+                                              return;
                                             }
-                                            return;
-                                          }
 
-                                          const appHost = appInfo.host || "www.example.com";
-                                          const appName = appInfo.name || "Example Company";
-                                          console.log(`serviceNames - `, serviceNames);
-
-                                          // Once all services have been processed, send email notification
-                                          try {
-                                            await createMail(
-                                              "client application",
-                                              "create",
-                                              client_application_name,
-                                              client_application_generated_id,
-                                              clientName,
-                                              clientCode,
-                                              serviceNames,
-                                              newAttachedDocsString,
-                                              appHost,
-                                              toArr,
-                                              ccArr
+                                            const appHost =
+                                              appInfo.host || "www.example.com";
+                                            const appName =
+                                              appInfo.name || "Example Company";
+                                            console.log(
+                                              `serviceNames - `,
+                                              serviceNames
                                             );
 
-                                            if (!res.headersSent) {
-                                              return res.status(201).json({
-                                                status: true,
-                                                message: "Client application created successfully and email sent.",
-                                                token: newToken,
-                                                savedImagePaths,
-                                              });
-                                            }
-                                          } catch (emailError) {
-                                            console.error("Error sending email:", emailError);
-                                            if (!res.headersSent) {
-                                              return res.status(201).json({
-                                                status: true,
-                                                message:
-                                                  "Client application created successfully, but failed to send email.",
-                                                client: result,
-                                                token: newToken,
-                                                savedImagePaths,
-                                              });
+                                            // Once all services have been processed, send email notification
+                                            try {
+                                              await createMail(
+                                                "client application",
+                                                "create",
+                                                client_application_name,
+                                                client_application_generated_id,
+                                                clientName,
+                                                clientCode,
+                                                serviceNames,
+                                                newAttachedDocsString,
+                                                appHost,
+                                                toArr,
+                                                ccArr
+                                              );
+
+                                              if (!res.headersSent) {
+                                                return res.status(201).json({
+                                                  status: true,
+                                                  message:
+                                                    "Client application created successfully and email sent.",
+                                                  token: newToken,
+                                                  savedImagePaths,
+                                                });
+                                              }
+                                            } catch (emailError) {
+                                              console.error(
+                                                "Error sending email:",
+                                                emailError
+                                              );
+                                              if (!res.headersSent) {
+                                                return res.status(201).json({
+                                                  status: true,
+                                                  message:
+                                                    "Client application created successfully, but failed to send email.",
+                                                  client: result,
+                                                  token: newToken,
+                                                  savedImagePaths,
+                                                });
+                                              }
                                             }
                                           }
-                                        });
+                                        );
                                         return;
                                       }
 
                                       const id = serviceIds[index];
 
-                                      Service.getServiceById(id, (err, currentService) => {
-                                        if (err) {
-                                          console.error("Error fetching service data:", err);
-                                          if (!res.headersSent) {
-                                            return res.status(500).json({
-                                              status: false,
-                                              message: err.message,
-                                              token: newToken,
-                                              savedImagePaths,
-                                            });
+                                      Service.getServiceById(
+                                        id,
+                                        (err, currentService) => {
+                                          if (err) {
+                                            console.error(
+                                              "Error fetching service data:",
+                                              err
+                                            );
+                                            if (!res.headersSent) {
+                                              return res.status(500).json({
+                                                status: false,
+                                                message: err.message,
+                                                token: newToken,
+                                                savedImagePaths,
+                                              });
+                                            }
+                                            return;
                                           }
-                                          return;
+
+                                          // Skip invalid services and continue to the next index
+                                          if (
+                                            !currentService ||
+                                            !currentService.title
+                                          ) {
+                                            return fetchServiceNames(index + 1);
+                                          }
+
+                                          // Add the current service name to the array
+                                          serviceNames.push(
+                                            currentService.title
+                                          );
+
+                                          // Recursively fetch the next service
+                                          fetchServiceNames(index + 1);
                                         }
-
-                                        // Skip invalid services and continue to the next index
-                                        if (!currentService || !currentService.title) {
-                                          return fetchServiceNames(index + 1);
-                                        }
-
-                                        // Add the current service name to the array
-                                        serviceNames.push(currentService.title);
-
-                                        // Recursively fetch the next service
-                                        fetchServiceNames(index + 1);
-                                      });
+                                      );
                                     };
 
                                     // Start fetching service names
                                     fetchServiceNames();
-
                                   }
                                 );
                               }
@@ -1647,7 +1698,7 @@ exports.delete = (req, res) => {
                   "0",
                   JSON.stringify({ id }),
                   err,
-                  () => { }
+                  () => {}
                 );
                 return res.status(500).json({
                   status: false,
@@ -1664,7 +1715,7 @@ exports.delete = (req, res) => {
                 "1",
                 JSON.stringify({ id }),
                 null,
-                () => { }
+                () => {}
               );
 
               res.status(200).json({
