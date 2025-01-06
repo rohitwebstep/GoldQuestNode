@@ -1,5 +1,6 @@
 const crypto = require("crypto");
 const Branch = require("../../../models/customer/branch/branchModel");
+const Customer = require("../../../models/customer/customerModel");
 const BranchCommon = require("../../../models/customer/branch/commonModel");
 const AdminCommon = require("../../../models/admin/commonModel");
 const Service = require("../../../models/admin/serviceModel");
@@ -87,6 +88,127 @@ exports.index = (req, res) => {
       }
     );
   });
+};
+
+// Controller to list all branches
+exports.callbackRequest = (req, res) => {
+  const { branch_id, _token } = req.body;
+
+  let missingFields = [];
+  if (
+    !branch_id ||
+    branch_id === "" ||
+    branch_id === undefined ||
+    branch_id === "undefined"
+  ) {
+    missingFields.push("Branch ID");
+  }
+
+  if (
+    !_token ||
+    _token === "" ||
+    _token === undefined ||
+    _token === "undefined"
+  ) {
+    missingFields.push("Token");
+  }
+
+  if (missingFields.length > 0) {
+    return res.status(400).json({
+      status: false,
+      message: `Missing required fields: ${missingFields.join(
+        ", "
+      )}. Unable to process the callback request.`,
+    });
+  }
+
+  let sub_user_id;
+  // Step 3: Verify the branch token
+  BranchCommon.isBranchTokenValid(
+    _token,
+    sub_user_id || null,
+    branch_id,
+    (tokenErr, tokenResult) => {
+      if (tokenErr) {
+        console.error("Error checking token validity:", tokenErr);
+        return res.status(500).json({
+          status: false,
+          message:
+            "An internal error occurred while validating the branch token. Please try again.",
+        });
+      }
+
+      if (!tokenResult.status) {
+        return res.status(401).json({
+          status: false,
+          message:
+            "Invalid branch token. Unable to process the callback request.",
+        });
+      }
+
+      Branch.getBranchById(branch_id, (err, currentBranch) => {
+        if (err) {
+          console.error("Database error during branch retrieval:", err);
+          return res.status(500).json({
+            status: false,
+            message:
+              "An error occurred while retrieving the branch details. Please try again.",
+          });
+        }
+
+        if (!currentBranch) {
+          return res.status(404).json({
+            status: false,
+            message:
+              "The specified branch does not exist. Unable to proceed with the callback request.",
+          });
+        }
+
+        Customer.getCustomerById(
+          parseInt(currentBranch.customer_id),
+          (err, currentCustomer) => {
+            if (err) {
+              console.error("Database error during customer retrieval:", err);
+              return res.status(500).json({
+                status: false,
+                message:
+                  "An error occurred while retrieving the customer details. Please try again.",
+              });
+            }
+
+            if (!currentCustomer) {
+              return res.status(404).json({
+                status: false,
+                message:
+                  "The associated customer was not found. Unable to process the callback request.",
+              });
+            }
+
+            Branch.callbackRequest(
+              branch_id,
+              currentBranch.customer_id,
+              (err, result) => {
+                if (err) {
+                  console.error("Database error:", err);
+                  return res.status(500).json({
+                    status: false,
+                    message:
+                      "An error occurred while fetching the callback request. Please try again.",
+                  });
+                }
+
+                res.status(200).json({
+                  status: true,
+                  message:
+                    "Callback request request successfully sent to the admin from the branch of the customer.",
+                });
+              }
+            );
+          }
+        );
+      });
+    }
+  );
 };
 
 // Controller to list all branches

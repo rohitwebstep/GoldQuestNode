@@ -102,6 +102,54 @@ const Branch = {
     });
   },
 
+  callbackRequest: (branch_id, customer_id, callback) => {
+    // Start a connection to the database
+    startConnection((err, connection) => {
+      if (err) {
+        return callback(
+          {
+            message:
+              "Unable to establish a connection to the database. Please try again later.",
+            error: err,
+          },
+          null
+        );
+      }
+
+      // SQL query to insert the callback request
+      const sqlBranch = `
+        INSERT INTO \`callback_requests\` (
+          \`branch_id\`, \`customer_id\`
+        ) VALUES (?, ?)
+      `;
+
+      // Execute the query with provided parameters
+      connection.query(sqlBranch, [branch_id, customer_id], (err, results) => {
+        // Release the database connection after query execution
+        connectionRelease(connection);
+
+        if (err) {
+          console.error("Error while inserting callback request:", err);
+          return callback(
+            {
+              message:
+                "An error occurred while processing the callback request. Please contact support.",
+              error: err,
+            },
+            null
+          );
+        }
+
+        // Respond with the insert ID if the query is successful
+        const insertId = results.insertId;
+        callback(null, {
+          message: "Callback request successfully registered.",
+          insertId: insertId,
+        });
+      });
+    });
+  },
+
   create: (BranchData, callback) => {
     startConnection((err, connection) => {
       if (err) {

@@ -3,7 +3,7 @@ const router = express.Router();
 const authController = require("../../controllers/admin/authController");
 const adminController = require("../../controllers/admin/adminController");
 const permissionRoutes = require("./permissionRoutes");
-
+const callbackRoutes = require("./callbackRoutes");
 
 // Authentication routes
 router.post("/login", authController.login);
@@ -22,4 +22,5 @@ router.put("/update", adminController.update);
 router.delete("/delete", adminController.delete);
 
 router.use("/permission", permissionRoutes);
+router.use("/callback", callbackRoutes);
 module.exports = router;

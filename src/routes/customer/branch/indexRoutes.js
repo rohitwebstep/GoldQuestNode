@@ -12,6 +12,7 @@ const candidateRoutes = require("./candidateRoutes");
 
 // Basic routes
 router.post("/login", authController.login);
+router.post("/callback-request", profileController.callbackRequest);
 router.post("/verify-two-factor", authController.verifyTwoFactor);
 router.get("/logout", authController.logout);
 router.post("/forgot-password-request", authController.forgotPasswordRequest);
