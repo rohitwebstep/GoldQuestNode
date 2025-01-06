@@ -2,12 +2,7 @@ require("dotenv").config();
 const mysql = require("mysql2");
 
 // Validate critical environment variables
-if (
-  !process.env.DB_HOST ||
-  !process.env.DB_USER ||
-  !process.env.DB_NAME ||
-  !process.env.DB_PASSWORD
-) {
+if (!process.env.DB_HOST || !process.env.DB_USER || !process.env.DB_NAME) {
   console.error(
     "Missing critical environment variables. Please check your .env file."
   );
@@ -49,7 +44,7 @@ const startConnection = (callback, retries = 20) => {
         } else {
           callback(err, null);
         }
-      } else if (connection.state === 'disconnected') {
+      } else if (connection.state === "disconnected") {
         console.warn("Connection is disconnected. Retrying...");
         connection.release();
         attemptConnection(retriesLeft - 1);
@@ -62,7 +57,6 @@ const startConnection = (callback, retries = 20) => {
 
   attemptConnection(retries);
 };
-
 
 // Function to release a connection
 const connectionRelease = (connection) => {
@@ -84,6 +78,5 @@ const connectionRelease = (connection) => {
 
   // console.log("connectionRelease function execution completed");
 };
-
 
 module.exports = { pool, startConnection, connectionRelease };

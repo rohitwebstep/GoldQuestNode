@@ -92,6 +92,31 @@ async function createMail(
       .replace(/{{company_name}}/g, customerName)
       .replace(/{{form_href}}/g, href);
 
+    // Validate recipient email(s)
+    if (!toArr || toArr.length === 0) {
+      throw new Error("No recipient email provided");
+    }
+
+    // Prepare recipient list
+    const toList = toArr
+      .map((recipient) => {
+        if (recipient && recipient.name && recipient.email) {
+          return `"${recipient.name}" <${recipient.email.trim()}>`;
+        }
+        console.warn("Invalid recipient object:", recipient);
+        return null;
+      })
+      .filter(Boolean)
+      .join(", ");
+
+    if (!toList) {
+      throw new Error(
+        "Failed to prepare recipient list due to invalid recipient data"
+      );
+    }
+
+    const toEmails = toArr.map((email) => email.email.trim().toLowerCase());
+
     // Prepare CC list
     const ccList = ccArr
       .map((entry) => {
@@ -116,38 +141,17 @@ async function createMail(
           console.error("Error parsing email JSON:", entry.email, e);
           return ""; // Skip this entry if parsing fails
         }
-
+        // Filter out CC emails that are already in the toList
         return emails
-          .filter((email) => email) // Filter out invalid emails
+          .filter(
+            (email) => email && !toEmails.includes(email.trim().toLowerCase()) // Check against toEmails
+          )
           .map((email) => `"${entry.name}" <${email.trim()}>`) // Ensure valid and trimmed emails
           .join(", ");
       })
       .filter((cc) => cc !== "") // Remove any empty CCs from failed parses
       .join(", ");
-
-    // Validate recipient email(s)
-    if (!toArr || toArr.length === 0) {
-      throw new Error("No recipient email provided");
-    }
-
-    // Prepare recipient list
-    const toList = toArr
-      .map((recipient) => {
-        if (recipient && recipient.name && recipient.email) {
-          return `"${recipient.name}" <${recipient.email.trim()}>`;
-        }
-        console.warn("Invalid recipient object:", recipient);
-        return null;
-      })
-      .filter(Boolean)
-      .join(", ");
-
-    if (!toList) {
-      throw new Error(
-        "Failed to prepare recipient list due to invalid recipient data"
-      );
-    }
-
+      
     // Send email
     const info = await transporter.sendMail({
       from: `"${smtp.title}" <${smtp.username}>`,

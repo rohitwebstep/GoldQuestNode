@@ -4,6 +4,7 @@ const Branch = require("../../../../models/customer/branch/branchModel");
 const Service = require("../../../../models/admin/serviceModel");
 const Customer = require("../../../../models/customer/customerModel");
 const AppModel = require("../../../../models/appModel");
+const Admin = require("../../../../models/admin/adminModel");
 const {
   createMail,
 } = require("../../../../mailer/customer/branch/client/createMail");
@@ -340,12 +341,12 @@ exports.create = (req, res) => {
                                             token: newToken,
                                           });
                                         });
-                                      return;
                                     });
                                   }
                                 );
                               }
                             );
+                            return;
                           }
 
                           const id = serviceIds[index];
