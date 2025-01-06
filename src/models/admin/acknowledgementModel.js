@@ -9,7 +9,7 @@ const Acknowledgement = {
   list: (callback) => {
     const sql = `
     SELECT 
-      ca.\`id\`, 
+      MAX(ca.\`id\`) AS \`id\`, 
       ca.\`ack_sent\`, 
       ca.\`branch_id\`, 
       ca.\`customer_id\`, 
