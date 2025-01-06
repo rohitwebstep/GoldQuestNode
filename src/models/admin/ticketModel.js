@@ -22,6 +22,7 @@ const Branch = {
           T.id, 
           T.ticket_number, 
           T.title, 
+          T.description, 
           T.created_at,
           T.branch_id,
           B.name AS branch_name,
@@ -70,6 +71,7 @@ const Branch = {
             ticket_id: row.id,
             ticket_number: row.ticket_number,
             title: row.title,
+            description: row.description,
             created_at: row.created_at,
           });
 
@@ -113,7 +115,7 @@ const Branch = {
         );
       }
 
-      const sql = `SELECT id, title, created_at FROM \`tickets\` WHERE \`ticket_number\` = ? LIMIT 1`;
+      const sql = `SELECT id, title, description, created_at FROM \`tickets\` WHERE \`ticket_number\` = ? LIMIT 1`;
 
       connection.query(sql, [ticketNumber], (err, ticketResults) => {
         // Ensure connection is released even if there's an error
