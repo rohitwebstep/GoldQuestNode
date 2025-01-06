@@ -122,6 +122,18 @@ async function createMail(
       // If there are no documents, remove the placeholder from the template
       template = template.replace(/{{docs}}/g, "");
     }
+    // Validate recipient email(s)
+    if (!toArr || toArr.length === 0) {
+      throw new Error("No recipient email provided");
+    }
+
+    // Prepare recipient list
+    const toList = toArr
+      .map((email) => `"${email.name}" <${email.email}>`)
+      .join(", ");
+
+    // Extract plain email addresses from toList for comparison
+    const toEmails = toArr.map((email) => email.email.trim().toLowerCase());
 
     // Prepare CC list
     const ccList = ccArr
@@ -147,22 +159,15 @@ async function createMail(
           return ""; // Skip this entry if parsing fails
         }
 
+        // Remove emails that are already in the toList
         return emails
-          .filter((email) => email) // Filter out invalid emails
-          .map((email) => `"${entry.name}" <${email.trim()}>`) // Trim to remove whitespace
+          .filter(
+            (email) => email && !toEmails.includes(email.trim().toLowerCase()) // Check against toEmails
+          )
+          .map((email) => `"${entry.name}" <${email.trim()}>`) // Format valid emails
           .join(", ");
       })
-      .filter((cc) => cc !== "") // Remove any empty CCs from failed parses
-      .join(", ");
-
-    // Validate recipient email(s)
-    if (!toArr || toArr.length === 0) {
-      throw new Error("No recipient email provided");
-    }
-
-    // Prepare recipient list
-    const toList = toArr
-      .map((email) => `"${email.name}" <${email.email}>`)
+      .filter((cc) => cc !== "") // Remove any empty CC entries
       .join(", ");
 
     // Debugging: Log the email lists
