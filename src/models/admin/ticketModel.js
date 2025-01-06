@@ -32,7 +32,7 @@ const Branch = {
         FROM \`tickets\` AS T
         INNER JOIN \`branches\` AS B ON B.id = T.branch_id
         INNER JOIN \`customers\` AS C ON C.id = T.customer_id
-        ORDER BY T.\`created_at\` DESC
+        ORDER BY T.\`created_at\` ASC
       `;
 
       connection.query(sql, (err, results) => {
@@ -59,12 +59,19 @@ const Branch = {
             };
           }
 
-          // Create or get the branch inside the customer
-          const branch = {
-            branch_name: row.branch_name,
-            branch_id: row.branch_id,
-            tickets: [],
-          };
+          // Check if the branch already exists
+          let branch = acc[row.customer_id].branches.find(
+            (b) => b.branch_id === row.branch_id
+          );
+
+          if (!branch) {
+            branch = {
+              branch_name: row.branch_name,
+              branch_id: row.branch_id,
+              tickets: [],
+            };
+            acc[row.customer_id].branches.push(branch);
+          }
 
           // Add the ticket to the branch's tickets list
           branch.tickets.push({
@@ -75,31 +82,11 @@ const Branch = {
             created_at: row.created_at,
           });
 
-          // Add branch to the customer's branch list if not already added
-          if (
-            !acc[row.customer_id].branches.some(
-              (b) => b.branch_id === row.branch_id
-            )
-          ) {
-            acc[row.customer_id].branches.push(branch);
-          }
-
           return acc;
         }, {});
 
-        // Convert the object to an array and sort tickets inside each branch
-        const formattedResults = Object.values(hierarchicalData).map(
-          (customer) => {
-            // Sort the tickets inside each branch by created_at in descending order
-            customer.branches.forEach((branch) => {
-              branch.tickets.sort(
-                (a, b) => new Date(b.created_at) - new Date(a.created_at)
-              );
-            });
-
-            return customer;
-          }
-        );
+        // Convert the object to an array
+        const formattedResults = Object.values(hierarchicalData);
 
         callback(null, formattedResults);
       });

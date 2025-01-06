@@ -64,7 +64,7 @@ const Branch = {
         );
       }
 
-      const sql = `SELECT id, ticket_number, title, created_at FROM \`tickets\` WHERE \`branch_id\` = ? ORDER BY \`created_at\` DESC`;
+      const sql = `SELECT id, ticket_number, title, description, created_at FROM \`tickets\` WHERE \`branch_id\` = ? ORDER BY \`created_at\` DESC`;
       connection.query(sql, [branch_id], (err, results) => {
         // Ensure connection is released even if there's an error
         connectionRelease(connection);
@@ -91,7 +91,7 @@ const Branch = {
         );
       }
 
-      const sql = `SELECT id, title, created_at FROM \`tickets\` WHERE \`ticket_number\` = ? AND \`branch_id\` = ? LIMIT 1`;
+      const sql = `SELECT id, title, description, created_at FROM \`tickets\` WHERE \`ticket_number\` = ? AND \`branch_id\` = ? LIMIT 1`;
       console.log(
         `Executing SQL: ${sql} with ticketNumber: ${ticketNumber} and branchId: ${branchId}`
       ); // Debug log
