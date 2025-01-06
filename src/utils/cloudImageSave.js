@@ -242,6 +242,48 @@ const savePdf = async (doc, pdfFileName, targetDir) => {
   }
 };
 
+// Function to delete a folder from the FTP server
+const deleteFolder = async (folderPath) => {
+  console.log(`Attempting to delete folder at path: ${folderPath}`);
+  const client = new ftp.Client();
+  client.ftp.verbose = true; // Enable verbose logging for FTP connection
+  client.ftp.timeout = 300000; // Set a timeout for FTP operations
+
+  try {
+    // Connect to FTP server using previously fetched app information
+    await client.access({
+      host: cloudImageFTPHost,
+      user: cloudImageFTPUser,
+      password: cloudImageFTPPassword,
+      secure: cloudImageFTPSecure,
+    });
+
+    // Ensure the folder exists before attempting to delete it
+    await client.ensureDir(folderPath); // Navigate to the target folder
+    console.log(`Navigated to folder: ${folderPath}`);
+
+    // List the contents of the folder and remove each file individually
+    const files = await client.list(folderPath); // List the contents of the folder
+    if (files.length > 0) {
+      console.log(`Folder contains files, deleting them one by one...`);
+      for (let file of files) {
+        const filePath = `${folderPath}/${file.name}`;
+        await client.remove(filePath); // Remove each file individually
+        console.log(`Deleted file: ${filePath}`);
+      }
+    }
+
+    // Now that the folder is empty, remove the folder itself
+    await client.removeDir(folderPath); // Remove the empty directory
+    console.log(`Deleted folder: ${folderPath}`);
+  } catch (err) {
+    console.error("Error during FTP folder deletion:", err);
+    throw err; // Rethrow the error if deletion fails
+  } finally {
+    client.close(); // Close the FTP connection
+  }
+};
+
 // Exporting the upload middleware and saving functions
 module.exports = {
   upload: upload.fields([
@@ -253,4 +295,5 @@ module.exports = {
   saveImage,
   saveImages,
   savePdf,
+  deleteFolder,
 };

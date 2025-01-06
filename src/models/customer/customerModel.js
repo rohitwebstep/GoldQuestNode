@@ -843,6 +843,7 @@ const Customer = {
     });
   },
 
+  /*
   delete: (id, callback) => {
     const sql = `
         DELETE FROM \`customers\`
@@ -862,6 +863,135 @@ const Customer = {
           return callback(err, null);
         }
         callback(null, results);
+      });
+    });
+  },
+  */
+
+  delete: (customerId, callback) => {
+    startConnection((err, connection) => {
+      if (err) {
+        return callback(
+          { message: "Failed to connect to the database", error: err },
+          null
+        );
+      }
+
+      const customerSql = `
+        SELECT * FROM \`customers\`
+        WHERE \`id\` = ?;
+      `;
+      connection.query(customerSql, [customerId], (err, customerResults) => {
+        if (err) {
+          connectionRelease(connection);
+          console.error("Database query error: 67", err);
+          return callback(err, null);
+        }
+
+        if (customerResults.length === 0) {
+          connectionRelease(connection);
+          return callback(null, {
+            message: "No customer found with the provided ID.",
+          });
+        }
+
+        const customer = customerResults[0];
+        const clientUniqueId = customer.client_unique_id;
+
+        const branchSql = `
+          SELECT * FROM \`branches\`
+          WHERE \`customer_id\` = ?;
+        `;
+
+        connection.query(branchSql, [customerId], (err, branchResults) => {
+          if (err) {
+            connectionRelease(connection);
+            console.error("Database query error: 67", err);
+            return callback(err, null);
+          }
+
+          if (branchResults.length === 0) {
+            connectionRelease(connection);
+            return callback(null, {
+              message: "No branches found for this customer.",
+            });
+          }
+
+          const branchData = branchResults;
+          const combinedData = [];
+
+          // Loop through each branch to fetch the client and candidate applications
+          let pendingQueries = branchData.length;
+          branchData.forEach((branch) => {
+            const clientAppSql = `
+              SELECT \`name\`, \`application_id\`
+              FROM \`client_applications\`
+              WHERE \`branch_id\` = ?;
+            `;
+            const candidateAppSql = `
+              SELECT \`id\`, \`name\`
+              FROM \`candidate_applications\`
+              WHERE \`branch_id\` = ?;
+            `;
+
+            // Fetch client applications for the branch
+            connection.query(
+              clientAppSql,
+              [branch.id],
+              (err, clientApplications) => {
+                if (err) {
+                  console.error("Error fetching client applications:", err);
+                }
+
+                // Fetch candidate applications for the branch and client_unique_id
+                connection.query(
+                  candidateAppSql,
+                  [branch.id, clientUniqueId], // Pass clientUniqueId as a parameter
+                  (err, candidateApplications) => {
+                    if (err) {
+                      console.error(
+                        "Error fetching candidate applications:",
+                        err
+                      );
+                    }
+
+                    // Modify candidate application data to include formatted application_id
+                    const formattedCandidateApplications =
+                      candidateApplications.map((candidate) => {
+                        return {
+                          name: candidate.name,
+                          application_id: `cd-${clientUniqueId}-${candidate.id}`, // Format the application_id
+                        };
+                      });
+
+                    // Add the applications data to the branch
+                    const branchApplicationsData = {
+                      branchId: branch.id,
+                      branchName: branch.name,
+                      clientApplications: clientApplications,
+                      candidateApplications: formattedCandidateApplications, // Include formatted candidate applications
+                    };
+                    combinedData.push(branchApplicationsData);
+                    pendingQueries--;
+                    if (pendingQueries === 0) {
+                      connectionRelease(connection);
+                      callback(null, {
+                        client_unique_id: clientUniqueId,
+                        data: {
+                          name: customer.name,
+                          email: customer.email,
+                          mobile: customer.mobile,
+                          client_unique_id: clientUniqueId,
+                          branches: combinedData,
+                        },
+                      });
+                    }
+                  }
+                );
+              }
+            );
+          });
+        });
       });
     });
   },
