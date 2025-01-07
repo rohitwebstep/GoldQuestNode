@@ -36,7 +36,7 @@ const generateInvoiceModel = {
         escalation_admin.name AS escalation_admin_name
       FROM customers c
       LEFT JOIN customer_metas cm ON cm.customer_id = c.id
-      INNER JOIN admins escalation_admin ON escalation_admin.id = cm.escalation_admin_id
+      LEFT JOIN admins escalation_admin ON escalation_admin.id = cm.escalation_admin_id AND cm.escalation_admin_id IS NOT NULL
       WHERE c.id = ?;
     `;
 
@@ -49,7 +49,7 @@ const generateInvoiceModel = {
           );
           return callback(err, null);
         }
-
+        console.log(`customerResults - `, customerResults);
         // Check if customer exists
         if (customerResults.length === 0) {
           connectionRelease(connection);

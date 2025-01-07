@@ -1244,7 +1244,6 @@ exports.update = (req, res) => {
     contact_person_name,
     agreement_date,
     custom_template,
-    client_standard,
     industry_classification,
   };
 
