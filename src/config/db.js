@@ -23,9 +23,9 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 const dbHost = process.env.DB_HOST || "localhost";
-const dbUser = process.env.DB_USER | "goldquest";
-const dbName = process.env.DB_NAME | "goldquest";
-const dbPassword = process.env.DB_PASSWORD | "GoldQuest@135";
+const dbUser = process.env.DB_USER || "goldquest";
+const dbName = process.env.DB_NAME || "goldquest";
+const dbPassword = process.env.DB_PASSWORD || "GoldQuest@135";
 
 // Create a connection pool
 const pool = mysql.createPool({
