@@ -24,7 +24,7 @@ const tatDelayRoutes = require("./routes/admin/tatDelayRoutes");
 const weeklyReportRoutes = require("./routes/admin/weeklyReportRoutes");
 
 const app = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 5000;
 
 // Configure CORS
 const allowedOrigins = [
