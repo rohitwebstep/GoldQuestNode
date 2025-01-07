@@ -27,14 +27,16 @@ const generateInvoiceModel = {
         c.services, 
         cm.address, 
         cm.contact_person_name, 
-        cm.escalation_point_contact, 
+        cm.escalation_admin_id, 
         cm.single_point_of_contact, 
         cm.gst_number,
         cm.payment_contact_person,
         cm.state,
-        cm.state_code
+        cm.state_code,
+        escalation_admin.name AS escalation_admin_name
       FROM customers c
       LEFT JOIN customer_metas cm ON cm.customer_id = c.id
+      INNER JOIN admins escalation_admin ON escalation_admin.id = cm.escalation_admin_id
       WHERE c.id = ?;
     `;
 

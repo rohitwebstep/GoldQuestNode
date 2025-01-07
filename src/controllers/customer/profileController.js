@@ -7,6 +7,7 @@ const AdminCommon = require("../../models/admin/commonModel");
 const App = require("../../models/appModel");
 const BranchCommon = require("../../models/customer/branch/commonModel");
 const AppModel = require("../../models/appModel");
+const Admin = require("../../models/admin/adminModel");
 
 const { createMail } = require("../../mailer/customer/createMail");
 
@@ -157,7 +158,7 @@ exports.create = (req, res) => {
     custom_address,
     date_agreement,
     client_spoc,
-    name_of_escalation,
+    escalation_admin_id,
     contact_person,
     client_standard,
     custom_template,
@@ -184,7 +185,7 @@ exports.create = (req, res) => {
     mobile_number,
     date_agreement,
     client_spoc,
-    name_of_escalation,
+    escalation_admin_id,
     contact_person,
     clientData,
     custom_template,
@@ -375,7 +376,7 @@ exports.create = (req, res) => {
                     customer_id: customerId,
                     address,
                     client_spoc,
-                    name_of_escalation,
+                    escalation_admin_id,
                     contact_person,
                     gst_number: gstin,
                     tat_days: tat,
@@ -1209,7 +1210,7 @@ exports.update = (req, res) => {
     custom_address,
     agreement_date,
     single_point_of_contact,
-    escalation_point_contact,
+    escalation_admin_id,
     contact_person_name,
     client_standard,
     custom_template,
@@ -1236,7 +1237,7 @@ exports.update = (req, res) => {
     gst_number,
     client_unique_id,
     single_point_of_contact,
-    escalation_point_contact,
+    escalation_admin_id,
     contact_person_name,
     agreement_date,
     custom_template,
@@ -1392,8 +1393,8 @@ exports.update = (req, res) => {
                     single_point_of_contact
                   );
                   compareAndAddChanges(
-                    "escalation_point_contact",
-                    escalation_point_contact
+                    "escalation_admin_id",
+                    escalation_admin_id
                   );
                   compareAndAddChanges(
                     "contact_person_name",
@@ -1530,7 +1531,7 @@ exports.update = (req, res) => {
                           {
                             address,
                             client_spoc: single_point_of_contact,
-                            escalation_point_contact,
+                            escalation_admin_id,
                             contact_person: contact_person_name,
                             gst_number,
                             tat_days,
@@ -2121,19 +2122,27 @@ exports.addCustomerListings = (req, res) => {
               resolve(result);
             })
           ),
+          new Promise((resolve) =>
+            Admin.list((err, result) => {
+              if (err) return resolve([]);
+              resolve(result);
+            })
+          ),
         ];
 
-        Promise.all(dataPromises).then(([services, packages]) => {
+        Promise.all(dataPromises).then(([services, packages, admins]) => {
           res.json({
             status: true,
             message: "Services and Packages fetched successfully",
             data: {
               services,
               packages,
+              admins,
             },
             totalResults: {
               services: services.length,
               packages: packages.length,
+              admins: admins.length,
             },
             token: newToken,
           });

@@ -270,7 +270,7 @@ const Customer = {
       INSERT INTO \`customer_metas\` (
         \`customer_id\`, \`address\`,
         \`single_point_of_contact\`,
-        \`escalation_point_contact\`,
+        \`escalation_admin_id\`,
         \`contact_person_name\`,
         \`gst_number\`, \`tat_days\`, 
         \`agreement_date\`, \`agreement_duration\`, \`custom_template\`,
@@ -283,7 +283,7 @@ const Customer = {
       metaData.customer_id,
       metaData.address || null,
       metaData.client_spoc || null,
-      metaData.name_of_escalation || null,
+      metaData.escalation_admin_id || null,
       metaData.contact_person || null,
       metaData.gst_number || null,
       metaData.tat_days || null,
@@ -334,7 +334,7 @@ const Customer = {
       SET 
         \`address\` = ?, 
         \`single_point_of_contact\` = ?,
-        \`escalation_point_contact\` = ?,
+        \`escalation_admin_id\` = ?,
         \`contact_person_name\` = ?,
         \`gst_number\` = ?, 
         \`tat_days\` = ?, 
@@ -352,7 +352,7 @@ const Customer = {
     const valuesUpdateCustomerMetas = [
       metaData.address,
       metaData.client_spoc,
-      metaData.escalation_point_contact,
+      metaData.escalation_admin_id,
       metaData.contact_person,
       metaData.gst_number,
       metaData.tat_days,
