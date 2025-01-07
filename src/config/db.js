@@ -1,36 +1,27 @@
-const fs = require("fs");
-const dotenv = require("dotenv");
-
-// Load .env file if it exists
-if (fs.existsSync("../../.env")) {
-  dotenv.config({ path: "../../.env" });
-  console.log(".env file loaded successfully.");
-} else {
-  console.warn(".env file not found. Using fallback values.");
-}
-
+require("dotenv").config();
 const mysql = require("mysql2");
 
+/*
 // Validate critical environment variables
-const requiredEnv = ["DB_HOST", "DB_USER", "DB_NAME"];
-const missingEnv = requiredEnv.filter((env) => !process.env[env]);
-
-if (missingEnv.length > 0) {
-  console.warn(
-    `Missing environment variables: ${missingEnv.join(
-      ", "
-    )}. Using fallback values.`
+if (!process.env.DB_HOST || !process.env.DB_USER || !process.env.DB_NAME) {
+  console.error(
+    "Missing critical environment variables. Please check your .env file."
   );
+  process.exit(1);
 }
+*/
 
 // Assign environment variables with fallbacks
 const dbHost = process.env.DB_HOST || "localhost";
 const dbUser = process.env.DB_USER || "goldquest";
 const dbName = process.env.DB_NAME || "goldquest";
-const dbPassword = process.env.DB_PASSWORD || "GoldQuest@135";
+
+let dbPassword = "";
+if (process.env.DB_HOST == "production") {
+  dbPassword = process.env.DB_PASSWORD || "GoldQuest@135";
+}
 
 // Log environment variables for debugging (optional, avoid in production)
-console.log("Environment Variables:");
 console.log("DB_HOST:", dbHost);
 console.log("DB_USER:", dbUser);
 console.log("DB_NAME:", dbName);
@@ -48,7 +39,7 @@ const pool = mysql.createPool({
 });
 
 // Function to start a connection with retry mechanism
-const startConnection = (callback, retries = 20, retryDelay = 500) => {
+const startConnection = (callback, retries = 20) => {
   if (typeof callback !== "function") {
     throw new Error("Callback must be a function");
   }
@@ -59,9 +50,9 @@ const startConnection = (callback, retries = 20, retryDelay = 500) => {
         console.error(`Error getting connection from pool: ${err.message}`);
         if (retriesLeft > 0) {
           console.log(
-            `Connection attempt failed. Retrying in ${retryDelay}ms... (${retriesLeft} attempts left)`
+            `Connection attempt failed. Retrying... (${retriesLeft} attempts left)`
           );
-          setTimeout(() => attemptConnection(retriesLeft - 1), retryDelay);
+          setTimeout(() => attemptConnection(retriesLeft - 1), 500);
         } else {
           callback(err, null);
         }
@@ -70,7 +61,7 @@ const startConnection = (callback, retries = 20, retryDelay = 500) => {
         connection.release();
         attemptConnection(retriesLeft - 1);
       } else {
-        console.log("Connection established successfully");
+        console.log("Connection established");
         callback(null, connection);
       }
     });
@@ -81,10 +72,14 @@ const startConnection = (callback, retries = 20, retryDelay = 500) => {
 
 // Function to release a connection
 const connectionRelease = (connection) => {
+  // console.log("connectionRelease called"); // Log function entry
+
   if (connection) {
+    // console.log("Valid connection found, attempting to release...");
+
     try {
       connection.release(); // Release the connection back to the pool
-      console.log("Connection successfully released back to the pool");
+      // console.log("Connection successfully released back to the pool");
     } catch (err) {
       console.error("Error releasing connection:", err.message);
       console.debug("Error details:", err); // Log full error details for debugging
@@ -92,7 +87,8 @@ const connectionRelease = (connection) => {
   } else {
     console.warn("No valid connection to release");
   }
+
+  // console.log("connectionRelease function execution completed");
 };
 
-// Exporting the pool and helper functions
 module.exports = { pool, startConnection, connectionRelease };

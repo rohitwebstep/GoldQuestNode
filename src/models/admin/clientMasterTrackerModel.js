@@ -576,6 +576,8 @@ const Customer = {
         checkTableSql,
         [process.env.DB_NAME, db_table],
         (tableErr, tableResults) => {
+          console.log(`tableResults - `, tableResults);
+          console.log(`tableResults[0].count - `, tableResults[0].count);
           if (tableErr) {
             console.error("Error checking table existence:", tableErr);
             connectionRelease(connection); // Release connection
