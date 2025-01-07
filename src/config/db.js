@@ -2,24 +2,27 @@ require("dotenv").config();
 const mysql = require("mysql2");
 
 // Validate critical environment variables
+/*
 if (!process.env.DB_HOST || !process.env.DB_USER || !process.env.DB_NAME) {
   console.error(
     "Missing critical environment variables. Please check your .env file."
   );
   process.exit(1);
 }
+  */
 
 // Log environment variables for debugging (optional, avoid in production)
-console.log("DB_HOST:", process.env.DB_HOST);
-console.log("DB_USER:", process.env.DB_USER);
-console.log("DB_NAME:", process.env.DB_NAME);
+const dbHost = process.env.DB_HOST || "localhost";
+const dbUser = process.env.DB_USER || "goldquest";
+const dbName = process.env.DB_NAME || "goldquest";
+const dbPassword = process.env.DB_PASSWORD || "GoldQuest@135";
 
 // Create a connection pool
 const pool = mysql.createPool({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
+  host: dbHost,
+  user: dbUser,
+  password: dbPassword,
+  database: dbName,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
