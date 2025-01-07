@@ -1,4 +1,14 @@
-require("dotenv").config();
+const fs = require("fs");
+const dotenv = require("dotenv");
+
+// Load .env file if it exists
+if (fs.existsSync("../../.env")) {
+  dotenv.config({ path: "../../.env" });
+  console.log(".env file loaded successfully.");
+} else {
+  console.warn(".env file not found. Using fallback values.");
+}
+
 const mysql = require("mysql2");
 
 // Validate critical environment variables
@@ -6,26 +16,24 @@ const requiredEnv = ["DB_HOST", "DB_USER", "DB_NAME"];
 const missingEnv = requiredEnv.filter((env) => !process.env[env]);
 
 if (missingEnv.length > 0) {
-  console.error(
-    `Missing critical environment variables: ${missingEnv.join(
+  console.warn(
+    `Missing environment variables: ${missingEnv.join(
       ", "
-    )}. Please check your .env file.`
+    )}. Using fallback values.`
   );
-  process.exit(1);
 }
 
-// Log environment variables for debugging (optional, avoid in production)
-if (process.env.NODE_ENV !== "production") {
-  console.log("Environment Variables:");
-  console.log("DB_HOST:", process.env.DB_HOST);
-  console.log("DB_USER:", process.env.DB_USER);
-  console.log("DB_NAME:", process.env.DB_NAME);
-}
-
+// Assign environment variables with fallbacks
 const dbHost = process.env.DB_HOST || "localhost";
 const dbUser = process.env.DB_USER || "goldquest";
 const dbName = process.env.DB_NAME || "goldquest";
 const dbPassword = process.env.DB_PASSWORD || "GoldQuest@135";
+
+// Log environment variables for debugging (optional, avoid in production)
+console.log("Environment Variables:");
+console.log("DB_HOST:", dbHost);
+console.log("DB_USER:", dbUser);
+console.log("DB_NAME:", dbName);
 
 // Create a connection pool
 const pool = mysql.createPool({
