@@ -1972,16 +1972,17 @@ exports.delete = (req, res) => {
                 "Delete",
                 "0",
                 JSON.stringify({ id }),
-                err,
+                err.message,
                 () => {}
               );
               return res.status(500).json({
                 status: false,
-                message: "Failed to delete customer. Please try again.",
+                message:
+                  err.message || "Failed to delete customer. Please try again.",
                 token: newToken,
               });
             }
-
+            console.log(`result - `, result);
             AdminCommon.adminActivityLog(
               admin_id,
               "Customer",
