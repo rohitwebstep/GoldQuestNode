@@ -1211,6 +1211,7 @@ exports.update = (req, res) => {
     gst_number,
     custom_address,
     agreement_date,
+    director_email,
     single_point_of_contact,
     escalation_admin_id,
     contact_person_name,
@@ -1371,6 +1372,7 @@ exports.update = (req, res) => {
             }
             compareAndAddChanges("mobile", mobile);
             compareAndAddChanges("services", services);
+            compareAndAddChanges("director_email", director_email);
 
             Customer.getCustomerMetaById(
               customer_id,
@@ -1490,6 +1492,7 @@ exports.update = (req, res) => {
                     {
                       admin_id,
                       name,
+                      director_email,
                       address,
                       profile_picture: currentCustomer.profile_picture,
                       emails_json: JSON.stringify(filterEmails),
