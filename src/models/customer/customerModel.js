@@ -147,12 +147,13 @@ const Customer = {
         );
       }
       const sqlCustomers = `
-        INSERT INTO \`customers\` (\`client_unique_id\`, \`name\`, \`additional_login\`, \`username\`, \`profile_picture\`, \`emails\`, \`mobile\`, \`services\`, \`admin_id\`, \`is_custom_bgv\`
+        INSERT INTO \`customers\` (\`client_unique_id\`, \`director_email\`, \`name\`, \`additional_login\`, \`username\`, \`profile_picture\`, \`emails\`, \`mobile\`, \`services\`, \`admin_id\`, \`is_custom_bgv\`
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
 
       const valuesCustomers = [
         customerData.client_unique_id,
+        customerData.director_email,
         customerData.name,
         customerData.additional_login,
         customerData.username,

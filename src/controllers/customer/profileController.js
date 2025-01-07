@@ -155,6 +155,7 @@ exports.create = (req, res) => {
     client_code,
     company_name,
     mobile_number,
+    director_email,
     custom_address,
     date_agreement,
     client_spoc,
@@ -337,6 +338,7 @@ exports.create = (req, res) => {
               {
                 admin_id,
                 client_unique_id: client_code,
+                director_email,
                 name: company_name,
                 address,
                 profile_picture: null,
