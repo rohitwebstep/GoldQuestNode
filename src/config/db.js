@@ -16,9 +16,9 @@ const dbHost = process.env.DB_HOST || "localhost";
 const dbUser = process.env.DB_USER || "goldquest";
 const dbName = process.env.DB_NAME || "goldquest";
 
-let dbPassword = "";
-if (process.env.DB_HOST == "production") {
-  dbPassword = process.env.DB_PASSWORD || "GoldQuest@135";
+let dbPassword = process.env.DB_PASSWORD || "GoldQuest@135";
+if (process.env.DB_HOST == "local") {
+  dbPassword = process.env.DB_PASSWORD || "";
 }
 
 // Log environment variables for debugging (optional, avoid in production)

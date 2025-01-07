@@ -574,7 +574,7 @@ const Customer = {
 
       connection.query(
         checkTableSql,
-        [process.env.DB_NAME, db_table],
+        [process.env.DB_NAME || "goldquest", db_table],
         (tableErr, tableResults) => {
           console.log(`tableResults - `, tableResults);
           console.log(`tableResults[0].count - `, tableResults[0].count);
@@ -810,7 +810,7 @@ const Customer = {
 
       connection.query(
         checkTableSql,
-        [process.env.DB_NAME, db_table],
+        [process.env.DB_NAME || "goldquest", db_table],
         (tableErr, tableResults) => {
           if (tableErr) {
             connectionRelease(connection);

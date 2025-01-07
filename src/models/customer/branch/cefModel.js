@@ -129,7 +129,7 @@ const cef = {
 
       connection.query(
         checkTableSql,
-        [process.env.DB_NAME, db_table],
+        [process.env.DB_NAME || "goldquest", db_table],
         (tableErr, tableResults) => {
           if (tableErr) {
             console.error("Error checking table existence:", tableErr);
@@ -401,7 +401,7 @@ const cef = {
 
       connection.query(
         checkTableSql,
-        [process.env.DB_NAME, db_table],
+        [process.env.DB_NAME || "goldquest", db_table],
         (tableErr, tableResults) => {
           if (tableErr) {
             console.error("Error checking table existence:", tableErr);
