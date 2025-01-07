@@ -61,7 +61,7 @@ exports.uploadImage = (req, res) => {
 exports.connectionCheck = (req, res) => {
   // Get the IP address from the X-Forwarded-For header or req.ip
   let ipAddress =
-    req.headers["x-forwarded-for"] || req.connection.remoteAddress || req.ip;
+    req.headers["x-forwarded-for"] || req.connection.remoteAddress
 
   // If there are multiple IPs in X-Forwarded-For, take the first one (the real client's IP)
   if (ipAddress.includes(",")) {

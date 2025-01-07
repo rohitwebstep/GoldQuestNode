@@ -185,7 +185,7 @@ exports.create = (req, res) => {
     .filter((field) => {
       const value = requiredFields[field];
       // Ensure value is a string before calling .trim() and check for empty strings
-      return typeof value === 'string' ? value.trim() === "" : !value;
+      return typeof value === "string" ? value.trim() === "" : !value;
     })
     .map((field) => field.replace(/_/g, " "));
 
@@ -247,12 +247,11 @@ exports.create = (req, res) => {
               "0",
               null,
               err.message,
-              () => { }
+              () => {}
             );
             return res.status(500).json({
               status: false,
-              message: "Failed to create admin.",
-              error: err.message,
+              message: err.message || "Failed to create admin.",
               token: newToken,
             });
           }
@@ -265,7 +264,7 @@ exports.create = (req, res) => {
             "1",
             `{id: ${result.insertId}}`,
             null,
-            () => { }
+            () => {}
           );
 
           if (send_mail == 0) {
@@ -301,7 +300,8 @@ exports.create = (req, res) => {
               console.error("Error sending email:", emailError);
               return res.status(201).json({
                 status: true,
-                message: "Admin created successfully, but failed to send email.",
+                message:
+                  "Admin created successfully, but failed to send email.",
                 result,
                 token: newToken,
               });
@@ -348,7 +348,7 @@ exports.update = (req, res) => {
     .filter((field) => {
       const value = requiredFields[field];
       // Ensure value is a string before calling .trim() and check for empty strings
-      return typeof value === 'string' ? value.trim() === "" : !value;
+      return typeof value === "string" ? value.trim() === "" : !value;
     })
     .map((field) => field.replace(/_/g, " "));
 
@@ -432,7 +432,7 @@ exports.update = (req, res) => {
                 "0",
                 null,
                 err,
-                () => { }
+                () => {}
               );
               return res.status(500).json({
                 status: false,
@@ -450,7 +450,7 @@ exports.update = (req, res) => {
               "1",
               `{id: ${id}}`,
               null,
-              () => { }
+              () => {}
             );
 
             return res.status(201).json({
@@ -544,7 +544,7 @@ exports.delete = (req, res) => {
               "0",
               JSON.stringify({ id }),
               err,
-              () => { }
+              () => {}
             );
             return res.status(500).json({
               status: false,
@@ -560,7 +560,7 @@ exports.delete = (req, res) => {
             "1",
             JSON.stringify({ id }),
             null,
-            () => { }
+            () => {}
           );
 
           res.status(200).json({
