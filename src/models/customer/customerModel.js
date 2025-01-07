@@ -974,17 +974,42 @@ const Customer = {
                     combinedData.push(branchApplicationsData);
                     pendingQueries--;
                     if (pendingQueries === 0) {
-                      connectionRelease(connection);
-                      callback(null, {
-                        client_unique_id: clientUniqueId,
-                        data: {
-                          name: customer.name,
-                          email: customer.email,
-                          mobile: customer.mobile,
-                          client_unique_id: clientUniqueId,
-                          branches: combinedData,
-                        },
-                      });
+                      // After processing all branches, delete the customer
+                      const deleteCustomerSql = `
+                    DELETE FROM \`customers\`
+                    WHERE \`id\` = ?;
+                  `;
+                      connection.query(
+                        deleteCustomerSql,
+                        [customerId],
+                        (err) => {
+                          connectionRelease(connection);
+                          if (err) {
+                            console.error("Error deleting customer:", err);
+                            return callback(
+                              {
+                                message: "Failed to delete customer",
+                                error: err,
+                              },
+                              null
+                            );
+                          }
+
+                          // Return the result after deletion
+                          callback(null, {
+                            message:
+                              "Customer and related data retrieved and deleted successfully.",
+                            client_unique_id: clientUniqueId,
+                            data: {
+                              name: customer.name,
+                              email: customer.email,
+                              mobile: customer.mobile,
+                              client_unique_id: clientUniqueId,
+                              branches: combinedData,
+                            },
+                          });
+                        }
+                      );
                     }
                   }
                 );
