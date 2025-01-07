@@ -1,7 +1,6 @@
 require("dotenv").config();
 const mysql = require("mysql2");
 
-/*
 // Validate critical environment variables
 const requiredEnv = ["DB_HOST", "DB_USER", "DB_NAME", "DB_PASSWORD"];
 const missingEnv = requiredEnv.filter((env) => !process.env[env]);
@@ -15,7 +14,6 @@ if (missingEnv.length > 0) {
   process.exit(1);
 }
 
-
 // Log environment variables for debugging (optional, avoid in production)
 if (process.env.NODE_ENV !== "production") {
   console.log("Environment Variables:");
@@ -23,8 +21,7 @@ if (process.env.NODE_ENV !== "production") {
   console.log("DB_USER:", process.env.DB_USER);
   console.log("DB_NAME:", process.env.DB_NAME);
 }
-  */
- 
+
 const dbHost = process.env.DB_HOST || "localhost";
 const dbUser = process.env.DB_USER | "goldquest";
 const dbName = process.env.DB_NAME | "goldquest";
