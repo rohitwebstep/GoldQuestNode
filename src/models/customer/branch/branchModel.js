@@ -305,22 +305,58 @@ const Branch = {
         );
       }
 
-      const sql = `SELECT * FROM \`branches\` WHERE \`email\` = ? AND \`customer_id\` != ?`;
-      connection.query(sql, [email, customer_id], (err, results) => {
-        connectionRelease(connection); // Ensure connection is released
+      const branchQuery = `
+        SELECT * 
+        FROM \`branches\` 
+        WHERE \`email\` = ? AND \`customer_id\` != ?`;
 
-        if (err) {
-          console.error("Database query error:", err);
-          return callback(
-            { message: "Database query error", error: err },
-            null
+      const customerQuery = `
+        SELECT \`emails\`
+        FROM \`customers\`
+        WHERE JSON_CONTAINS(\`emails\`, ?) AND \`id\` != ?`;
+
+      // First, check in branches table
+      connection.query(
+        branchQuery,
+        [email, customer_id],
+        (err, branchResults) => {
+          if (err) {
+            connectionRelease(connection);
+            console.error("Branches query error:", err);
+            return callback(
+              { message: "Database query error", error: err },
+              null
+            );
+          }
+
+          if (branchResults.length > 0) {
+            // Email is found in branches table
+            connectionRelease(connection);
+            return callback(null, true);
+          }
+
+          // Next, check in customers table
+          connection.query(
+            customerQuery,
+            [JSON.stringify(email), customer_id],
+            (err, customerResults) => {
+              connectionRelease(connection);
+
+              if (err) {
+                console.error("Customers query error:", err);
+                return callback(
+                  { message: "Customers query error", error: err },
+                  null
+                );
+              }
+
+              // Check if email is used in customers table
+              const isUsed = customerResults.length > 0;
+              return callback(null, isUsed);
+            }
           );
         }
-
-        // Return true if the email is found, false otherwise
-        const isUsed = results.length > 0;
-        callback(null, isUsed);
-      });
+      );
     });
   },
 
