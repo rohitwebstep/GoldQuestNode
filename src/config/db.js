@@ -72,6 +72,7 @@ const startConnection = (callback, retries = 20) => {
 
 // Function to release a connection
 const connectionRelease = (connection) => {
+  /*
   // console.log("connectionRelease called"); // Log function entry
 
   if (connection) {
@@ -89,6 +90,7 @@ const connectionRelease = (connection) => {
   }
 
   // console.log("connectionRelease function execution completed");
+  */
 };
 
 module.exports = { pool, startConnection, connectionRelease };
