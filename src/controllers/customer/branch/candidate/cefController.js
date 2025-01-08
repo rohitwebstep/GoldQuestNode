@@ -564,8 +564,7 @@ const sendNotificationEmails = (
                     customer_name,
                     attachments,
                     toArr || [],
-                    ccArr || [],
-                    currentCEFApplication || []
+                    ccArr || []
                   )
                     .then(() => {
                       return res.status(201).json({
