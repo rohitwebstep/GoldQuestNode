@@ -138,6 +138,9 @@ const Customer = {
   },
 
   create: (customerData, callback) => {
+    const sanitizeValue = (value) =>
+      value === undefined || value === "" ? null : value; // Helper function to handle empty values
+
     startConnection((err, connection) => {
       if (err) {
         console.error("Failed to connect to the database:", err);
@@ -146,23 +149,35 @@ const Customer = {
           null
         );
       }
+
       const sqlCustomers = `
-        INSERT INTO \`customers\` (\`client_unique_id\`, \`director_email\`, \`name\`, \`additional_login\`, \`username\`, \`profile_picture\`, \`emails\`, \`mobile\`, \`services\`, \`admin_id\`, \`is_custom_bgv\`
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `;
+            INSERT INTO \`customers\` (
+                \`client_unique_id\`, 
+                \`director_email\`, 
+                \`name\`, 
+                \`additional_login\`, 
+                \`username\`, 
+                \`profile_picture\`, 
+                \`emails\`, 
+                \`mobile\`, 
+                \`services\`, 
+                \`admin_id\`, 
+                \`is_custom_bgv\`
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `;
 
       const valuesCustomers = [
-        customerData.client_unique_id,
-        customerData.director_email,
-        customerData.name,
-        customerData.additional_login,
-        customerData.username,
-        customerData.profile_picture,
-        customerData.emails_json,
-        customerData.mobile_number,
-        customerData.services,
-        customerData.admin_id,
-        customerData.custom_bgv,
+        sanitizeValue(customerData.client_unique_id),
+        sanitizeValue(customerData.director_email),
+        sanitizeValue(customerData.name),
+        sanitizeValue(customerData.additional_login),
+        sanitizeValue(customerData.username),
+        sanitizeValue(customerData.profile_picture),
+        sanitizeValue(customerData.emails_json),
+        sanitizeValue(customerData.mobile_number),
+        sanitizeValue(customerData.services),
+        sanitizeValue(customerData.admin_id),
+        sanitizeValue(customerData.custom_bgv),
       ];
 
       connection.query(sqlCustomers, valuesCustomers, (err, results) => {
@@ -170,11 +185,16 @@ const Customer = {
 
         if (err) {
           console.error("Database insertion error for customers:", err);
-          return callback({ message: err }, null);
+          return callback(
+            {
+              status: false,
+              message: err.message || "Failed to create customer",
+            },
+            null
+          );
         }
 
-        const customerId = results.insertId;
-        callback(null, { insertId: customerId });
+        callback(null, { status: true, insertId: results.insertId });
       });
     });
   },
