@@ -36,14 +36,10 @@ const tatDelay = {
     const weekendsQuery = `SELECT weekends FROM company_info WHERE status = 1;`;
 
     startConnection((connectionError, connection) => {
-      console.log("Connection attempt started...");
-
       if (connectionError) {
         console.error("Connection error:", connectionError);
         return callback(connectionError, null);
       }
-
-      console.log("Connection established successfully.");
 
       // Execute the applications query
       connection.query(
@@ -54,8 +50,6 @@ const tatDelay = {
             return handleQueryError(appQueryError, connection, callback);
           }
 
-          console.log("Applications query executed successfully.");
-
           // Execute the holidays query
           connection.query(holidaysQuery, (holQueryError, holidayResults) => {
             if (holQueryError) {
@@ -63,13 +57,10 @@ const tatDelay = {
               return handleQueryError(holQueryError, connection, callback);
             }
 
-            console.log("Holidays query executed successfully.");
-
             // Prepare holiday dates for calculations
             const holidayDates = holidayResults.map((holiday) =>
               moment(holiday.holiday_date).startOf("day")
             );
-            console.log("Holiday dates prepared:", holidayDates);
 
             // Execute the weekends query
             connection.query(
@@ -78,11 +69,12 @@ const tatDelay = {
                 connectionRelease(connection); // Always release the connection
 
                 if (weekendQueryError) {
-                  console.error("Database query error: Weekends", weekendQueryError);
+                  console.error(
+                    "Database query error: Weekends",
+                    weekendQueryError
+                  );
                   return callback(weekendQueryError, null);
                 }
-
-                console.log("Weekends query executed successfully.");
 
                 const weekends = weekendResults[0]?.weekends
                   ? JSON.parse(weekendResults[0].weekends)
@@ -90,8 +82,6 @@ const tatDelay = {
                 const weekendsSet = new Set(
                   weekends.map((day) => day.toLowerCase())
                 );
-
-                console.log("Weekends processed:", weekendsSet);
 
                 // Construct the hierarchical structure for applications
                 const applicationHierarchy = applicationResults.reduce(
@@ -116,7 +106,9 @@ const tatDelay = {
                     // Ensure tat_days is a reasonable value to avoid memory issues
                     const tatDays = parseInt(tat_days, 10) || 0;
                     if (tatDays < 1 || tatDays > 365) {
-                      console.warn(`Skipping invalid TAT days value: ${tatDays}`);
+                      console.warn(
+                        `Skipping invalid TAT days value: ${tatDays}`
+                      );
                       return accumulator;
                     }
 
@@ -144,8 +136,6 @@ const tatDelay = {
                       };
                     }
 
-                    console.log(`Processing application for customer ${customer_id}, branch ${branch_id}`);
-
                     // Calculate days out of TAT
                     const applicationDate = moment(application_created_at);
                     const dueDate = calculateDueDate(
@@ -163,26 +153,23 @@ const tatDelay = {
                       weekendsSet
                     );
 
-                    console.log(`Calculated days out of TAT: ${daysOutOfTat} for application ${application_id}`);
-
                     // Only add application information if days out of TAT is greater than 0
                     if (daysOutOfTat > 0) {
-                      accumulator[customer_id].branches[branch_id].applications.push({
+                      accumulator[customer_id].branches[
+                        branch_id
+                      ].applications.push({
                         client_application_id,
                         application_id,
                         application_name,
                         application_created_at,
                         days_out_of_tat: daysOutOfTat, // Include days out of TAT
                       });
-                      console.log(`Application added to hierarchy: ${application_name}`);
                     }
 
                     return accumulator;
                   },
                   {}
                 );
-
-                console.log("Application hierarchy constructed:", applicationHierarchy);
 
                 // Convert the application hierarchy object to an array with nested branches and applications
                 const applicationHierarchyArray = Object.values(
@@ -196,16 +183,12 @@ const tatDelay = {
                   }))
                   .filter((customer) => customer.branches.length > 0); // Only include customers with branches
 
-                console.log("Application hierarchy array created:", applicationHierarchyArray);
-
                 // Map holiday results into a structured array
                 const holidaysArray = holidayResults.map((holiday) => ({
                   id: holiday.holiday_id,
                   title: holiday.holiday_title,
                   date: holiday.holiday_date,
                 }));
-
-                console.log("Holiday results mapped:", holidaysArray);
 
                 // Callback with both the application hierarchy and holidays array
                 callback(null, {
@@ -225,45 +208,46 @@ const tatDelay = {
       callback(error, null);
     }
 
-    function calculateDaysOutOfTat(dueDate, endDate, holidayDates, weekendsSet) {
-      console.log("Starting days out of TAT calculation...");
-      console.log("Due Date:", dueDate.format("YYYY-MM-DD"));
-      console.log("End Date:", endDate.format("YYYY-MM-DD"));
-
+    function calculateDaysOutOfTat(
+      dueDate,
+      endDate,
+      holidayDates,
+      weekendsSet
+    ) {
       // Calculate the number of days in the range, excluding the dueDate itself
       const totalDays = endDate.diff(dueDate, "days") - 1;
 
       // Generate all dates in the range (excluding dueDate)
-      const allDates = Array.from({ length: totalDays }, (_, i) => dueDate.clone().add(i + 1, "days"));
+      const allDates = Array.from({ length: totalDays }, (_, i) =>
+        dueDate.clone().add(i + 1, "days")
+      );
 
       // Filter dates to include only valid business days (non-weekends, non-holidays)
-      const validBusinessDays = allDates.filter(date => {
+      const validBusinessDays = allDates.filter((date) => {
         const dayName = date.format("dddd").toLowerCase();
 
         // Skip weekends and holidays in a single check
-        if (weekendsSet.has(dayName) || holidayDates.some(holiday => holiday.isSame(date, "day"))) {
-          console.log(weekendsSet.has(dayName) ? `Skipped weekend: ${date.format("YYYY-MM-DD")}` : `Skipped holiday: ${date.format("YYYY-MM-DD")}`);
+        if (
+          weekendsSet.has(dayName) ||
+          holidayDates.some((holiday) => holiday.isSame(date, "day"))
+        ) {
           return false;
         }
 
-        console.log("Valid business day counted:", date.format("YYYY-MM-DD"));
         return true;
       });
 
-      console.log("Total days out of TAT:", validBusinessDays.length);
       return validBusinessDays.length;
     }
 
     function calculateDueDate(startDate, tatDays, holidayDates, weekendsSet) {
-      console.log("Starting due date calculation...");
-      console.log("Start Date:", startDate.format("YYYY-MM-DD"));
-      console.log("TAT Days:", tatDays);
-
       // Track remaining TAT days to process
       let remainingDays = tatDays;
 
       // Generate potential dates to check
-      const potentialDates = Array.from({ length: tatDays * 2 }, (_, i) => startDate.clone().add(i + 1, "days"));
+      const potentialDates = Array.from({ length: tatDays * 2 }, (_, i) =>
+        startDate.clone().add(i + 1, "days")
+      );
 
       // Calculate the final due date
       let finalDueDate = potentialDates.find((date) => {
@@ -275,18 +259,16 @@ const tatDelay = {
         }
 
         // Skip holidays
-        if (holidayDates.some(holiday => holiday.isSame(date, "day"))) {
+        if (holidayDates.some((holiday) => holiday.isSame(date, "day"))) {
           return false;
         }
 
         remainingDays--;
         return remainingDays <= 0;
       });
-
-      console.log("Due Date calculated:", finalDueDate.format("YYYY-MM-DD"));
       return finalDueDate;
     }
-  }
+  },
 };
 
 module.exports = tatDelay;

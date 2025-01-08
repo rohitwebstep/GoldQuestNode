@@ -74,10 +74,6 @@ const subUser = {
                 null
               );
             }
-
-            console.log(
-              "Table created successfully, proceeding with the insert."
-            );
             insertData();
           });
         } else {

@@ -576,8 +576,6 @@ const Customer = {
         checkTableSql,
         [process.env.DB_NAME || "goldquest", db_table],
         (tableErr, tableResults) => {
-          console.log(`tableResults - `, tableResults);
-          console.log(`tableResults[0].count - `, tableResults[0].count);
           if (tableErr) {
             console.error("Error checking table existence:", tableErr);
             connectionRelease(connection); // Release connection
@@ -1067,7 +1065,6 @@ const Customer = {
               .then(() => {
                 const insertSql = `UPDATE \`${db_table}\` SET \`${db_column}\` = ? WHERE \`client_application_id\` = ?`;
                 const joinedPaths = savedImagePaths.join(", ");
-                console.log(insertSql, [joinedPaths, client_application_id]);
                 connection.query(
                   insertSql,
                   [joinedPaths, client_application_id],

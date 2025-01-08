@@ -126,7 +126,6 @@ exports.test = async (req, res) => {
       pdfFileName,
       pdfTargetDirectory
     );
-    console.log("PDF generated at:", pdfPath);
     // If successful, return the result
     res.json({
       status: true,
@@ -2121,7 +2120,6 @@ exports.upload = async (req, res) => {
                             }
                             // QC report email
                             else if (emailStatus == 2) {
-                              console.log(`Mail Sedning`);
                               qcReportCheckMail(
                                 "cmt",
                                 "qc",
@@ -2186,7 +2184,6 @@ exports.upload = async (req, res) => {
                             }
                             // Handle unknown email status
                             else {
-                              console.log(`Email Status - `, emailStatus);
                               return res.status(200).json({
                                 status: true,
                                 message: "Images uploaded successfully.",
@@ -2282,8 +2279,6 @@ exports.annexureDataByServiceIds = (req, res) => {
       }
       const allowedServiceIds = allowedServiceIdsResult.finalServiceIds;
       const addressServicesPermission = allowedServiceIdsResult.addressServicesPermission;
-
-      console.log(`allowedServiceIds - `, allowedServiceIds);
 
       // Verify admin token
       AdminCommon.isAdminTokenValid(_token, admin_id, (err, result) => {

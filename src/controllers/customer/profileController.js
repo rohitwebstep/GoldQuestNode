@@ -1986,7 +1986,6 @@ exports.delete = (req, res) => {
                 token: newToken,
               });
             }
-            console.log(`result - `, result);
             AdminCommon.adminActivityLog(
               admin_id,
               "Customer",

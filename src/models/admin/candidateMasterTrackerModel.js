@@ -558,7 +558,6 @@ const Customer = {
 
                         tableQueries++;
                         if (tableQueries === totalTables) {
-                          console.log(`servicesResult.cef - `, servicesResult.cef);
                           candidateApp.service_data = servicesResult;
                         }
                       } catch (error) {

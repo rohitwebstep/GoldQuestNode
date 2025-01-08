@@ -188,9 +188,7 @@ exports.login = (req, res) => {
 };
 
 exports.verifyTwoFactor = (req, res) => {
-  console.log("Request received for verifyTwoFactor.");
   const { username, otp } = req.body;
-  console.log("Request body:", { username, otp });
 
   const missingFields = [];
 
@@ -201,7 +199,6 @@ exports.verifyTwoFactor = (req, res) => {
   const otpAsNumber = Number(otp); // Attempt to convert OTP to a number
 
   if (isNaN(otpAsNumber)) {
-    console.log("OTP is not a valid number.");
     return res.status(400).json({
       status: false,
       message: "OTP must be a valid number.",
@@ -211,14 +208,12 @@ exports.verifyTwoFactor = (req, res) => {
   const otpInt = parseInt(otpAsNumber, 10);
 
   if (missingFields.length > 0) {
-    console.log("Missing required fields:", missingFields);
     return res.status(400).json({
       status: false,
       message: `Missing required fields: ${missingFields.join(", ")}`,
     });
   }
 
-  console.log("Finding admin by email or mobile...");
   // Find admin by email or mobile
   Admin.findByEmailOrMobile(username, (err, result) => {
     if (err) {
@@ -229,7 +224,6 @@ exports.verifyTwoFactor = (req, res) => {
       });
     }
 
-    console.log("Admin search result:", result);
     if (result.length === 0) {
       console.log("No admin found with the provided email or mobile number.");
       return res.status(404).json({
@@ -239,11 +233,9 @@ exports.verifyTwoFactor = (req, res) => {
     }
 
     const admin = result[0];
-    console.log("Admin found:", admin);
 
     // Validate account status
     if (admin.status === 0) {
-      console.log("Admin account not verified.");
       Common.adminLoginLog(admin.id, "login", "0", "Account not verified", () => { });
       return res.status(400).json({
         status: false,
@@ -252,7 +244,6 @@ exports.verifyTwoFactor = (req, res) => {
     }
 
     if (admin.status === 2) {
-      console.log("Admin account suspended.");
       Common.adminLoginLog(admin.id, "login", "0", "Account suspended", () => { });
       return res.status(400).json({
         status: false,
@@ -263,10 +254,8 @@ exports.verifyTwoFactor = (req, res) => {
     // Validate token and two-factor authentication settings
     const currentTime = getCurrentTime();
     const tokenExpiry = new Date(admin.token_expiry);
-    console.log("Current time:", currentTime, "Token expiry:", tokenExpiry);
 
     if (admin.login_token && tokenExpiry > currentTime) {
-      console.log("Another admin is currently logged in.");
       Common.adminLoginLog(admin.id, "login", "0", "Another admin is logged in", () => { });
       return res.status(400).json({
         status: false,
@@ -275,7 +264,6 @@ exports.verifyTwoFactor = (req, res) => {
     }
 
     if (admin.two_factor_enabled !== 1) {
-      console.log("Two-factor authentication disabled for this admin.");
       return res.status(400).json({
         status: false,
         message: "Two-factor authentication is disabled for this admin.",
@@ -284,10 +272,8 @@ exports.verifyTwoFactor = (req, res) => {
 
     // Validate OTP
     const otpExpiry = new Date(admin.otp_expiry);
-    console.log("OTP provided:", otpInt, "Stored OTP:", admin.otp, "OTP expiry:", otpExpiry);
 
     if (admin.otp !== otpInt) {
-      console.log("Invalid OTP provided.");
       Common.adminLoginLog(admin.id, "login", "0", "Invalid OTP", () => { });
       return res.status(401).json({
         status: false,
@@ -296,7 +282,6 @@ exports.verifyTwoFactor = (req, res) => {
     }
 
     if (otpExpiry <= currentTime) {
-      console.log("OTP has expired.");
       Common.adminLoginLog(admin.id, "login", "0", "OTP expired", () => { });
       return res.status(401).json({
         status: false,
@@ -307,7 +292,6 @@ exports.verifyTwoFactor = (req, res) => {
     // Update token and return success response
     const token = generateToken();
     const newTokenExpiry = getTokenExpiry();
-    console.log("Generated token:", token, "New token expiry:", newTokenExpiry);
 
     Admin.updateOTP(admin.id, null, null, (err, result) => {
       if (err) {
@@ -326,11 +310,9 @@ exports.verifyTwoFactor = (req, res) => {
           });
         }
 
-        console.log("Token updated successfully.");
         Common.adminLoginLog(admin.id, "login", "1", "Login successful", () => { });
         const { otp, two_factor_enabled, otp_expiry, login_token, token_expiry, ...adminDataWithoutSensitiveInfo } = admin;
 
-        console.log("Sending successful login response.");
         return res.json({
           status: true,
           message: "Login successful.",

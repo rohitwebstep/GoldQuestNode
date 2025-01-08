@@ -677,7 +677,6 @@ const cef = {
               .then(() => {
                 const insertSql = `UPDATE \`${db_table}\` SET \`${db_column}\` = ? WHERE \`candidate_application_id\` = ?`;
                 const joinedPaths = savedImagePaths.join(", ");
-                console.log(insertSql, [joinedPaths, candidate_application_id]);
                 connection.query(
                   insertSql,
                   [joinedPaths, candidate_application_id],

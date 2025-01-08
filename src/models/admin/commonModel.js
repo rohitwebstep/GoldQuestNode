@@ -217,7 +217,6 @@ const common = {
         }
 
         if (results.length === 0) {
-          console.log("No admin found with the provided ID");
           connectionRelease(connection);
           return callback(
             { message: "No admin found with the provided ID" },
@@ -264,8 +263,6 @@ const common = {
               console.error("Action type not found in permissions");
               return callback({ status: false, message: "Access Denied" });
             }
-
-            console.log(`Authorization successful for action: ${action}`);
 
             // Final step: Release the connection and send success response
             connectionRelease(connection);

@@ -59,9 +59,6 @@ exports.create = (req, res) => {
             // Extract the main error message from the `sqlMessage` property
             const logError = err.sqlMessage || err.message;
 
-            // Log the extracted error message for better readability
-            console.log(`logError -`, logError);
-
             // Save the error in the admin activity log
             Common.adminActivityLog(
               admin_id,

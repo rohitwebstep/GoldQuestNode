@@ -200,7 +200,6 @@ exports.create = (req, res) => {
                         }
 
                         const { branch, customer } = emailData;
-                        console.log(`customer - `, customer);
 
                         // Prepare recipient and CC lists
 
@@ -514,8 +513,6 @@ exports.bulkCreate = (req, res) => {
           // Include the application if it has at least one non-empty field
           return true;
         });
-
-        console.log("Applications with issues:", emptyValues);
 
         if (emptyValues.length > 0) {
           return res.status(400).json({

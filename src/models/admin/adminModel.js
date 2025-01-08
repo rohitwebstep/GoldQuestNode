@@ -737,8 +737,6 @@ const Admin = {
             );
           }
         } else {
-          // If the role is admin, set finalServiceIds to an empty array and allow address services
-          console.log("Role is admin, returning empty service IDs array.");
           connectionRelease(connection);
           return callback(null, { finalServiceIds: [], addressServicesPermission: true }); // Return empty array and true for admin role
         }

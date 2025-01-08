@@ -1507,10 +1507,6 @@ exports.upload = async (req, res) => {
                                               const appName =
                                                 appInfo.name ||
                                                 "Example Company";
-                                              console.log(
-                                                `serviceNames - `,
-                                                serviceNames
-                                              );
 
                                               // Once all services have been processed, send email notification
                                               try {

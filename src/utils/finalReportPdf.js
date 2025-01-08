@@ -97,8 +97,7 @@ function addFooter(doc, appHost) {
   const centerX = pageWidth / 2; // Center of the page
 
   // Insert text into the center column (centered)
-  const footerText =
-    `No 293/154/172, 4th Floor, Outer Ring Road, Kadubeesanahalli, Marathahalli, Bangalore-560103 | ${appHost}`;
+  const footerText = `No 293/154/172, 4th Floor, Outer Ring Road, Kadubeesanahalli, Marathahalli, Bangalore-560103 | ${appHost}`;
   doc.setFont("helvetica", "normal");
   doc.setTextColor(0, 0, 0); // Set text color to black (RGB: 0, 0, 0)
   doc.setFontSize(7);
@@ -177,7 +176,12 @@ async function addImageToPDF(
 }
 
 module.exports = {
-  generatePDF: async (client_applicaton_id, branch_id, pdfFileName, targetDirectory) => {
+  generatePDF: async (
+    client_applicaton_id,
+    branch_id,
+    pdfFileName,
+    targetDirectory
+  ) => {
     return new Promise((resolve, reject) => {
       // Fetch application data
       ClientMasterTrackerModel.applicationByID(
@@ -326,9 +330,8 @@ module.exports = {
                       );
                     }
 
-                    const appHost = appInfo.host || 'www.example.com';
-                    const appName = appInfo.name || 'Example Company';
-
+                    const appHost = appInfo.host || "www.example.com";
+                    const appName = appInfo.name || "Example Company";
 
                     try {
                       const filteredResults = annexureResults.filter(
@@ -417,8 +420,8 @@ module.exports = {
                           {
                             content: CMTApplicationData.dob
                               ? new Date(
-                                CMTApplicationData.dob
-                              ).toLocaleDateString()
+                                  CMTApplicationData.dob
+                                ).toLocaleDateString()
                               : "N/A",
                           },
                           {
@@ -428,8 +431,8 @@ module.exports = {
                           {
                             content: application.updated_at
                               ? new Date(
-                                application.updated_at
-                              ).toLocaleDateString()
+                                  application.updated_at
+                                ).toLocaleDateString()
                               : "N/A",
                           },
                         ],
@@ -464,8 +467,8 @@ module.exports = {
                           {
                             content: CMTApplicationData.report_date
                               ? new Date(
-                                CMTApplicationData.report_date
-                              ).toLocaleDateString()
+                                  CMTApplicationData.report_date
+                                ).toLocaleDateString()
                               : "N/A",
                           },
                         ],
@@ -508,12 +511,12 @@ module.exports = {
                       const secondTableData = servicesData.map((item) => {
                         const sourceKey = item.annexureData
                           ? Object.keys(item.annexureData).find(
-                            (key) =>
-                              key.startsWith("info_source") ||
-                              key.startsWith("information_source") ||
-                              key.endsWith("info_source") ||
-                              key.endsWith("information_source")
-                          )
+                              (key) =>
+                                key.startsWith("info_source") ||
+                                key.startsWith("information_source") ||
+                                key.endsWith("info_source") ||
+                                key.endsWith("information_source")
+                            )
                           : undefined;
                         const dateKey =
                           item.annexureData &&
@@ -528,11 +531,13 @@ module.exports = {
                             : "NIL",
                           completedDate:
                             dateKey &&
-                              item.annexureData[dateKey] &&
-                              !isNaN(new Date(item.annexureData[dateKey]).getTime())
+                            item.annexureData[dateKey] &&
+                            !isNaN(
+                              new Date(item.annexureData[dateKey]).getTime()
+                            )
                               ? new Date(
-                                item.annexureData[dateKey]
-                              ).toLocaleDateString()
+                                  item.annexureData[dateKey]
+                                ).toLocaleDateString()
                               : "NIL",
                           status:
                             item.annexureData && item.annexureData.status
@@ -626,7 +631,8 @@ module.exports = {
                       const remainingTableWidth =
                         totalTableWidth - legendColumnWidth; // Remaining space for other columns
                       const columnCount = 5; // Number of remaining columns
-                      const otherColumnWidth = remainingTableWidth / columnCount; // Width of each remaining column
+                      const otherColumnWidth =
+                        remainingTableWidth / columnCount; // Width of each remaining column
                       const tableHeight = 12; // Reduced height of the table
                       const boxWidth = 5; // Width of the color box
                       const boxHeight = 9; // Height of the color box
@@ -677,8 +683,8 @@ module.exports = {
                           index === 0
                             ? tableStartX // "Legend" column starts at tableStartX
                             : tableStartX +
-                            legendColumnWidth +
-                            (index - 1) * otherColumnWidth; // Remaining columns start after the "Legend" column
+                              legendColumnWidth +
+                              (index - 1) * otherColumnWidth; // Remaining columns start after the "Legend" column
 
                         const columnWidth =
                           index === 0 ? legendColumnWidth : otherColumnWidth;
@@ -716,7 +722,8 @@ module.exports = {
                         if (col.description) {
                           doc.setFont("helvetica", "normal");
                           doc.setFontSize(7); // Reduced font size for better fit
-                          const textX = columnStartX + 3 + boxWidth + textBoxGap;
+                          const textX =
+                            columnStartX + 3 + boxWidth + textBoxGap;
                           const textY = tableStartY + tableHeight / 2 + 2;
                           doc.text(col.description, textX, textY, {
                             baseline: "middle",
@@ -763,20 +770,23 @@ module.exports = {
                               ? inputName
                               : `report_details_${inputName}`;
 
-                            if (input.label && typeof input.label === "string") {
+                            if (
+                              input.label &&
+                              typeof input.label === "string"
+                            ) {
                               input.label = input.label.replace(/:/g, "");
                             }
                             if (service.annexureData) {
                               const value =
                                 service.annexureData[inputName] !== undefined &&
-                                  service.annexureData[inputName] !== null
+                                service.annexureData[inputName] !== null
                                   ? service.annexureData[inputName]
                                   : "";
 
                               const reportDetailsValue =
                                 service.annexureData[reportDetailsInputName] !==
                                   undefined &&
-                                  service.annexureData[reportDetailsInputName] !==
+                                service.annexureData[reportDetailsInputName] !==
                                   null
                                   ? service.annexureData[reportDetailsInputName]
                                   : "";
@@ -844,7 +854,8 @@ module.exports = {
                           .filter(Boolean);
                         const pageWidth = doc.internal.pageSize.width;
 
-                        const headingText = reportFormJson.heading.toUpperCase();
+                        const headingText =
+                          reportFormJson.heading.toUpperCase();
                         const backgroundColor = "#f5f5f5";
                         const backgroundColorHeading = "#6495ed";
                         const borderColor = "#6495ed";
@@ -962,7 +973,9 @@ module.exports = {
 
                         const annexureData = service.annexureData || {}; // Ensure annexureData is an empty object if it's null or undefined
 
-                        const annexureImagesKey = Object.keys(annexureData).find(
+                        const annexureImagesKey = Object.keys(
+                          annexureData
+                        ).find(
                           (key) =>
                             key.toLowerCase().startsWith("annexure") &&
                             !key.includes("[") &&
@@ -1019,7 +1032,8 @@ module.exports = {
                                 const annexureText = `Annexure ${annexureIndex} (${String.fromCharCode(
                                   97 + index
                                 )})`;
-                                const textWidth = doc.getTextWidth(annexureText);
+                                const textWidth =
+                                  doc.getTextWidth(annexureText);
                                 const centerX =
                                   (doc.internal.pageSize.width - textWidth) / 2;
 
@@ -1126,7 +1140,8 @@ module.exports = {
                         disclaimerY = 20;
                       }
                       const disclaimerButtonXPosition =
-                        (doc.internal.pageSize.width - disclaimerButtonWidth) / 2;
+                        (doc.internal.pageSize.width - disclaimerButtonWidth) /
+                        2;
 
                       if (
                         disclaimerButtonWidth > 0 &&
@@ -1198,9 +1213,11 @@ module.exports = {
                       doc.textWithLink(
                         anchorText,
                         10 +
-                        doc.getTextWidth(
-                          disclaimerLinesPart1[disclaimerLinesPart1.length - 1]
-                        ),
+                          doc.getTextWidth(
+                            disclaimerLinesPart1[
+                              disclaimerLinesPart1.length - 1
+                            ]
+                          ),
                         currentY - lineHeight,
                         {
                           url: "mailto:compliance@goldquestglobal.com",
@@ -1223,7 +1240,8 @@ module.exports = {
                       }
 
                       const endButtonXPosition =
-                        (doc.internal.pageSize.width - disclaimerButtonWidth) / 2; // Centering horizontally
+                        (doc.internal.pageSize.width - disclaimerButtonWidth) /
+                        2; // Centering horizontally
 
                       if (
                         disclaimerButtonWidth > 0 &&

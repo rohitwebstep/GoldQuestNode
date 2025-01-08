@@ -28,13 +28,6 @@ const tatDelay = {
   },
 
   activityList: (logId, adminId, callback) => {
-    // Log the function entry with parameters
-    console.log(
-      "Entering activityList function with logId:",
-      logId,
-      "adminId:",
-      adminId
-    );
 
     // SQL query to retrieve the first login log
     const initialLoginQuery = `SELECT * FROM \`admin_login_logs\` WHERE \`id\` = ? AND \`action\` = ? AND \`result\` = ? AND \`admin_id\` = ? LIMIT 1`;
@@ -44,8 +37,6 @@ const tatDelay = {
         console.error("Database connection error:", connectionError);
         return callback(connectionError, null);
       }
-
-      console.log("Database connection established successfully.");
 
       // Execute the query to fetch the current login log
       connection.query(
@@ -62,17 +53,10 @@ const tatDelay = {
 
           // Check if no login records found
           if (currentLoginResults.length === 0) {
-            console.log(
-              "No current login records found for logId:",
-              logId,
-              "and adminId:",
-              adminId
-            );
             return callback(null, { message: "No records found" });
           }
 
           const currentLogData = currentLoginResults[0];
-          console.log("Current login log data found:", currentLogData);
 
           // SQL query to retrieve the next login log
           const nextLoginQuery = `SELECT * FROM \`admin_login_logs\` WHERE \`id\` > ? AND \`action\` = ? AND \`result\` = ? AND \`admin_id\` = ? LIMIT 1`;
@@ -85,10 +69,6 @@ const tatDelay = {
               );
               return callback(nextConnectionError, null);
             }
-
-            console.log(
-              "Database connection established successfully for next login log."
-            );
 
             // Execute the query to fetch the next login log
             nextConnection.query(
@@ -107,12 +87,6 @@ const tatDelay = {
                   );
                 }
 
-                // Log the query results
-                console.log(
-                  "Next login log query executed. Number of results:",
-                  nextLoginResults.length
-                );
-
                 let nextLogDatacreated_at = "9999-12-31";
                 // Check if no next login records found
                 if (nextLoginResults.length === 0) {
@@ -120,7 +94,6 @@ const tatDelay = {
                 } else {
                   const nextLogData = nextLoginResults[0];
                   nextLogDatacreated_at = nextLogData.created_at;
-                  console.log("Next login log data found:", nextLogData);
                 }
 
                 // SQL query to retrieve admin activity logs within the time range
@@ -135,10 +108,6 @@ const tatDelay = {
                       );
                       return callback(activityConnectionError, null);
                     }
-
-                    console.log(
-                      "Database connection established successfully for activity logs."
-                    );
 
                     // Execute the query to fetch activity logs
                     activityConnection.query(
@@ -163,15 +132,8 @@ const tatDelay = {
 
                         // Check if no activity records found
                         if (activityResults.length === 0) {
-                          console.log(
-                            "No activity records found for adminId:",
-                            adminId
-                          );
                           return callback(null, []);
                         }
-
-                        // Log activity results for debugging
-                        console.log("Activity logs found:", activityResults);
 
                         // Return the processed activity data
                         return callback(null, activityResults);

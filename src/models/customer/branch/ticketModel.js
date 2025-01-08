@@ -92,9 +92,6 @@ const Branch = {
       }
 
       const sql = `SELECT id, title, description, created_at FROM \`tickets\` WHERE \`ticket_number\` = ? AND \`branch_id\` = ? LIMIT 1`;
-      console.log(
-        `Executing SQL: ${sql} with ticketNumber: ${ticketNumber} and branchId: ${branchId}`
-      ); // Debug log
 
       connection.query(sql, [ticketNumber, branchId], (err, ticketResults) => {
         // Ensure connection is released even if there's an error
@@ -116,9 +113,6 @@ const Branch = {
 
         // Get the conversations associated with the ticket
         const conversationsSql = `SELECT id, \`from\`, message, created_at FROM \`ticket_conversations\` WHERE ticket_id = ? AND branch_id = ?`;
-        console.log(
-          `Executing SQL: ${conversationsSql} with ticketId: ${ticketData.id} and branchId: ${branchId}`
-        ); // Debug log
 
         connection.query(
           conversationsSql,

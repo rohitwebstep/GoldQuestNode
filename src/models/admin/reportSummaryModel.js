@@ -3,8 +3,6 @@ const { pool, startConnection, connectionRelease } = require("../../config/db");
 const ReportSummary = {
   reportTracker: async (callback) => {
     try {
-      console.log("Starting report generation...");
-
       const sql = `
       SELECT 
           ca.branch_id, 
@@ -36,28 +34,20 @@ const ReportSummary = {
         cmt.overall_status IN ('complete', 'completed')
         AND ca.is_report_downloaded IN (1, '1');
       `;
-      console.log("SQL query prepared.");
 
       // Establish database connection
       const connection = await new Promise((resolve, reject) =>
         startConnection((err, conn) => (err ? reject(err) : resolve(conn)))
       );
-      console.log("Database connection established.");
 
       // Execute the main query
       const results = await new Promise((resolve, reject) =>
         connection.query(sql, (err, res) => (err ? reject(err) : resolve(res)))
       );
-      console.log(
-        "SQL query executed successfully. Rows fetched:",
-        results.length
-      );
 
       const groupedResults = [];
 
       for (const row of results) {
-        console.log("Processing row for application:", row.application_name);
-
         // Find or create customer object
         let customer = groupedResults.find(
           (c) => c.customer_id === row.customer_id
@@ -70,7 +60,6 @@ const ReportSummary = {
             branches: [],
           };
           groupedResults.push(customer);
-          console.log("New customer added:", customer.customer_name);
         }
 
         // Find or create branch object
@@ -84,18 +73,14 @@ const ReportSummary = {
             applications: [],
           };
           customer.branches.push(branch);
-          console.log("New branch added:", branch.branch_name);
         }
 
         // Fetch service statuses
         const serviceIds = row.services.split(",");
-        console.log("Service IDs for application:", serviceIds);
 
         const statuses = {};
 
         for (const serviceId of serviceIds) {
-          console.log("Fetching report data for service ID:", serviceId);
-
           const reportFormResults = await new Promise((resolve, reject) =>
             connection.query(
               `SELECT json FROM report_forms WHERE service_id = ?`,
@@ -108,7 +93,6 @@ const ReportSummary = {
             const parsedData = JSON.parse(reportFormResults[0].json);
             const dbTable = parsedData.db_table.replace(/-/g, "_");
             const dbTableHeading = parsedData.heading;
-            console.log("Resolved DB table:", dbTable);
 
             const statusResults = await new Promise((resolve, reject) => {
               connection.query(`SHOW TABLES LIKE ?`, [dbTable], (err, res) =>
@@ -119,9 +103,6 @@ const ReportSummary = {
             if (statusResults.length === 0) {
               // If the table does not exist, set the status to "INITIATED"
               statuses[dbTableHeading] = "INITIATED";
-              console.log(
-                `Table ${dbTable} does not exist. Status set to "INITIATED".`
-              );
             } else {
               // If the table exists, fetch the status
               const existingStatusResults = await new Promise(
@@ -139,7 +120,6 @@ const ReportSummary = {
                   : null;
               if (status) {
                 statuses[dbTableHeading] = status;
-                console.log(`Status fetched from table ${dbTable}:`, status);
               }
             }
           }
@@ -162,7 +142,6 @@ const ReportSummary = {
             application_created_at: row.application_created_at,
             services_status: statuses,
           });
-          console.log("Application added:", row.application_name);
         }
       }
 
@@ -176,7 +155,6 @@ const ReportSummary = {
         })
         .filter((customer) => customer.branches.length > 0);
 
-      console.log("Final grouped results prepared.");
       connectionRelease(connection); // Release connection
       callback(null, cleanGroupedResults);
     } catch (error) {
@@ -187,8 +165,6 @@ const ReportSummary = {
 
   reportGeneration: async (callback) => {
     try {
-      console.log("Starting report generation...");
-
       const sql = `
         SELECT 
             ca.branch_id, 
@@ -218,21 +194,14 @@ const ReportSummary = {
         LEFT JOIN admins AS ad_qc ON ad_qc.id = cmt.qc_done_by
         WHERE cmt.overall_status = 'wip';`;
 
-      console.log("SQL query prepared.");
-
       // Establish database connection
       const connection = await new Promise((resolve, reject) =>
         startConnection((err, conn) => (err ? reject(err) : resolve(conn)))
       );
-      console.log("Database connection established.");
 
       // Execute the main query
       const results = await new Promise((resolve, reject) =>
         connection.query(sql, (err, res) => (err ? reject(err) : resolve(res)))
-      );
-      console.log(
-        "SQL query executed successfully. Rows fetched:",
-        results.length
       );
 
       const validStatuses = [
@@ -247,8 +216,6 @@ const ReportSummary = {
       const groupedResults = [];
 
       for (const row of results) {
-        console.log("Processing row for application:", row.application_name);
-
         // Find or create customer object
         let customer = groupedResults.find(
           (c) => c.customer_id === row.customer_id
@@ -261,7 +228,6 @@ const ReportSummary = {
             branches: [],
           };
           groupedResults.push(customer);
-          console.log("New customer added:", customer.customer_name);
         }
 
         // Find or create branch object
@@ -275,19 +241,15 @@ const ReportSummary = {
             applications: [],
           };
           customer.branches.push(branch);
-          console.log("New branch added:", branch.branch_name);
         }
 
         // Fetch service statuses
         const serviceIds = row.services.split(",");
-        console.log("Service IDs for application:", serviceIds);
 
         const statuses = {};
         let allValidStatuses = true;
 
         for (const serviceId of serviceIds) {
-          console.log("Fetching report data for service ID:", serviceId);
-
           const reportFormResults = await new Promise((resolve, reject) =>
             connection.query(
               `SELECT json FROM report_forms WHERE service_id = ?`,
@@ -300,7 +262,6 @@ const ReportSummary = {
             const parsedData = JSON.parse(reportFormResults[0].json);
             const dbTable = parsedData.db_table.replace(/-/g, "_");
             const dbTableHeading = parsedData.heading;
-            console.log("Resolved DB table:", dbTable);
 
             const statusResults = await new Promise((resolve, reject) => {
               connection.query(`SHOW TABLES LIKE ?`, [dbTable], (err, res) =>
@@ -311,9 +272,6 @@ const ReportSummary = {
             if (statusResults.length === 0) {
               // If the table does not exist, set the status to "INITIATED"
               statuses[dbTableHeading] = "INITIATED";
-              console.log(
-                `Table ${dbTable} does not exist. Status set to "INITIATED".`
-              );
             } else {
               // If the table exists, fetch the status
               const existingStatusResults = await new Promise(
@@ -333,9 +291,7 @@ const ReportSummary = {
                 statuses[dbTableHeading] = status;
                 if (!validStatuses.includes(status)) {
                   allValidStatuses = false;
-                  console.log("Invalid status detected:", status);
                 }
-                console.log(`Status fetched from table ${dbTable}:`, status);
               }
             }
           }
@@ -361,7 +317,6 @@ const ReportSummary = {
             application_created_at: row.application_created_at,
             services_status: statuses,
           });
-          console.log("Application added:", row.application_name);
         }
       }
 
@@ -375,7 +330,6 @@ const ReportSummary = {
         })
         .filter((customer) => customer.branches.length > 0);
 
-      console.log("Final grouped results prepared.");
       connectionRelease(connection); // Release connection
       callback(null, cleanGroupedResults);
     } catch (error) {

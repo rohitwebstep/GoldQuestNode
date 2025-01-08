@@ -145,8 +145,6 @@ module.exports = {
     targetDirectory
   ) => {
     return new Promise((resolve, reject) => {
-      console.log(`targetDirectory - 1 - `, targetDirectory);
-      console.log(`targetDirectory - 1 - `, targetDirectory);
       Candidate.isApplicationExist(
         candidate_application_id,
         branch_id,
@@ -661,8 +659,6 @@ module.exports = {
                           pdfFileName,
                           targetDirectory
                         );
-
-                        console.log(`pdfPathCloud - `, pdfPathCloud);
                         resolve(pdfPathCloud);
                       }
                       );

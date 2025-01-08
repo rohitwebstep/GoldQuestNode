@@ -212,18 +212,12 @@ const dav = {
       WHERE \`id\` = ? AND \`candidate_application_id\` = ?
     `;
 
-    console.log("Preparing to update images...");
-
     // Start a database connection
     startConnection((err, connection) => {
       if (err) {
         console.error("Error establishing database connection:", err.message);
         return callback(err, null);
       }
-
-      console.log(
-        "Database connection established. Checking if column exists..."
-      );
 
       // First, check if the column exists
       const checkColumnSql = `
@@ -242,10 +236,6 @@ const dav = {
 
         // If column doesn't exist, alter the table
         if (checkResults[0].columnExists === 0) {
-          console.log(
-            `Column ${dbColumn} does not exist. Altering the table...`
-          );
-
           const alterTableSql = `
             ALTER TABLE \`dav_applications\`
             ADD COLUMN \`${dbColumn}\` LONGTEXT
@@ -257,10 +247,6 @@ const dav = {
               connectionRelease(connection);
               return callback(alterErr, null);
             }
-
-            console.log(
-              `Column ${dbColumn} added successfully. Proceeding with the update...`
-            );
 
             // Now execute the update query
             connection.query(
@@ -276,16 +262,11 @@ const dav = {
                   return callback(queryErr, null);
                 }
 
-                console.log("Query executed successfully. Results:", results);
                 callback(null, results);
               }
             );
           });
         } else {
-          console.log(
-            `Column ${dbColumn} exists. Proceeding with the update...`
-          );
-
           // If the column exists, execute the update query directly
           connection.query(
             sql,
@@ -300,7 +281,6 @@ const dav = {
                 return callback(queryErr, null);
               }
 
-              console.log("Query executed successfully. Results:", results);
               callback(null, results);
             }
           );

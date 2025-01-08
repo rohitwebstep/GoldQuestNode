@@ -49,7 +49,6 @@ const generateInvoiceModel = {
           );
           return callback(err, null);
         }
-        console.log(`customerResults - `, customerResults);
         // Check if customer exists
         if (customerResults.length === 0) {
           connectionRelease(connection);
