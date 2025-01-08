@@ -58,33 +58,51 @@ exports.uploadImage = (req, res) => {
     });
   });
 };
+
 exports.connectionCheck = (req, res) => {
+  console.log("Step 1: Entering connectionCheck function.");
+
   // Get the IP address from the X-Forwarded-For header or req.ip
   let ipAddress =
-    req.headers["x-forwarded-for"] || req.connection.remoteAddress
+    req.headers["x-forwarded-for"] || req.connection.remoteAddress;
+  console.log("Step 2: Initial IP address extracted:", ipAddress);
 
   // If there are multiple IPs in X-Forwarded-For, take the first one (the real client's IP)
   if (ipAddress.includes(",")) {
     ipAddress = ipAddress.split(",")[0].trim(); // Take the first IP in the list
+    console.log(
+      "Step 3: Multiple IPs detected, using the first IP:",
+      ipAddress
+    );
   }
 
   // If the IP address is IPv6-mapped IPv4 (::ffff:), extract the real IPv4 address
   if (ipAddress.startsWith("::ffff:")) {
     ipAddress = ipAddress.slice(7); // Remove "::ffff:" to get the correct IPv4 address
+    console.log(
+      "Step 4: IPv6-mapped IPv4 detected, converted to IPv4:",
+      ipAddress
+    );
   }
 
   ipAddress = ipAddress.trim();
+  console.log("Step 5: Final cleaned IP address:", ipAddress);
 
+  // Database check function
+  console.log("Step 6: Initiating database check with Test.connectionCheck.");
   Test.connectionCheck((err, result) => {
     if (err) {
-      console.error("Database error:", err);
+      console.error("Step 7: Database error occurred:", err);
       return res.status(500).json({
         status: false,
         message: err.message,
       });
     }
 
+    console.log("Step 8: Database check completed. Result:", result);
+
     if (!result) {
+      console.log("Step 9: No matching customers found.");
       return res.json({
         status: true,
         message: "No matching customers found",
@@ -92,6 +110,7 @@ exports.connectionCheck = (req, res) => {
       });
     }
 
+    console.log("Step 10: Customers fetched successfully.");
     res.json({
       status: true,
       message: "Customers fetched successfully",
