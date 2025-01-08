@@ -1351,30 +1351,8 @@ exports.upload = async (req, res) => {
                           currentClientApplication.attach_documents.trim() !==
                             ""
                         ) {
-                          AppModel.appInfo("backend", (err, appInfo) => {
-                            if (err) {
-                              console.error("Database error:", err);
-                              return res.status(500).json({
-                                status: false,
-                                message: err.message,
-                                token: newToken,
-                                savedImagePaths,
-                              });
-                            }
-
-                            if (appInfo) {
-                              const appHost = appInfo.host || "www.example.com";
-                              const documentsArray =
-                                currentClientApplication.attach_documents
-                                  .split(",")
-                                  .map((doc) => doc.trim());
-
-                              // Loop through each document
-                              documentsArray.forEach((doc, index) => {
-                                newAttachedDocsString += `${doc}`;
-                              });
-                            }
-                          });
+                          newAttachedDocsString =
+                            currentClientApplication.attach_documents;
                         }
 
                         BranchCommon.getBranchandCustomerEmailsForNotification(
