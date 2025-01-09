@@ -49,19 +49,16 @@ const dav = {
       }
 
       // 1. Check for existing columns in dav_applications
-      const checkColumnsSql = `
-        SELECT COLUMN_NAME 
-        FROM INFORMATION_SCHEMA.COLUMNS 
-        WHERE TABLE_NAME = 'dav_applications' AND COLUMN_NAME IN (?)`;
+      const checkColumnsSql = `SHOW COLUMNS FROM \`dav_applications\``;
 
-      connection.query(checkColumnsSql, [fields], (err, results) => {
+      connection.query(checkColumnsSql, (err, results) => {
         if (err) {
           console.error("Error checking columns:", err);
           connectionRelease(connection);
           return callback(err, null);
         }
 
-        const existingColumns = results.map((row) => row.COLUMN_NAME);
+        const existingColumns = results.map((row) => row.Field);
         const missingColumns = fields.filter(
           (field) => !existingColumns.includes(field)
         );
@@ -220,22 +217,18 @@ const dav = {
       }
 
       // First, check if the column exists
-      const checkColumnSql = `
-        SELECT COUNT(*) AS columnExists
-        FROM INFORMATION_SCHEMA.COLUMNS
-        WHERE table_name = 'dav_applications'
-          AND column_name = ?
-      `;
+      const checkColumnSql = `SHOW COLUMNS FROM \`dav_applications\``;
 
-      connection.query(checkColumnSql, [dbColumn], (checkErr, checkResults) => {
+      connection.query(checkColumnSql, (checkErr, checkResults) => {
         if (checkErr) {
           console.error("Error checking column existence:", checkErr.message);
           connectionRelease(connection);
           return callback(checkErr, null);
         }
 
+        const existingColumns = checkResults.map((row) => row.Field);
         // If column doesn't exist, alter the table
-        if (checkResults[0].columnExists === 0) {
+        if (!existingColumns.includes(dbColumn)) {
           const alterTableSql = `
             ALTER TABLE \`dav_applications\`
             ADD COLUMN \`${dbColumn}\` LONGTEXT

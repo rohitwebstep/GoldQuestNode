@@ -212,11 +212,7 @@ const generateInvoiceModel = {
                               const dbTable = reportFormJson.db_table;
 
                               // Query to find the column that starts with "additional_fee"
-                              const additionalFeeColumnQuery = `
-                              SELECT COLUMN_NAME 
-                              FROM INFORMATION_SCHEMA.COLUMNS 
-                              WHERE TABLE_NAME = '${dbTable}' AND COLUMN_NAME LIKE 'additional_fee%';
-                            `;
+                              const additionalFeeColumnQuery = `SHOW COLUMNS FROM \`${dbTable}\` WHERE \`Field\` LIKE 'additional_fee%'`;
 
                               connection.query(
                                 additionalFeeColumnQuery,
@@ -231,7 +227,7 @@ const generateInvoiceModel = {
                                   // Identify the additional_fee column
                                   const additionalFeeColumn =
                                     columnResults.length > 0
-                                      ? columnResults[0].COLUMN_NAME
+                                      ? columnResults[0].Field
                                       : null;
 
                                   // Construct the query with a fixed "status" column and dynamic "additional_fee" column
