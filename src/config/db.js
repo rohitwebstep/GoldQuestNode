@@ -12,7 +12,7 @@ if (!process.env.DB_HOST || !process.env.DB_USER || !process.env.DB_NAME) {
 */
 
 // Assign environment variables with fallbacks
-const dbHost = process.env.DB_HOST || "localhost";
+const dbHost = process.env.DB_HOST || "127.0.0.1";
 const dbUser = process.env.DB_USER || "goldquest_db";
 const dbName = process.env.DB_NAME || "goldquest";
 
