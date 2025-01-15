@@ -13,7 +13,7 @@ if (!process.env.DB_HOST || !process.env.DB_USER || !process.env.DB_NAME) {
 
 // Assign environment variables with fallbacks
 const dbHost = process.env.DB_HOST || "localhost";
-const dbUser = process.env.DB_USER || "goldquest";
+const dbUser = process.env.DB_USER || "goldquest_db";
 const dbName = process.env.DB_NAME || "goldquest";
 
 let dbPassword = process.env.DB_PASSWORD || "GoldQuest@135";
