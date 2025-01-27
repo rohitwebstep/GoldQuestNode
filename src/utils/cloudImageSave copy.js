@@ -24,7 +24,6 @@ App.appInfo("backend", (err, appInfo) => {
     console.error("FTP configuration missing required details.");
     return;
   }
-
   // Set cloudImageFTPSecure based on its value (0 = false, anything else = true)
   cloudImageFTPSecure = cloudImageFTPSecure === 0 ? false : true;
 });
@@ -47,10 +46,81 @@ const storage = multer.diskStorage({
   },
 });
 
-const upload = multer({ storage: storage });
+const fileFilter = (req, file, cb) => {
+  const allowedFileTypes = [
+    "application/pdf", // PDF files
+    "image/jpeg", // JPEG images
+    "image/png", // PNG images
+    "image/gif", // GIF images
+    "image/bmp", // BMP images
+    "image/tiff", // TIFF images
+    "image/webp", // WebP images
+    "image/svg+xml", // SVG images
+    "image/x-icon", // ICO files
+    "image/heic", // HEIC images
+    "image/heif", // HEIF images
+    "image/apng", // APNG images
+    "application/zip", // ZIP files
+    "application/vnd.ms-excel", // Excel files (.xls)
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", // Excel files (.xlsx)
+    "text/csv", // CSV files
+    "application/msword", // Word files (.doc)
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document", // Word files (.docx)
+  ];
 
+  if (allowedFileTypes.includes(file.mimetype)) {
+    cb(null, true); // Accept the file
+  } else {
+    cb(
+      new Error(
+        "Invalid file type. Allowed file types are: PDF, images (JPEG, PNG, GIF, BMP, TIFF, WebP, SVG, ICO, HEIC, HEIF, APNG), ZIP, Excel files (.xls, .xlsx), CSV files, and Word documents (.doc, .docx)."
+      )
+    );
+  }
+};
+
+// Multer setup
+const upload = multer({
+  storage,
+  limits: { fileSize: 512 * 1024 * 1024 }, // 512 MB limit
+  fileFilter,
+});
 // Function to save a single image and upload it to FTP
 const saveImage = async (file, targetDir) => {
+  return new Promise((resolve, reject) => {
+    if (file) {
+      const originalPath = path.join("uploads", file.filename); // Original file path
+      const newPath = path.join(targetDir, file.filename); // New file path
+
+      // Ensure target directory exists
+      if (!fs.existsSync(targetDir)) {
+        fs.mkdirSync(targetDir, { recursive: true }); // Create directory if it doesn't exist
+      }
+
+      // Move the file to the new directory
+      fs.rename(originalPath, newPath, async (err) => {
+        if (err) {
+          console.error("Error renaming file:", err);
+          return reject(err); // Reject on error
+        }
+
+        // Upload the image to FTP after saving locally
+        try {
+          await uploadToFtp(newPath); // FTP upload after saving locally
+          fs.unlinkSync(newPath);
+          resolve(newPath); // Return the new file path
+        } catch (err) {
+          console.error("Error uploading to FTP:", err);
+          reject(err); // Reject if FTP upload fails
+        }
+      });
+    } else {
+      reject(new Error("No file provided for saving."));
+    }
+  });
+};
+
+const saveZip = async (file, targetDir) => {
   return new Promise((resolve, reject) => {
     if (file) {
       const originalPath = path.join("uploads", file.filename); // Original file path
@@ -88,6 +158,7 @@ const saveImage = async (file, targetDir) => {
 const uploadToFtp = async (filePath) => {
   const client = new ftp.Client();
   client.ftp.verbose = true; // Enable verbose logging for FTP connection
+  client.ftp.timeout = 300000;
 
   try {
     // Connect to FTP server using previously fetched app information
@@ -131,6 +202,7 @@ const savePdf = async (doc, pdfFileName, targetDir) => {
   const dirs = targetDir.split(path.sep); // Split targetDir into directory parts
   const client = new ftp.Client();
   client.ftp.verbose = true; // Enable verbose logging for FTP connection
+  client.ftp.timeout = 300000;
 
   try {
     // Connect to FTP server using previously fetched app information
@@ -143,15 +215,16 @@ const savePdf = async (doc, pdfFileName, targetDir) => {
 
     // Ensure the directories exist on the FTP server
     for (const dir of dirs) {
-      await client.ensureDir(dir);
+      await client.ensureDir(dir); // Ensure each directory exists on FTP
+    }
+
+    if (!fs.existsSync(targetDir)) {
+      fs.mkdirSync(targetDir, { recursive: true }); // Create directory if it doesn't exist
     }
 
     // Create a temporary path to save the PDF file locally
     const pdfPath = path.join(targetDir, pdfFileName);
 
-    if (!fs.existsSync(targetDir)) {
-      fs.mkdirSync(targetDir, { recursive: true }); // Create directory if it doesn't exist
-    }
     // Save the document (PDF) to a temporary local path
     await doc.save(pdfPath); // You can adjust this to directly generate the file
 
@@ -169,13 +242,58 @@ const savePdf = async (doc, pdfFileName, targetDir) => {
   }
 };
 
+// Function to delete a folder from the FTP server
+const deleteFolder = async (folderPath) => {
+  console.log(`Attempting to delete folder at path: ${folderPath}`);
+  const client = new ftp.Client();
+  client.ftp.verbose = true; // Enable verbose logging for FTP connection
+  client.ftp.timeout = 300000; // Set a timeout for FTP operations
+
+  try {
+    // Connect to FTP server using previously fetched app information
+    await client.access({
+      host: cloudImageFTPHost,
+      user: cloudImageFTPUser,
+      password: cloudImageFTPPassword,
+      secure: cloudImageFTPSecure,
+    });
+
+    // Ensure the folder exists before attempting to delete it
+    await client.ensureDir(folderPath); // Navigate to the target folder
+    console.log(`Navigated to folder: ${folderPath}`);
+
+    // List the contents of the folder and remove each file individually
+    const files = await client.list(folderPath); // List the contents of the folder
+    if (files.length > 0) {
+      console.log(`Folder contains files, deleting them one by one...`);
+      for (let file of files) {
+        const filePath = `${folderPath}/${file.name}`;
+        await client.remove(filePath); // Remove each file individually
+        console.log(`Deleted file: ${filePath}`);
+      }
+    }
+
+    // Now that the folder is empty, remove the folder itself
+    await client.removeDir(folderPath); // Remove the empty directory
+    console.log(`Deleted folder: ${folderPath}`);
+  } catch (err) {
+    console.error("Error during FTP folder deletion:", err);
+    throw err; // Rethrow the error if deletion fails
+  } finally {
+    client.close(); // Close the FTP connection
+  }
+};
+
 // Exporting the upload middleware and saving functions
 module.exports = {
   upload: upload.fields([
-    { name: "images", maxCount: 10 },
-    { name: "image", maxCount: 1 },
+    { name: "pdf", maxCount: 5 },
+    { name: "images", maxCount: 100 },
+    { name: "zip", maxCount: 5 },
   ]),
+  saveZip,
   saveImage,
   saveImages,
   savePdf,
+  deleteFolder,
 };

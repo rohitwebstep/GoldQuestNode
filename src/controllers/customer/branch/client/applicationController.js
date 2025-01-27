@@ -142,7 +142,7 @@ exports.create = (req, res) => {
                     "0",
                     null,
                     err,
-                    () => {}
+                    () => { }
                   );
                   return res.status(500).json({
                     status: false,
@@ -158,9 +158,9 @@ exports.create = (req, res) => {
                   "Client Application",
                   "Create",
                   "1",
-                  `{id: ${result.insertId}}`,
+                  `{id: ${result.results.insertId}}`,
                   null,
-                  () => {}
+                  () => { }
                 );
 
                 if (send_mail == 0) {
@@ -311,7 +311,7 @@ exports.create = (req, res) => {
                                         "client application",
                                         "create",
                                         name,
-                                        result.insertId,
+                                        result.new_application_id,
                                         clientName,
                                         clientCode,
                                         serviceNames,
@@ -490,8 +490,7 @@ exports.bulkCreate = (req, res) => {
 
             if (missingFields.length > 0) {
               emptyValues.push(
-                `${
-                  app.applicant_full_name || "Unnamed applicant"
+                `${app.applicant_full_name || "Unnamed applicant"
                 } (missing fields: ${missingFields.join(", ")})`
               );
               return false; // Exclude applications with missing fields
@@ -509,8 +508,7 @@ exports.bulkCreate = (req, res) => {
 
             if (emptyFields.length > 0) {
               emptyValues.push(
-                `${
-                  app.applicant_full_name || "Unnamed applicant"
+                `${app.applicant_full_name || "Unnamed applicant"
                 } (empty fields: ${emptyFields.join(", ")})`
               );
             }
@@ -599,7 +597,7 @@ exports.bulkCreate = (req, res) => {
                           "1",
                           `{id: ${result.insertId}}`,
                           null,
-                          () => {}
+                          () => { }
                         );
 
                         // Assign the new application ID to the corresponding app object
@@ -1116,7 +1114,7 @@ exports.update = (req, res) => {
                         "0",
                         JSON.stringify({ client_application_id, ...changes }),
                         err,
-                        () => {}
+                        () => { }
                       );
                       return res.status(500).json({
                         status: false,
@@ -1132,7 +1130,7 @@ exports.update = (req, res) => {
                       "1",
                       JSON.stringify({ client_application_id, ...changes }),
                       null,
-                      () => {}
+                      () => { }
                     );
 
                     res.status(200).json({
@@ -1349,7 +1347,7 @@ exports.upload = async (req, res) => {
                         if (
                           currentClientApplication.attach_documents &&
                           currentClientApplication.attach_documents.trim() !==
-                            ""
+                          ""
                         ) {
                           newAttachedDocsString =
                             currentClientApplication.attach_documents;
@@ -1456,11 +1454,11 @@ exports.upload = async (req, res) => {
                                       const serviceIds =
                                         typeof currentClientApplication.services ===
                                           "string" &&
-                                        currentClientApplication.services.trim() !==
+                                          currentClientApplication.services.trim() !==
                                           ""
                                           ? currentClientApplication.services
-                                              .split(",")
-                                              .map((id) => id.trim())
+                                            .split(",")
+                                            .map((id) => id.trim())
                                           : currentClientApplication.services;
 
                                       const serviceNames = [];
@@ -1514,7 +1512,7 @@ exports.upload = async (req, res) => {
                                                   "client application",
                                                   "create",
                                                   client_application_name,
-                                                  client_application_generated_id,
+                                                  currentClientApplication.application_id,
                                                   clientName,
                                                   clientCode,
                                                   serviceNames,
@@ -1724,7 +1722,7 @@ exports.delete = (req, res) => {
                   "0",
                   JSON.stringify({ id }),
                   err,
-                  () => {}
+                  () => { }
                 );
                 return res.status(500).json({
                   status: false,
@@ -1741,7 +1739,7 @@ exports.delete = (req, res) => {
                 "1",
                 JSON.stringify({ id }),
                 null,
-                () => {}
+                () => { }
               );
 
               res.status(200).json({

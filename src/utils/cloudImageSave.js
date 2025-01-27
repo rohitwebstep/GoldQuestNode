@@ -173,8 +173,13 @@ const uploadToFtp = async (filePath) => {
     const filename = path.basename(filePath); // Get the filename (e.g., "1734421514518_5912.png")
 
     const dirs = targetDir.split(path.sep);
+
+    // Ensure each directory exists and set permissions to 755
+    let currentDir = "";
     for (const dir of dirs) {
-      await client.ensureDir(dir); // Ensure each directory exists
+      currentDir = path.join(currentDir, dir);
+      await client.ensureDir(currentDir); // Ensure directory exists
+      await client.send(`SITE CHMOD 755 ${currentDir}`); // Set permission to 755
     }
 
     // Upload the image file to Hostinger's public_html folder
@@ -213,9 +218,14 @@ const savePdf = async (doc, pdfFileName, targetDir) => {
       secure: cloudImageFTPSecure,
     });
 
-    // Ensure the directories exist on the FTP server
+    const dirs = targetDir.split(path.sep);
+
+    // Ensure each directory exists and set permissions to 755
+    let currentDir = "";
     for (const dir of dirs) {
-      await client.ensureDir(dir); // Ensure each directory exists on FTP
+      currentDir = path.join(currentDir, dir);
+      await client.ensureDir(currentDir); // Ensure directory exists
+      await client.send(`SITE CHMOD 755 ${currentDir}`); // Set permission to 755
     }
 
     if (!fs.existsSync(targetDir)) {
