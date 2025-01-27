@@ -1234,115 +1234,111 @@ exports.upload = async (req, res) => {
           }
 
           const newToken = result.newToken;
+          ClientApplication.getClientApplicationById(
+            clientAppId,
+            async (err, currentClientApplication) => {
+              if (err) {
+                console.error(
+                  "Database error during clientApplication retrieval:",
+                  err
+                );
+                return res.status(500).json({
+                  status: false,
+                  message:
+                    "Failed to retrieve ClientApplication. Please try again.",
+                  token: newToken
+                });
+              }
 
-          // Define the target directory for uploads
-          let targetDirectory;
-          let dbColumn;
-          switch (uploadCat) {
-            case "photo":
-              targetDirectory = `uploads/customers/${customerCode}/client-applications/${client_application_generated_id}/photo`;
-              dbColumn = `photo`;
-              break;
-            case "attach_documents":
-              targetDirectory = `uploads/customers/${customerCode}/client-applications/${client_application_generated_id}/document`;
-              dbColumn = `attach_documents`;
-              break;
-            default:
-              return res.status(400).json({
-                status: false,
-                message: "Invalid upload category.",
-                token: newToken,
-              });
-          }
+              if (!currentClientApplication) {
+                return res.status(404).json({
+                  status: false,
+                  message: "Client Aplication not found.",
+                  token: newToken
+                });
+              }
+              // Define the target directory for uploads
+              let targetDirectory;
+              let dbColumn;
+              switch (uploadCat) {
+                case "photo":
+                  targetDirectory = `uploads/customers/${customerCode}/client-applications/${currentClientApplication.application_id}/photo`;
+                  dbColumn = `photo`;
+                  break;
+                case "attach_documents":
+                  targetDirectory = `uploads/customers/${customerCode}/client-applications/${currentClientApplication.application_id}/document`;
+                  dbColumn = `attach_documents`;
+                  break;
+                default:
+                  return res.status(400).json({
+                    status: false,
+                    message: "Invalid upload category.",
+                    token: newToken,
+                  });
+              }
 
-          // Create the target directory for uploads
-          await fs.promises.mkdir(targetDirectory, { recursive: true });
-          AppModel.appInfo("backend", async (err, appInfo) => {
-            if (err) {
-              console.error("Database error:", err);
-              return res.status(500).json({
-                status: false,
-                err,
-                message: err.message,
-                token: newToken,
-              });
-            }
-
-            let imageHost = "www.example.in";
-
-            if (appInfo) {
-              imageHost = appInfo.cloud_host || "www.example.in";
-            }
-            let savedImagePaths = [];
-
-            // Check for multiple files under the "images" field
-            if (req.files.images && req.files.images.length > 0) {
-              const uploadedImages = await saveImages(
-                req.files.images,
-                targetDirectory
-              );
-              uploadedImages.forEach((imagePath) => {
-                savedImagePaths.push(`${imageHost}/${imagePath}`);
-              });
-            }
-
-            // Process single file upload
-            if (req.files.image && req.files.image.length > 0) {
-              const uploadedImage = await saveImage(
-                req.files.image[0],
-                targetDirectory
-              );
-              savedImagePaths.push(`${imageHost}/${uploadedImage}`);
-            }
-            ClientApplication.upload(
-              clientAppId,
-              dbColumn,
-              savedImagePaths,
-              (success, result) => {
-                if (!success) {
-                  // If an error occurred, return the error details in the response
+              // Create the target directory for uploads
+              await fs.promises.mkdir(targetDirectory, { recursive: true });
+              AppModel.appInfo("backend", async (err, appInfo) => {
+                if (err) {
+                  console.error("Database error:", err);
                   return res.status(500).json({
                     status: false,
-                    message:
-                      result || "An error occurred while saving the image.", // Use detailed error message if available
+                    err,
+                    message: err.message,
                     token: newToken,
-                    savedImagePaths,
-                    // details: result.details,
-                    // query: result.query,
-                    // params: result.params,
                   });
                 }
 
-                // Handle the case where the upload was successful
-                if (result && result.affectedRows > 0) {
-                  // Return success response if there are affected rows
-                  if (send_mail == 1) {
-                    ClientApplication.getClientApplicationById(
-                      clientAppId,
-                      (err, currentClientApplication) => {
-                        if (err) {
-                          console.error(
-                            "Database error during clientApplication retrieval:",
-                            err
-                          );
-                          return res.status(500).json({
-                            status: false,
-                            message:
-                              "Failed to retrieve ClientApplication. Please try again.",
-                            token: newToken,
-                            savedImagePaths,
-                          });
-                        }
+                let imageHost = "www.example.in";
 
-                        if (!currentClientApplication) {
-                          return res.status(404).json({
-                            status: false,
-                            message: "Client Aplication not found.",
-                            token: newToken,
-                            savedImagePaths,
-                          });
-                        }
+                if (appInfo) {
+                  imageHost = appInfo.cloud_host || "www.example.in";
+                }
+                let savedImagePaths = [];
 
+                // Check for multiple files under the "images" field
+                if (req.files.images && req.files.images.length > 0) {
+                  const uploadedImages = await saveImages(
+                    req.files.images,
+                    targetDirectory
+                  );
+                  uploadedImages.forEach((imagePath) => {
+                    savedImagePaths.push(`${imageHost}/${imagePath}`);
+                  });
+                }
+
+                // Process single file upload
+                if (req.files.image && req.files.image.length > 0) {
+                  const uploadedImage = await saveImage(
+                    req.files.image[0],
+                    targetDirectory
+                  );
+                  savedImagePaths.push(`${imageHost}/${uploadedImage}`);
+                }
+                ClientApplication.upload(
+                  clientAppId,
+                  dbColumn,
+                  savedImagePaths,
+                  (success, result) => {
+                    if (!success) {
+                      // If an error occurred, return the error details in the response
+                      return res.status(500).json({
+                        status: false,
+                        message:
+                          result || "An error occurred while saving the image.", // Use detailed error message if available
+                        token: newToken,
+                        savedImagePaths,
+                        // details: result.details,
+                        // query: result.query,
+                        // params: result.params,
+                      });
+                    }
+
+                    // Handle the case where the upload was successful
+                    if (result && result.affectedRows > 0) {
+                      // Return success response if there are affected rows
+                      if (send_mail == 1) {
                         let newAttachedDocsString = "";
                         if (
                           currentClientApplication.attach_documents &&
@@ -1603,30 +1599,29 @@ exports.upload = async (req, res) => {
                             });
                           }
                         );
+                      } else {
+                        return res.status(201).json({
+                          status: true,
+                          message: "Client application created successfully.",
+                          token: newToken,
+                          savedImagePaths,
+                        });
                       }
-                    );
-                  } else {
-                    return res.status(201).json({
-                      status: true,
-                      message: "Client application created successfully.",
-                      token: newToken,
-                      savedImagePaths,
-                    });
+                    } else {
+                      // If no rows were affected, indicate that no changes were made
+                      return res.status(400).json({
+                        status: false,
+                        message:
+                          "No changes were made. Please check the client application ID.",
+                        token: newToken,
+                        result,
+                        savedImagePaths,
+                      });
+                    }
                   }
-                } else {
-                  // If no rows were affected, indicate that no changes were made
-                  return res.status(400).json({
-                    status: false,
-                    message:
-                      "No changes were made. Please check the client application ID.",
-                    token: newToken,
-                    result,
-                    savedImagePaths,
-                  });
-                }
-              }
-            );
-          });
+                );
+              });
+            });
         }
       );
     });
