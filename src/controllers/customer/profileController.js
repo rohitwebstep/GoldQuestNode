@@ -253,7 +253,15 @@ exports.create = (req, res) => {
       );
       console.log("allEmails:", allEmails);
 
-      const allLoginEmails = emails[0].concat(
+      // Get the first email in the array
+      const firstEmail = emails[0];
+      console.log("firstEmail:", firstEmail);
+
+      // Correct way to create an object with the first email
+      const firstEmailInArr = { firstEmail };
+      console.log("firstEmailInArr:", firstEmailInArr);
+
+      const allLoginEmails = firstEmailInArr.concat(
         branches.map((branch) => branch.branch_email)
       );
       console.log("allLoginEmails:", allLoginEmails);
