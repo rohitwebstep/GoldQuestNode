@@ -257,8 +257,8 @@ exports.create = (req, res) => {
       const firstEmail = emails[0];
       console.log("firstEmail:", firstEmail);
 
-      // Correct way to create an object with the first email
-      const firstEmailInArr = { firstEmail };
+      // Correct way to create an array with the first email
+      const firstEmailInArr = [firstEmail]; // Make it an array
       console.log("firstEmailInArr:", firstEmailInArr);
 
       const allLoginEmails = firstEmailInArr.concat(
@@ -1321,17 +1321,17 @@ exports.update = (req, res) => {
       const firstEmail = filterEmails[0];
       console.log("firstEmail:", firstEmail);
 
-      // Correct way to create an object with the first email
-      const firstEmailInArr = { firstEmail };
+      // Correct way to create an array with the first email
+      const firstEmailInArr = [firstEmail]; // Make it an array, not an object
       console.log("firstEmailInArr:", firstEmailInArr);
 
       // Find duplicate emails
-      const duplicateEmails = (
-        Array.isArray(filterEmails) ? filterEmails : JSON.parse(filterEmails)
-      ).filter((email, index, self) => self.indexOf(email) !== index);
+      const duplicateEmails = filterEmails.filter(
+        (email, index, self) => self.indexOf(email) !== index
+      );
       console.log("duplicateEmails:", duplicateEmails);
 
-      // Get unique duplicates
+      // Get unique duplicates and show in the error message
       if (duplicateEmails.length > 0) {
         const uniqueDuplicateEmails = [...new Set(duplicateEmails)]; // Get unique duplicate emails
         console.error(`Email(s) used many times: ${uniqueDuplicateEmails.join(", ")}`);
