@@ -512,37 +512,93 @@ const Admin = {
   setResetPasswordToken: (id, token, tokenExpiry, callback) => {
     const sql = `
       UPDATE \`admins\`
-      SET \`reset_password_token\` = ?, \`password_token_expiry\` = ?
+      SET 
+        \`reset_password_token\` = ?, 
+        \`password_token_expiry\` = ?,
+        \`can_request_password_reset\` = ?,
+        \`password_reset_request_count\` = 
+          CASE 
+            WHEN DATE(\`password_reset_requested_at\`) = CURDATE() 
+            THEN \`password_reset_request_count\` + 1 
+            ELSE 1 
+          END,
+        \`password_reset_requested_at\` = 
+          CASE 
+            WHEN DATE(\`password_reset_requested_at\`) = CURDATE() 
+            THEN \`password_reset_requested_at\` 
+            ELSE NOW() 
+          END
       WHERE \`id\` = ?
     `;
 
     startConnection((err, connection) => {
       if (err) {
-        return callback(err, null);
+        console.error("Database connection error:", err);
+        return callback({ success: false, message: "Database connection failed", error: err }, null);
       }
 
-      connection.query(sql, [token, tokenExpiry, id], (queryErr, results) => {
-        connectionRelease(connection); // Release the connection
+      connection.query(sql, [token, tokenExpiry, 1, id], (queryErr, results) => {
+        connectionRelease(connection); // Ensure the connection is released
 
         if (queryErr) {
-          console.error("Database query error: 10", queryErr);
-          return callback(
-            { message: "Database update error", error: queryErr },
-            null
-          );
+          console.error("Database query error:", queryErr);
+          return callback({ success: false, message: "Failed to update reset password token", error: queryErr }, null);
         }
 
         if (results.affectedRows === 0) {
-          return callback(
-            {
-              message:
-                "Token update failed. Admin not found or no changes made.",
-            },
-            null
-          );
+          return callback({ success: false, message: "No admin found with the provided ID or no update required" }, null);
         }
 
-        callback(null, results);
+        return callback(null, {
+          success: true,
+          message: "Password reset token updated successfully",
+          data: { affectedRows: results.affectedRows }
+        });
+      });
+    });
+  },
+
+  updatePasswordResetPermission: (status, admin_id, callback) => {
+    const sql = `
+      UPDATE \`admins\`
+      SET \`can_request_password_reset\` = ?
+      WHERE \`id\` = ?
+    `;
+
+    startConnection((err, connection) => {
+      if (err) {
+        console.error("Database connection error:", err);
+        return callback({
+          success: false,
+          message: "Database connection failed",
+          error: err
+        }, null);
+      }
+
+      connection.query(sql, [status, admin_id], (queryErr, results) => {
+        connectionRelease(connection); // Ensure connection is released
+
+        if (queryErr) {
+          console.error("Database query error:", queryErr);
+          return callback({
+            success: false,
+            message: "Failed to update password reset permission",
+            error: queryErr
+          }, null);
+        }
+
+        if (results.affectedRows === 0) {
+          return callback({
+            success: false,
+            message: "No admin found with the provided ID or no update was necessary"
+          }, null);
+        }
+
+        return callback(null, {
+          success: true,
+          message: `Password reset permission updated successfully to ${status ? 'Allowed' : 'Denied'}`,
+          data: { affectedRows: results.affectedRows }
+        });
       });
     });
   },

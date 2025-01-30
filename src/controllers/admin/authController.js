@@ -638,13 +638,10 @@ exports.forgotPasswordRequest = (req, res) => {
       console.error("Database error:", err);
       return res.status(500).json({
         status: false,
-        message:
-          err.message ||
-          "An error occurred while processing your request. Please try again.",
+        message: "An error occurred while processing your request. Please try again later.",
       });
     }
 
-    // If no admin found, return a 404 response
     if (result.length === 0) {
       return res.status(404).json({
         status: false,
@@ -653,86 +650,111 @@ exports.forgotPasswordRequest = (req, res) => {
     }
 
     const admin = result[0];
+    const currentDate = new Date().toDateString();
+    const passwordResetRequestedAt = admin.password_reset_requested_at
+      ? new Date(admin.password_reset_requested_at).toDateString()
+      : null;
+    const passwordResetRequestCount = admin.password_reset_request_count || 0;
+    const canRequestPasswordReset = admin.can_request_password_reset;
 
-    // Retrieve application information for the reset link
-    AppModel.appInfo("frontend", (err, appInfo) => {
-      if (err) {
-        console.error("Database error:", err);
+    // Check if the admin has exceeded the reset request limit for the day
+    if (passwordResetRequestedAt === currentDate) {
+      if (canRequestPasswordReset === 0 || passwordResetRequestCount >= 6) {
+        // Block further password reset requests
+        Admin.updatePasswordResetPermission(0, admin.id, (updateErr) => {
+          if (updateErr) {
+            console.error("Error updating password reset permission:", updateErr);
+            return res.status(500).json({
+              status: false,
+              message: "Too many reset requests. Your account is temporarily blocked. Please try again tomorrow.",
+            });
+          }
+
+          Common.adminActivityLog(
+            admin.id,
+            "Forgot Password",
+            "Reset Blocked",
+            "0",
+            "Blocked due to too many reset requests",
+            null,
+            () => { }
+          );
+
+          return res.status(429).json({
+            status: false,
+            message: "Too many reset requests. Your account is temporarily blocked. Please try again tomorrow.",
+          });
+        });
+        return;
+      }
+    }
+
+    // Retrieve application information for generating the reset link
+    AppModel.appInfo("frontend", (appErr, appInfo) => {
+      if (appErr) {
+        console.error("Database error:", appErr);
         return res.status(500).json({
           status: false,
-          message:
-            "An error occurred while retrieving application information. Please try again.",
+          message: "An error occurred while retrieving application information. Please try again later.",
         });
       }
 
-      if (appInfo) {
-        const token = generateToken();
-        const tokenExpiry = getTokenExpiry(); // ISO string for expiry time
+      if (!appInfo) {
+        return res.status(500).json({
+          status: false,
+          message: "Application information is not available. Please try again later.",
+        });
+      }
 
-        // Update the reset password token in the database
-        Admin.setResetPasswordToken(admin.id, token, tokenExpiry, (err) => {
-          if (err) {
-            console.error("Error updating reset password token:", err);
+      // Generate reset token and expiry time
+      const token = generateToken();
+      const tokenExpiry = getTokenExpiry(); // ISO string for expiry time
+
+      // Update the reset password token in the database
+      Admin.setResetPasswordToken(admin.id, token, tokenExpiry, (tokenErr) => {
+        if (tokenErr) {
+          console.error("Error updating reset password token:", tokenErr);
+          Common.adminLoginLog(
+            admin.id,
+            "forgot-password",
+            "0",
+            `Error updating token: ${tokenErr.message}`,
+            () => { }
+          );
+          return res.status(500).json({
+            status: false,
+            message: "Failed to generate reset token. Please try again later.",
+          });
+        }
+
+        // Construct the password reset link
+        const resetLink = `${appInfo.host || "https://www.example.com"}/reset-password?email=${admin.email}&token=${token}`;
+        const toArr = [{ name: admin.name, email: admin.email }];
+
+        // Send password reset email
+        forgetPassword("admin auth", "forget-password", admin.name, resetLink, toArr)
+          .then(() => {
+            Common.adminLoginLog(admin.id, "forgot-password", "1", null, () => { });
+            return res.status(200).json({
+              status: true,
+              message: `A password reset email has been successfully sent to ${admin.name}.`,
+            });
+          })
+          .catch((emailError) => {
+            console.error("Error sending password reset email:", emailError);
             Common.adminLoginLog(
               admin.id,
               "forgot-password",
               "0",
-              `Error updating token: ${err.message}`,
+              `Failed to send email: ${emailError.message}`,
               () => { }
             );
             return res.status(500).json({
               status: false,
-              message: err.message,
+              message: `Failed to send password reset email to ${admin.name}. Please try again later.`,
             });
-          }
-
-          // Send password reset email
-          const resetLink = `${appInfo.host || "https://www.example.com"
-            }/reset-password?email=${admin.email}&token=${token}`;
-          const toArr = [{ name: admin.name, email: admin.email }];
-
-          forgetPassword(
-            "admin auth",
-            "forget-password",
-            admin.name,
-            resetLink,
-            toArr
-          )
-            .then(() => {
-              Common.adminLoginLog(
-                admin.id,
-                "forgot-password",
-                "1",
-                null,
-                () => { }
-              );
-              return res.status(200).json({
-                status: true,
-                message: `A password reset email has been successfully sent to ${admin.name}.`,
-              });
-            })
-            .catch((emailError) => {
-              console.error("Error sending password reset email:", emailError);
-              Common.adminLoginLog(
-                admin.id,
-                "forgot-password",
-                "0",
-                `Failed to send email: ${emailError.message}`,
-                () => { }
-              );
-              return res.status(500).json({
-                status: false,
-                message: `Failed to send password reset email to ${admin.name}. Please try again later.`,
-              });
-            });
-        });
-      } else {
-        return res.status(500).json({
-          status: false,
-          message:
-            "Application information is not available. Please try again later.",
-        });
-      }
+          });
+      });
     });
   });
 };
