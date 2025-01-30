@@ -379,7 +379,7 @@ const Customer = {
       metaData.contact_person,
       metaData.gst_number,
       metaData.tat_days,
-      metaData.formattedAgreementDate,
+      metaData.agreement_date,
       metaData.agreement_duration,
       metaData.custom_template || "no",
       metaData.custom_address || null,
