@@ -152,8 +152,7 @@ exports.login = (req, res) => {
             // Get current time and token expiry
             const currentTime = getCurrentTime();
             const tokenExpiry = new Date(branch.token_expiry); // Convert token_expiry to Date object
-
-            /*
+            
             // Check if the existing token is still valid
             if (branch.login_token && tokenExpiry > currentTime) {
               Common.branchLoginLog(
@@ -169,7 +168,6 @@ exports.login = (req, res) => {
                   "Another branch is currently logged in. Please try again later.",
               });
             }
-            */
 
             if (admin_id && admin_token) {
               const action = "client_management";
@@ -471,7 +469,6 @@ exports.verifyTwoFactor = (req, res) => {
     const currentTime = getCurrentTime();
     const tokenExpiry = new Date(branch.token_expiry);
 
-    /*
     if (branch.login_token && tokenExpiry > currentTime) {
       console.log("Another branch is currently logged in.");
       Common.branchLoginLog(
@@ -487,7 +484,7 @@ exports.verifyTwoFactor = (req, res) => {
           "Another branch is currently logged in. Please try again later.",
       });
     }
-*/
+
     if (branch.two_factor_enabled !== 1) {
       return res.status(400).json({
         status: false,
