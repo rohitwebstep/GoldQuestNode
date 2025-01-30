@@ -251,27 +251,27 @@ exports.create = (req, res) => {
       const allEmails = emails.concat(
         branches.map((branch) => branch.branch_email)
       );
+      console.log("allEmails:", allEmails);
 
       const allLoginEmails = emails[0].concat(
         branches.map((branch) => branch.branch_email)
       );
+      console.log("allLoginEmails:", allLoginEmails);
 
       // Find duplicate emails
       const duplicateEmails = allEmails.filter(
         (email, index, self) => self.indexOf(email) !== index
       );
+      console.log("duplicateEmails:", duplicateEmails);
 
       // Get unique duplicates and show in the error message
       if (duplicateEmails.length > 0) {
         const uniqueDuplicateEmails = [...new Set(duplicateEmails)]; // Get unique duplicate emails
-        console.error(
-          `Email(s) used many times: ${uniqueDuplicateEmails.join(", ")}`
-        );
+        console.error(`Email(s) used many times: ${uniqueDuplicateEmails.join(", ")}`);
+
         return res.status(400).json({
           status: false,
-          message: `${uniqueDuplicateEmails.join(
-            ", "
-          )} email(s) are used many times`,
+          message: `${uniqueDuplicateEmails.join(", ")} email(s) are used many times`,
           repeatedEmails: uniqueDuplicateEmails,
           token: newToken,
         });
@@ -283,7 +283,7 @@ exports.create = (req, res) => {
             return res.status(400).json({
               status: false,
               message: message, // Return the formatted message in the response
-              token: result.newToken,
+              token: newToken,
             });
           }
 
@@ -1304,31 +1304,33 @@ exports.update = (req, res) => {
       }
 
       const newToken = result.newToken;
+      console.log("newToken:", newToken);
+
       const filterEmails = Array.isArray(emails) ? emails : JSON.parse(emails);
+      console.log("filterEmails:", filterEmails);
 
       // Get the first email in the array
       const firstEmail = filterEmails[0];
+      console.log("firstEmail:", firstEmail);
 
       // Correct way to create an object with the first email
       const firstEmailInArr = { firstEmail };
+      console.log("firstEmailInArr:", firstEmailInArr);
 
       // Find duplicate emails
       const duplicateEmails = (
         Array.isArray(filterEmails) ? filterEmails : JSON.parse(filterEmails)
       ).filter((email, index, self) => self.indexOf(email) !== index);
+      console.log("duplicateEmails:", duplicateEmails);
 
       // Get unique duplicates
       if (duplicateEmails.length > 0) {
         const uniqueDuplicateEmails = [...new Set(duplicateEmails)]; // Get unique duplicate emails
-        console.error(
-          `Email(s) used many times: ${uniqueDuplicateEmails.join(", ")}`
-        );
+        console.error(`Email(s) used many times: ${uniqueDuplicateEmails.join(", ")}`);
 
         return res.status(400).json({
           status: false,
-          message: `${uniqueDuplicateEmails.join(
-            ", "
-          )} email(s) are used many times`,
+          message: `${uniqueDuplicateEmails.join(", ")} email(s) are used many times`,
           repeatedEmails: uniqueDuplicateEmails,
           token: newToken,
         });
@@ -1337,6 +1339,7 @@ exports.update = (req, res) => {
       areEmailsUsedForUpdate(firstEmailInArr, customer_id)
         .then(({ areAnyUsed, message }) => {
           if (areAnyUsed) {
+            console.log("Email(s) already used:", message);
             return res.status(400).json({
               status: false,
               message: message, // Return the formatted message in the response
