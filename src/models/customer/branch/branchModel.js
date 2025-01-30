@@ -310,6 +310,48 @@ const Branch = {
         FROM \`branches\` 
         WHERE \`email\` = ? AND \`customer_id\` != ?`;
 
+
+      // First, check in branches table
+      connection.query(
+        branchQuery,
+        [email, customer_id],
+        (err, branchResults) => {
+          if (err) {
+            connectionRelease(connection);
+            console.error("Branches query error:", err);
+            return callback(
+              { message: "Database query error", error: err },
+              null
+            );
+          }
+
+          if (branchResults.length > 0) {
+            // Email is found in branches table
+            connectionRelease(connection);
+            return callback(null, true);
+          }
+          const isUsed = branchResults.length > 0;
+          return callback(null, isUsed);
+        }
+      );
+    });
+  },
+
+  /*
+  isEmailUsedForUpdate: (email, customer_id, callback) => {
+    startConnection((err, connection) => {
+      if (err) {
+        return callback(
+          { message: "Failed to connect to the database", error: err },
+          null
+        );
+      }
+
+      const branchQuery = `
+        SELECT * 
+        FROM \`branches\` 
+        WHERE \`email\` = ? AND \`customer_id\` != ?`;
+
       const customerQuery = `
         SELECT \`emails\`
         FROM \`customers\`
@@ -359,6 +401,7 @@ const Branch = {
       );
     });
   },
+  */
 
   listByCustomerID: (customer_id, callback) => {
     startConnection((err, connection) => {

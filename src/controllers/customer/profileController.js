@@ -252,6 +252,10 @@ exports.create = (req, res) => {
         branches.map((branch) => branch.branch_email)
       );
 
+      const allLoginEmails = emails[0].concat(
+        branches.map((branch) => branch.branch_email)
+      );
+
       // Find duplicate emails
       const duplicateEmails = allEmails.filter(
         (email, index, self) => self.indexOf(email) !== index
@@ -273,7 +277,7 @@ exports.create = (req, res) => {
         });
       }
 
-      areEmailsUsed(allEmails)
+      areEmailsUsed(allLoginEmails)
         .then(({ areAnyUsed, message }) => {
           if (areAnyUsed) {
             return res.status(400).json({
@@ -362,7 +366,7 @@ exports.create = (req, res) => {
                     "0",
                     null,
                     err,
-                    () => {}
+                    () => { }
                   );
                   return res.status(500).json({
                     status: false,
@@ -387,7 +391,7 @@ exports.create = (req, res) => {
                     custom_template,
                     custom_address:
                       custom_template_string &&
-                      custom_template_string.toLowerCase() === "yes"
+                        custom_template_string.toLowerCase() === "yes"
                         ? custom_address
                         : null,
                     state,
@@ -408,7 +412,7 @@ exports.create = (req, res) => {
                         "0",
                         `{id: ${customerId}}`,
                         err,
-                        () => {}
+                        () => { }
                       );
                       return res.status(500).json({
                         status: false,
@@ -477,7 +481,7 @@ exports.create = (req, res) => {
                               "1",
                               `{id: ${customerId}}`,
                               null,
-                              () => {}
+                              () => { }
                             );
 
                             if (send_mail == 1) {
@@ -498,7 +502,7 @@ exports.create = (req, res) => {
                                       "0",
                                       null,
                                       err,
-                                      () => {}
+                                      () => { }
                                     );
 
                                     return res.status(500).json({
@@ -860,7 +864,7 @@ exports.upload = async (req, res) => {
                       "0",
                       null,
                       err,
-                      () => {}
+                      () => { }
                     );
                     return res.status(500).json({
                       status: false,
@@ -887,7 +891,7 @@ exports.upload = async (req, res) => {
                             "0",
                             null,
                             err,
-                            () => {} // Callback after logging the error
+                            () => { } // Callback after logging the error
                           );
 
                           // Return error response
@@ -1302,6 +1306,12 @@ exports.update = (req, res) => {
       const newToken = result.newToken;
       const filterEmails = Array.isArray(emails) ? emails : JSON.parse(emails);
 
+      // Get the first email in the array
+      const firstEmail = filterEmails[0];
+
+      // Correct way to create an object with the first email
+      const firstEmailInArr = { firstEmail };
+
       // Find duplicate emails
       const duplicateEmails = (
         Array.isArray(filterEmails) ? filterEmails : JSON.parse(filterEmails)
@@ -1324,7 +1334,7 @@ exports.update = (req, res) => {
         });
       }
 
-      areEmailsUsedForUpdate(filterEmails, customer_id)
+      areEmailsUsedForUpdate(firstEmailInArr, customer_id)
         .then(({ areAnyUsed, message }) => {
           if (areAnyUsed) {
             return res.status(400).json({
@@ -1543,12 +1553,12 @@ exports.update = (req, res) => {
                             agreement_duration,
                             custom_template:
                               custom_template_string &&
-                              custom_template_string.toLowerCase() === "yes"
+                                custom_template_string.toLowerCase() === "yes"
                                 ? 1
                                 : 0,
                             custom_address:
                               custom_template_string &&
-                              custom_template_string.toLowerCase() === "yes"
+                                custom_template_string.toLowerCase() === "yes"
                                 ? custom_address
                                 : null,
                             state,
@@ -1760,7 +1770,7 @@ exports.active = (req, res) => {
               "0",
               JSON.stringify({ customer_id, ...changes }),
               err,
-              () => {}
+              () => { }
             );
             return res.status(500).json({
               status: false,
@@ -1776,7 +1786,7 @@ exports.active = (req, res) => {
             "1",
             JSON.stringify({ customer_id, ...changes }),
             null,
-            () => {}
+            () => { }
           );
 
           res.status(200).json({
@@ -1867,7 +1877,7 @@ exports.inactive = (req, res) => {
               "0",
               JSON.stringify({ customer_id, ...changes }),
               err,
-              () => {}
+              () => { }
             );
             return res.status(500).json({
               status: false,
@@ -1883,7 +1893,7 @@ exports.inactive = (req, res) => {
             "1",
             JSON.stringify({ customer_id, ...changes }),
             null,
-            () => {}
+            () => { }
           );
 
           res.status(200).json({
@@ -1977,7 +1987,7 @@ exports.delete = (req, res) => {
                 "0",
                 JSON.stringify({ id }),
                 err.message,
-                () => {}
+                () => { }
               );
               return res.status(500).json({
                 status: false,
@@ -1993,7 +2003,7 @@ exports.delete = (req, res) => {
               "1",
               JSON.stringify({ id }),
               null,
-              () => {}
+              () => { }
             );
             const clientUniqueId = result.client_unique_id;
             // const deletResponse = await deleteFolder("uploads/test");

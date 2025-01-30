@@ -78,8 +78,8 @@ const connectionRelease = (connection) => {
     // console.log("Valid connection found, attempting to release...");
 
     try {
-      // connection.release(); // Release the connection back to the pool
-      // console.log("Connection successfully released back to the pool");
+      connection.release(); // Release the connection back to the pool
+      console.log("Connection successfully released back to the pool");
     } catch (err) {
       console.error("Error releasing connection:", err.message);
       console.debug("Error details:", err); // Log full error details for debugging
