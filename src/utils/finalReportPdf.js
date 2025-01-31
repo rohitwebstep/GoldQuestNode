@@ -420,8 +420,8 @@ module.exports = {
                           {
                             content: CMTApplicationData.dob
                               ? new Date(
-                                  CMTApplicationData.dob
-                                ).toLocaleDateString()
+                                CMTApplicationData.dob
+                              ).toLocaleDateString()
                               : "N/A",
                           },
                           {
@@ -431,8 +431,8 @@ module.exports = {
                           {
                             content: application.updated_at
                               ? new Date(
-                                  application.updated_at
-                                ).toLocaleDateString()
+                                application.updated_at
+                              ).toLocaleDateString()
                               : "N/A",
                           },
                         ],
@@ -467,8 +467,8 @@ module.exports = {
                           {
                             content: CMTApplicationData.report_date
                               ? new Date(
-                                  CMTApplicationData.report_date
-                                ).toLocaleDateString()
+                                CMTApplicationData.report_date
+                              ).toLocaleDateString()
                               : "N/A",
                           },
                         ],
@@ -511,12 +511,12 @@ module.exports = {
                       const secondTableData = servicesData.map((item) => {
                         const sourceKey = item.annexureData
                           ? Object.keys(item.annexureData).find(
-                              (key) =>
-                                key.startsWith("info_source") ||
-                                key.startsWith("information_source") ||
-                                key.endsWith("info_source") ||
-                                key.endsWith("information_source")
-                            )
+                            (key) =>
+                              key.startsWith("info_source") ||
+                              key.startsWith("information_source") ||
+                              key.endsWith("info_source") ||
+                              key.endsWith("information_source")
+                          )
                           : undefined;
                         const dateKey =
                           item.annexureData &&
@@ -531,13 +531,13 @@ module.exports = {
                             : "NIL",
                           completedDate:
                             dateKey &&
-                            item.annexureData[dateKey] &&
-                            !isNaN(
-                              new Date(item.annexureData[dateKey]).getTime()
-                            )
+                              item.annexureData[dateKey] &&
+                              !isNaN(
+                                new Date(item.annexureData[dateKey]).getTime()
+                              )
                               ? new Date(
-                                  item.annexureData[dateKey]
-                                ).toLocaleDateString()
+                                item.annexureData[dateKey]
+                              ).toLocaleDateString()
                               : "NIL",
                           status:
                             item.annexureData && item.annexureData.status
@@ -683,8 +683,8 @@ module.exports = {
                           index === 0
                             ? tableStartX // "Legend" column starts at tableStartX
                             : tableStartX +
-                              legendColumnWidth +
-                              (index - 1) * otherColumnWidth; // Remaining columns start after the "Legend" column
+                            legendColumnWidth +
+                            (index - 1) * otherColumnWidth; // Remaining columns start after the "Legend" column
 
                         const columnWidth =
                           index === 0 ? legendColumnWidth : otherColumnWidth;
@@ -748,6 +748,13 @@ module.exports = {
 
                         let yPosition = 20;
 
+                        console.log(`service - `, service);
+
+                        if (!service.reportFormJson || !service.reportFormJson.json) {
+                          console.error("reportFormJson or reportFormJson.json does not exist.");
+                          continue;
+                        }
+
                         const reportFormJson = JSON.parse(
                           service.reportFormJson.json
                         );
@@ -779,14 +786,14 @@ module.exports = {
                             if (service.annexureData) {
                               const value =
                                 service.annexureData[inputName] !== undefined &&
-                                service.annexureData[inputName] !== null
+                                  service.annexureData[inputName] !== null
                                   ? service.annexureData[inputName]
                                   : "";
 
                               const reportDetailsValue =
                                 service.annexureData[reportDetailsInputName] !==
                                   undefined &&
-                                service.annexureData[reportDetailsInputName] !==
+                                  service.annexureData[reportDetailsInputName] !==
                                   null
                                   ? service.annexureData[reportDetailsInputName]
                                   : "";
@@ -1213,11 +1220,11 @@ module.exports = {
                       doc.textWithLink(
                         anchorText,
                         10 +
-                          doc.getTextWidth(
-                            disclaimerLinesPart1[
-                              disclaimerLinesPart1.length - 1
-                            ]
-                          ),
+                        doc.getTextWidth(
+                          disclaimerLinesPart1[
+                          disclaimerLinesPart1.length - 1
+                          ]
+                        ),
                         currentY - lineHeight,
                         {
                           url: "mailto:compliance@goldquestglobal.com",
