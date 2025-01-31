@@ -589,11 +589,12 @@ const cef = {
         }
 
         if (tableResults[0].count === 0) {
+
           const createTableSql = `
           CREATE TABLE \`${db_table}\` (
-              \`id\` BIGINT(20) NOT NULL AUTO_INCREMENT,
-              \`cef_id\` BIGINT(20) NOT NULL,
-              \`candidate_application_id\` BIGINT(20) NOT NULL,
+              \`id\` INT NOT NULL AUTO_INCREMENT,
+              \`cef_id\` INT NOT NULL,
+              \`candidate_application_id\` INT NOT NULL,
               \`branch_id\` INT(11) NOT NULL,
               \`customer_id\` INT(11) NOT NULL,
               \`status\` VARCHAR(100) DEFAULT NULL,
@@ -601,10 +602,13 @@ const cef = {
               \`updated_at\` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
               PRIMARY KEY (\`id\`),
               KEY \`candidate_application_id\` (\`candidate_application_id\`),
-              KEY \`customer_id\` (\`customer_id\`),
-              KEY \`cef_id\` (\`cef_id\`),
+              KEY \`branch_id\` (\`branch_id\`),
+              KEY \`cmt_application_customer_id\` (\`customer_id\`),
+              KEY \`cmt_application_cef_id\` (\`cef_id\`),
               CONSTRAINT \`fk_${db_table}_candidate_application_id\` FOREIGN KEY (\`candidate_application_id\`) 
                   REFERENCES \`candidate_applications\` (\`id\`) ON DELETE CASCADE,
+              CONSTRAINT \`fk_${db_table}_branch_id\` FOREIGN KEY (\`branch_id\`) 
+                  REFERENCES \`branches\` (\`id\`) ON DELETE CASCADE,
               CONSTRAINT \`fk_${db_table}_customer_id\` FOREIGN KEY (\`customer_id\`) 
                   REFERENCES \`customers\` (\`id\`) ON DELETE CASCADE,
               CONSTRAINT \`fk_${db_table}_cef_id\` FOREIGN KEY (\`cef_id\`) 
@@ -795,11 +799,10 @@ const cef = {
                     for (const [dbTable, fileInputNames] of Object.entries(
                       dbTableFileInputs
                     )) {
-                      const selectQuery = `SELECT ${
-                        fileInputNames.length > 0
+                      const selectQuery = `SELECT ${fileInputNames.length > 0
                           ? fileInputNames.join(", ")
                           : "*"
-                      } FROM cef_${dbTable} WHERE candidate_application_id = ?`;
+                        } FROM cef_${dbTable} WHERE candidate_application_id = ?`;
 
                       connection.query(
                         selectQuery,
