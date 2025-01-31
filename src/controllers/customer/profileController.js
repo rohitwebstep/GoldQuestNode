@@ -251,27 +251,19 @@ exports.create = (req, res) => {
       const allEmails = emails.concat(
         branches.map((branch) => branch.branch_email)
       );
-      console.log("allEmails:", allEmails);
 
       // Get the first email in the array
       const firstEmail = emails[0];
-      console.log("firstEmail:", firstEmail);
 
       // Correct way to create an array with the first email
-      const firstEmailInArr = [firstEmail]; // Make it an array
-      console.log("firstEmailInArr:", firstEmailInArr);
-
+      const firstEmailInArr = [firstEmail];
       const allLoginEmails = firstEmailInArr.concat(
         branches.map((branch) => branch.branch_email)
       );
-      console.log("allLoginEmails:", allLoginEmails);
-
       // Find duplicate emails
       const duplicateEmails = allEmails.filter(
         (email, index, self) => self.indexOf(email) !== index
       );
-      console.log("duplicateEmails:", duplicateEmails);
-
       // Get unique duplicates and show in the error message
       if (duplicateEmails.length > 0) {
         const uniqueDuplicateEmails = [...new Set(duplicateEmails)]; // Get unique duplicate emails
@@ -1312,24 +1304,19 @@ exports.update = (req, res) => {
       }
 
       const newToken = result.newToken;
-      console.log("newToken:", newToken);
 
       const filterEmails = Array.isArray(emails) ? emails : JSON.parse(emails);
-      console.log("filterEmails:", filterEmails);
 
       // Get the first email in the array
       const firstEmail = filterEmails[0];
-      console.log("firstEmail:", firstEmail);
 
       // Correct way to create an array with the first email
-      const firstEmailInArr = [firstEmail]; // Make it an array, not an object
-      console.log("firstEmailInArr:", firstEmailInArr);
+      const firstEmailInArr = [firstEmail];
 
       // Find duplicate emails
       const duplicateEmails = filterEmails.filter(
         (email, index, self) => self.indexOf(email) !== index
       );
-      console.log("duplicateEmails:", duplicateEmails);
 
       // Get unique duplicates and show in the error message
       if (duplicateEmails.length > 0) {

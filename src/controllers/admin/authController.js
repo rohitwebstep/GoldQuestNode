@@ -224,7 +224,6 @@ exports.verifyTwoFactor = (req, res) => {
     }
 
     if (result.length === 0) {
-      console.log("No admin found with the provided email or mobile number.");
       return res.status(404).json({
         status: false,
         message: "No admin found with the provided email or mobile number.",
@@ -453,8 +452,6 @@ exports.validateLogin = (req, res) => {
         message: "Admin not found with the provided ID",
       });
     }
-
-    console.log(`admin - `, admin);
 
     // Validate the token
     if (admin.login_token !== _token) {

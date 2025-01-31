@@ -470,7 +470,6 @@ exports.verifyTwoFactor = (req, res) => {
     const tokenExpiry = new Date(branch.token_expiry);
 
     if (branch.login_token && tokenExpiry > currentTime) {
-      console.log("Another branch is currently logged in.");
       Common.branchLoginLog(
         branch.id,
         "login",
