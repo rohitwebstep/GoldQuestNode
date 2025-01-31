@@ -84,7 +84,7 @@ exports.login = (req, res) => {
       const currentTime = getCurrentTime();
       const tokenExpiry = new Date(admin.token_expiry);
 
-      
+
       if (admin.login_token && tokenExpiry > currentTime) {
         Common.adminLoginLog(admin.id, "login", "0", "Another admin logged in", () => { });
         return res.status(400).json({
@@ -443,7 +443,7 @@ exports.validateLogin = (req, res) => {
       console.error("Database error:", err);
       return res
         .status(500)
-        .json({ status: false, message: "Internal server error 1." });
+        .json({ status: false, message: err.message });
     }
 
     // If no admin found, return a 404 response
@@ -454,11 +454,23 @@ exports.validateLogin = (req, res) => {
       });
     }
 
+    console.log(`admin - `, admin);
+
     // Validate the token
     if (admin.login_token !== _token) {
       return res
         .status(401)
         .json({ status: false, message: "Invalid or expired token" });
+    }
+
+    const now = new Date();
+    const tokenExpiry = new Date(new Date(admin.token_expiry).getTime() + 15 * 60 * 1000); // Add 15 minutes
+
+    if (tokenExpiry < now) {
+      return res.status(440).json({
+        status: false,
+        message: "Your session has expired. Please log in again to continue."
+      });
     }
 
     // Check admin status

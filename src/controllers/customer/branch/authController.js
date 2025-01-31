@@ -99,7 +99,7 @@ exports.login = (req, res) => {
           BranchAuth.validatePassword(username, password, (err, isValid) => {
             if (err) {
               console.error("Database error:", err);
-              Common.branchLoginLog(branch.id, "login", "0", err, () => {});
+              Common.branchLoginLog(branch.id, "login", "0", err, () => { });
               return res
                 .status(500)
                 .json({ status: false, message: err.message });
@@ -112,7 +112,7 @@ exports.login = (req, res) => {
                 "login",
                 "0",
                 "Incorrect password",
-                () => {}
+                () => { }
               );
               return res
                 .status(401)
@@ -125,7 +125,7 @@ exports.login = (req, res) => {
                 "login",
                 "0",
                 "Branch account is not yet verified.",
-                () => {}
+                () => { }
               );
               return res.status(400).json({
                 status: false,
@@ -140,7 +140,7 @@ exports.login = (req, res) => {
                 "login",
                 "0",
                 "Branch account has been suspended.",
-                () => {}
+                () => { }
               );
               return res.status(400).json({
                 status: false,
@@ -152,7 +152,7 @@ exports.login = (req, res) => {
             // Get current time and token expiry
             const currentTime = getCurrentTime();
             const tokenExpiry = new Date(branch.token_expiry); // Convert token_expiry to Date object
-            
+
             // Check if the existing token is still valid
             if (branch.login_token && tokenExpiry > currentTime) {
               Common.branchLoginLog(
@@ -223,7 +223,7 @@ exports.login = (req, res) => {
                               "login",
                               "0",
                               "Error updating token: " + err,
-                              () => {}
+                              () => { }
                             );
                             return res.status(500).json({
                               status: false,
@@ -238,7 +238,7 @@ exports.login = (req, res) => {
                             "login",
                             "1",
                             null,
-                            () => {}
+                            () => { }
                           );
                           const {
                             login_token,
@@ -276,7 +276,7 @@ exports.login = (req, res) => {
                         "login",
                         "0",
                         "Error updating token: " + err,
-                        () => {}
+                        () => { }
                       );
                       return res.status(500).json({
                         status: false,
@@ -351,7 +351,7 @@ exports.login = (req, res) => {
                         "login",
                         "0",
                         "Error updating token: " + err,
-                        () => {}
+                        () => { }
                       );
                       return res.status(500).json({
                         status: false,
@@ -365,7 +365,7 @@ exports.login = (req, res) => {
                       "login",
                       "1",
                       null,
-                      () => {}
+                      () => { }
                     );
                     const {
                       login_token,
@@ -443,7 +443,7 @@ exports.verifyTwoFactor = (req, res) => {
         "login",
         "0",
         "Account not verified",
-        () => {}
+        () => { }
       );
       return res.status(400).json({
         status: false,
@@ -457,7 +457,7 @@ exports.verifyTwoFactor = (req, res) => {
         "login",
         "0",
         "Account suspended",
-        () => {}
+        () => { }
       );
       return res.status(400).json({
         status: false,
@@ -476,7 +476,7 @@ exports.verifyTwoFactor = (req, res) => {
         "login",
         "0",
         "Another branch is logged in",
-        () => {}
+        () => { }
       );
       return res.status(400).json({
         status: false,
@@ -496,7 +496,7 @@ exports.verifyTwoFactor = (req, res) => {
     const otpExpiry = new Date(branch.otp_expiry);
 
     if (branch.otp !== otpInt) {
-      Common.branchLoginLog(branch.id, "login", "0", "Invalid OTP", () => {});
+      Common.branchLoginLog(branch.id, "login", "0", "Invalid OTP", () => { });
       return res.status(401).json({
         status: false,
         message: "The provided OTP is incorrect.",
@@ -504,7 +504,7 @@ exports.verifyTwoFactor = (req, res) => {
     }
 
     if (otpExpiry <= currentTime) {
-      Common.branchLoginLog(branch.id, "login", "0", "OTP expired", () => {});
+      Common.branchLoginLog(branch.id, "login", "0", "OTP expired", () => { });
       return res.status(401).json({
         status: false,
         message: "The OTP has expired. Please request a new one.",
@@ -530,7 +530,7 @@ exports.verifyTwoFactor = (req, res) => {
             "login",
             "0",
             "Error updating token",
-            () => {}
+            () => { }
           );
           return res.status(500).json({
             status: false,
@@ -544,7 +544,7 @@ exports.verifyTwoFactor = (req, res) => {
           "login",
           "1",
           "Login successful",
-          () => {}
+          () => { }
         );
         const {
           otp,
@@ -635,7 +635,7 @@ exports.updatePassword = (req, res) => {
             "o",
             "Branch attempted to update password",
             null,
-            () => {}
+            () => { }
           );
           return res.status(500).json({
             status: false,
@@ -651,7 +651,7 @@ exports.updatePassword = (req, res) => {
           "1",
           "Branch successfully updated password",
           null,
-          () => {}
+          () => { }
         );
 
         return res.status(200).json({
@@ -767,7 +767,7 @@ exports.validateLogin = (req, res) => {
         "login",
         "0",
         "Branch account is not yet verified.",
-        () => {}
+        () => { }
       );
       return res.status(400).json({
         status: false,
@@ -782,7 +782,7 @@ exports.validateLogin = (req, res) => {
         "login",
         "0",
         "branch account has been suspended.",
-        () => {}
+        () => { }
       );
       return res.status(400).json({
         status: false,
@@ -851,6 +851,42 @@ exports.forgotPasswordRequest = (req, res) => {
     }
 
     const branch = result[0];
+    const currentDate = new Date().toDateString();
+    const passwordResetRequestedAt = branch.password_reset_requested_at
+      ? new Date(branch.password_reset_requested_at).toDateString()
+      : null;
+    const passwordResetRequestCount = branch.password_reset_request_count || 0;
+    const canRequestPasswordReset = branch.can_request_password_reset;
+
+    // Check if the branch has exceeded the reset request limit for the day
+    if (passwordResetRequestedAt === currentDate) {
+      if (canRequestPasswordReset === 0 || passwordResetRequestCount >= 6) {
+        // Block further password reset requests
+        BranchAuth.updatePasswordResetPermission(0, branch.id, (updateErr) => {
+          if (updateErr) {
+            console.error("Error updating password reset permission:", updateErr);
+            return res.status(500).json({
+              status: false,
+              message: "Too many reset requests. Your account is temporarily blocked. Please try again tomorrow.",
+            });
+          }
+
+          Common.branchLoginLog(
+            branch.id,
+            "forgot-password",
+            "0",
+            "Blocked due to too many reset requests",
+            () => { }
+          );
+
+          return res.status(429).json({
+            status: false,
+            message: "Too many reset requests. Your account is temporarily blocked. Please try again tomorrow.",
+          });
+        });
+        return;
+      }
+    }
 
     // Retrieve application information for the reset link
     AppModel.appInfo("frontend", (err, appInfo) => {
@@ -880,7 +916,7 @@ exports.forgotPasswordRequest = (req, res) => {
                 "forgot-password",
                 "0",
                 `Error updating token: ${err}`,
-                () => {}
+                () => { }
               );
               return res.status(500).json({
                 status: false,
@@ -890,9 +926,8 @@ exports.forgotPasswordRequest = (req, res) => {
             }
 
             // Send password reset email
-            const resetLink = `${
-              appInfo.host || "https://www.example.com"
-            }/branch/reset-password?email=${branch.email}&token=${token}`;
+            const resetLink = `${appInfo.host || "https://www.example.com"
+              }/branch/reset-password?email=${branch.email}&token=${token}`;
             const toArr = [{ name: branch.name, email: branch.email }];
 
             forgetPassword(
@@ -908,7 +943,7 @@ exports.forgotPasswordRequest = (req, res) => {
                   "forgot-password",
                   "1",
                   null,
-                  () => {}
+                  () => { }
                 );
                 return res.status(200).json({
                   status: true,
@@ -925,7 +960,7 @@ exports.forgotPasswordRequest = (req, res) => {
                   "forgot-password",
                   "0",
                   `Failed to send email: ${emailError.message}`,
-                  () => {}
+                  () => { }
                 );
                 return res.status(500).json({
                   status: false,
@@ -1016,7 +1051,7 @@ exports.forgotPassword = (req, res) => {
           "0",
           "Failed password update attempt",
           err,
-          () => {}
+          () => { }
         );
         return res.status(500).json({
           status: false,
@@ -1032,7 +1067,7 @@ exports.forgotPassword = (req, res) => {
         "1",
         "Branch password updated successfully",
         null,
-        () => {}
+        () => { }
       );
 
       return res.status(200).json({
