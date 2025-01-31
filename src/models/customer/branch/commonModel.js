@@ -8,8 +8,11 @@ const {
 // Generates a new random token
 const generateToken = () => crypto.randomBytes(32).toString("hex");
 
-// Returns the expiry time for the token (1 hour from now)
-const getTokenExpiry = () => new Date(Date.now() + 3600000).toISOString();
+// Utility function to get token expiry time (15 minutes from the current time)
+const getTokenExpiry = () => {
+  const expiryDurationInMinutes = 15; // Duration for token expiry in minutes
+  return new Date(getCurrentTime().getTime() + expiryDurationInMinutes * 60000);
+};
 
 const common = {
   isBranchTokenValid: (_token, sub_user_id, branch_id, callback) => {

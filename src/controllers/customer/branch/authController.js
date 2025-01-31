@@ -760,6 +760,16 @@ exports.validateLogin = (req, res) => {
         .json({ status: false, message: "Invalid or expired token" });
     }
 
+    const now = new Date();
+    const tokenExpiry = new Date(new Date(branch.token_expiry).getTime() + 15 * 60 * 1000); // Add 15 minutes
+
+    if (tokenExpiry < now) {
+      return res.status(440).json({
+        status: false,
+        message: "Your session has expired. Please log in again to continue."
+      });
+    }
+
     // Check branch status
     if (branch.status === 0) {
       Common.branchLoginLog(
