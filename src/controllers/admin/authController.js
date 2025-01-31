@@ -86,12 +86,38 @@ exports.login = (req, res) => {
 
 
       if (admin.login_token && tokenExpiry > currentTime) {
+
+        // Parse the tokenExpiry and currentTime to Date objects
+        const expiryDate = new Date(tokenExpiry);
+        const currentDate = new Date(currentTime);
+
+        // Calculate the time difference in milliseconds
+        const timeDifference = expiryDate - currentDate;
+
+        // Calculate hours, minutes, and seconds
+        const hours = Math.floor(timeDifference / (1000 * 60 * 60));
+        const minutes = Math.floor((timeDifference % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((timeDifference % (1000 * 60)) / 1000);
+
+        // Build the timeRemainingMessage based on available time units
+        let timeRemainingMessage = '';
+
+        if (hours > 0) {
+          timeRemainingMessage += `${hours} hour(s) `;
+        }
+        if (minutes > 0) {
+          timeRemainingMessage += `${minutes} minute(s) `;
+        }
+        timeRemainingMessage += `${seconds} second(s)`;
+
         Common.adminLoginLog(admin.id, "login", "0", "Another admin logged in", () => { });
+
         return res.status(400).json({
           status: false,
-          message: "Another admin is currently logged in. Please try again later.",
+          message: `Another admin is currently logged in. You can log in after ${timeRemainingMessage} if no activity is done by the current user.`,
         });
       }
+
 
       if (admin.two_factor_enabled && admin.two_factor_enabled == 1) {
         const isMobile = /^\d{10}$/.test(username);
@@ -254,10 +280,41 @@ exports.verifyTwoFactor = (req, res) => {
     const tokenExpiry = new Date(admin.token_expiry);
 
     if (admin.login_token && tokenExpiry > currentTime) {
-      Common.adminLoginLog(admin.id, "login", "0", "Another admin is logged in", () => { });
+
+      // Parse the tokenExpiry and currentTime to Date objects
+      const expiryDate = new Date(tokenExpiry);
+      const currentDate = new Date(currentTime);
+
+      // Calculate the time difference in milliseconds
+      const timeDifference = expiryDate - currentDate;
+
+      // Calculate hours, minutes, and seconds
+      const hours = Math.floor(timeDifference / (1000 * 60 * 60));
+      const minutes = Math.floor((timeDifference % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((timeDifference % (1000 * 60)) / 1000);
+
+      // Build the timeRemainingMessage based on available time units
+      let timeRemainingMessage = '';
+
+      if (hours > 0) {
+        timeRemainingMessage += `${hours} hour(s) `;
+      }
+      if (minutes > 0) {
+        timeRemainingMessage += `${minutes} minute(s) `;
+      }
+      timeRemainingMessage += `${seconds} second(s)`;
+
+      Common.branchLoginLog(
+        branch.id,
+        "login",
+        "0",
+        "Another branch is logged in",
+        () => { }
+      );
+
       return res.status(400).json({
         status: false,
-        message: "Another admin is currently logged in. Please try again later.",
+        message: `Another admin is currently logged in. You can log in after ${timeRemainingMessage} if no activity is done by the current user.`,
       });
     }
 

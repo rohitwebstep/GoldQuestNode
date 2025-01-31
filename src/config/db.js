@@ -17,6 +17,7 @@ const dbUser = process.env.DB_USER || "goldquest_db";
 const dbName = process.env.DB_NAME || "goldquest";
 
 let dbPassword = process.env.DB_PASSWORD || "GoldQuest@135";
+// let dbPassword = process.env.DB_PASSWORD || "";
 if (process.env.DB_HOST == "local") {
   dbPassword = process.env.DB_PASSWORD || "";
 }

@@ -155,17 +155,41 @@ exports.login = (req, res) => {
 
             // Check if the existing token is still valid
             if (branch.login_token && tokenExpiry > currentTime) {
+
+              // Parse the tokenExpiry and currentTime to Date objects
+              const expiryDate = new Date(tokenExpiry);
+              const currentDate = new Date(currentTime);
+
+              // Calculate the time difference in milliseconds
+              const timeDifference = expiryDate - currentDate;
+
+              // Calculate hours, minutes, and seconds
+              const hours = Math.floor(timeDifference / (1000 * 60 * 60));
+              const minutes = Math.floor((timeDifference % (1000 * 60 * 60)) / (1000 * 60));
+              const seconds = Math.floor((timeDifference % (1000 * 60)) / 1000);
+
+              // Build the timeRemainingMessage based on available time units
+              let timeRemainingMessage = '';
+
+              if (hours > 0) {
+                timeRemainingMessage += `${hours} hour(s) `;
+              }
+              if (minutes > 0) {
+                timeRemainingMessage += `${minutes} minute(s) `;
+              }
+              timeRemainingMessage += `${seconds} second(s)`;
+
               Common.branchLoginLog(
                 branch.id,
                 "login",
                 "0",
-                "Another branch is currently logged in.",
+                "Another branch is logged in",
                 () => { }
               );
+
               return res.status(400).json({
                 status: false,
-                message:
-                  "Another branch is currently logged in. Please try again later.",
+                message: `Another branch is currently logged in. You can log in after ${timeRemainingMessage} if no activity is done by the current branch.`,
               });
             }
 
@@ -470,6 +494,29 @@ exports.verifyTwoFactor = (req, res) => {
     const tokenExpiry = new Date(branch.token_expiry);
 
     if (branch.login_token && tokenExpiry > currentTime) {
+      // Parse the tokenExpiry and currentTime to Date objects
+      const expiryDate = new Date(tokenExpiry);
+      const currentDate = new Date(currentTime);
+
+      // Calculate the time difference in milliseconds
+      const timeDifference = expiryDate - currentDate;
+
+      // Calculate hours, minutes, and seconds
+      const hours = Math.floor(timeDifference / (1000 * 60 * 60));
+      const minutes = Math.floor((timeDifference % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((timeDifference % (1000 * 60)) / 1000);
+
+      // Build the timeRemainingMessage based on available time units
+      let timeRemainingMessage = '';
+
+      if (hours > 0) {
+        timeRemainingMessage += `${hours} hour(s) `;
+      }
+      if (minutes > 0) {
+        timeRemainingMessage += `${minutes} minute(s) `;
+      }
+      timeRemainingMessage += `${seconds} second(s)`;
+
       Common.branchLoginLog(
         branch.id,
         "login",
@@ -477,10 +524,10 @@ exports.verifyTwoFactor = (req, res) => {
         "Another branch is logged in",
         () => { }
       );
+
       return res.status(400).json({
         status: false,
-        message:
-          "Another branch is currently logged in. Please try again later.",
+        message: `Another branch is currently logged in. You can log in after ${timeRemainingMessage} if no activity is done by the current branch.`,
       });
     }
 
