@@ -31,13 +31,10 @@ exports.list = (req, res) => {
 
     // Validate admin token
     Common.isAdminTokenValid(_token, admin_id, (err, result) => {
+
       if (err) {
-        console.error("Error validating admin token:", err);
-        return res.status(500).json({
-          status: false,
-          message:
-            "An internal error occurred while validating the token. Please try again later.",
-        });
+        console.error("Error checking token validity:", err);
+        return res.status(500).json(err);
       }
 
       if (!result.status) {
