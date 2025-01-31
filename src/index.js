@@ -24,6 +24,11 @@ const tatDelayRoutes = require("./routes/admin/tatDelayRoutes");
 const weeklyReportRoutes = require("./routes/admin/weeklyReportRoutes");
 
 const app = express();
+
+// Increase the limit for incoming requests
+app.use(bodyParser.json({ limit: '100mb' }));  // Adjust the limit as needed (50mb here)
+app.use(bodyParser.urlencoded({ limit: '100mb', extended: true }));
+
 const port = process.env.PORT || 5000;
 
 // Configure CORS
