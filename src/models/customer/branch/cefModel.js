@@ -26,6 +26,34 @@ const cef = {
     });
   },
 
+  updateSubmitStatus: (data, callback) => {
+    const { candidateAppId, status } = data;
+
+    // If no duplicates are found, proceed with updating the admin record
+    const sql = `
+        UPDATE \`candidate_applications\` 
+        SET 
+          \`is_submitted\` = ?
+        WHERE \`id\` = ?
+      `;
+
+    startConnection((err, connection) => {
+      if (err) {
+        return callback(err, null);
+      }
+
+      connection.query(sql, [status, candidateAppId], (queryErr, results) => {
+        connectionRelease(connection); // Release the connection
+
+        if (queryErr) {
+          console.error("Database query error: 51", queryErr);
+          return callback(queryErr, null);
+        }
+        callback(null, results);
+      });
+    });
+  },
+
   formJsonWithData: (services, candidate_application_id, callback) => {
     startConnection((err, connection) => {
       if (err) {

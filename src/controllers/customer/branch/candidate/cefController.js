@@ -98,7 +98,6 @@ exports.isApplicationExist = (req, res) => {
         console.error("Database error:", err);
         return res.status(500).json({
           status: false,
-          err,
           message: "An error occurred while checking application existence.",
         });
       }
@@ -121,6 +120,29 @@ exports.isApplicationExist = (req, res) => {
               });
             }
 
+            Customer.getCustomerById(
+              parseInt(customer_id),
+              (err, currentCustomer) => {
+                if (err) {
+                  console.error(
+                    "Database error during customer retrieval:",
+                    err
+                  );
+                  return res.status(500).json({
+                    status: false,
+                    message: "Failed to retrieve Customer. Please try again.",
+                    token: newToken,
+                  });
+                }
+
+                if (!currentCustomer) {
+                  return res.status(404).json({
+                    status: false,
+                    message: "Customer not found.",
+                    token: newToken,
+                  });
+                }
+                /*
             if (
               currentCEFApplication &&
               Object.keys(currentCEFApplication).length > 0
@@ -130,12 +152,42 @@ exports.isApplicationExist = (req, res) => {
                 message: "An application has already been submitted.",
               });
             }
+            */
 
-            return res.status(200).json({
-              status: true,
-              data: currentCandidateApplication,
-              message: "Application exists.",
-            });
+                const service_ids = Array.isArray(
+                  currentCandidateApplication.services
+                )
+                  ? currentCandidateApplication.services
+                  : currentCandidateApplication.services
+                    .split(",")
+                    .map((item) => item.trim());
+                CEF.formJsonWithData(
+                  service_ids,
+                  candidate_application_id,
+                  (err, serviceData) => {
+                    if (err) {
+                      console.error("Database error:", err);
+                      return res.status(500).json({
+                        status: false,
+                        message:
+                          "An error occurred while fetching service form json.",
+                        token: newToken,
+                      });
+                    }
+                    return res.status(200).json({
+                      status: true,
+                      data: {
+                        application: currentCandidateApplication,
+                        cefApplication: currentCEFApplication,
+                        serviceData,
+                        customer: currentCustomer,
+                      },
+                      message: "Application exists.",
+                    });
+                  }
+                );
+              }
+            );
           }
         );
       } else {
@@ -174,25 +226,30 @@ exports.submit = (req, res) => {
     application_id,
     personal_information,
     annexure,
+    is_submit,
     send_mail,
   } = req.body;
 
-  // Define required fields and check for missing values
-  const requiredFields = {
-    branch_id,
-    customer_id,
-    application_id,
-    personal_information,
-  };
-  const missingFields = Object.keys(requiredFields)
-    .filter((field) => !requiredFields[field] || requiredFields[field] === "")
-    .map((field) => field.replace(/_/g, " "));
+  let submitStatus = is_submit;
+  if (submitStatus === 1) {
+    const requiredFields = {
+      branch_id,
+      customer_id,
+      application_id,
+      personal_information,
+    };
+    const missingFields = Object.keys(requiredFields)
+      .filter((field) => !requiredFields[field] || requiredFields[field] === "")
+      .map((field) => field.replace(/_/g, " "));
 
-  if (missingFields.length > 0) {
-    return res.status(400).json({
-      status: false,
-      message: `Missing required fields: ${missingFields.join(", ")}`,
-    });
+    if (missingFields.length > 0) {
+      return res.status(400).json({
+        status: false,
+        message: `Missing required fields: ${missingFields.join(", ")}`,
+      });
+    }
+  } else {
+    submitStatus = 0;
   }
 
   // Check if the application exists
@@ -400,7 +457,7 @@ exports.submit = (req, res) => {
                     // Process all annexure promises
                     Promise.all(annexurePromises)
                       .then(() => {
-                        if (parseInt(send_mail) === 1) {
+                        if (parseInt(send_mail) === 1 && submitStatus == 1) {
                           sendNotificationEmails(
                             application_id,
                             cefResult.insertId,
@@ -409,6 +466,7 @@ exports.submit = (req, res) => {
                             customer_id,
                             currentCustomer.client_unique_id,
                             currentCustomer.name,
+                            submitStatus,
                             res
                           );
                         } else {
@@ -426,11 +484,27 @@ exports.submit = (req, res) => {
                         });
                       });
                   } else {
-                    // No annexures to handle, finalize submission
-                    return res.status(200).json({
-                      status: true,
-                      message: "CEF Application submitted successfully.",
-                    });
+                    CEF.updateSubmitStatus(
+                      {
+                        candidateAppId: application_id,
+                        status: submitStatus,
+                      },
+                      (err, result) => {
+                        if (err) {
+                          console.error("Error updating submit status:", err);
+                          return res.status(500).json({
+                            status: false,
+                            message:
+                              "An error occurred while updating submit status. Please try again.",
+                          });
+                        }
+                        // No annexures to handle, finalize submission
+                        return res.status(200).json({
+                          status: true,
+                          message: "CEF Application submitted successfully.",
+                        });
+                      }
+                    );
                   }
                 }
               );
@@ -451,6 +525,7 @@ const sendNotificationEmails = (
   customer_id,
   client_unique_id,
   customer_name,
+  submitStatus,
   res
 ) => {
   CEF.getCEFApplicationById(
@@ -567,11 +642,24 @@ const sendNotificationEmails = (
                     ccArr || []
                   )
                     .then(() => {
-                      return res.status(201).json({
-                        status: true,
-                        message:
-                          "CEF Application submitted successfully and notifications sent.",
-                      });
+                      CEF.updateSubmitStatus(
+                        { candidateAppId, status: submitStatus },
+                        (err, result) => {
+                          if (err) {
+                            console.error("Error updating submit status:", err);
+                            return res.status(500).json({
+                              status: false,
+                              message:
+                                "An error occurred while updating submit status. Please try again.",
+                            });
+                          }
+                          return res.status(201).json({
+                            status: true,
+                            message:
+                              "CEF Application submitted successfully and notifications sent.",
+                          });
+                        }
+                      );
                     })
                     .catch((emailError) => {
                       console.error(
@@ -614,7 +702,14 @@ exports.upload = async (req, res) => {
       db_table: dbTable,
       db_column: dbColumn,
       send_mail,
+      is_submit,
     } = req.body;
+
+    let submitStatus = is_submit; // Use a local variable to avoid direct modification
+
+    if (submitStatus !== 1) {
+      submitStatus = 0;
+    }
 
     const requiredFields = { branchId, customerID, candidateAppId, dbTable, dbColumn };
 
@@ -735,7 +830,7 @@ exports.upload = async (req, res) => {
                       });
                     }
 
-                    if (parseInt(send_mail) === 1) {
+                    if (parseInt(send_mail) === 1 && submitStatus == 1) {
                       sendNotificationEmails(
                         candidateAppId,
                         CefID,
@@ -744,6 +839,7 @@ exports.upload = async (req, res) => {
                         customerID,
                         currentCustomer.client_unique_id,
                         currentCustomer.name,
+                        submitStatus,
                         res
                       );
                     } else {
