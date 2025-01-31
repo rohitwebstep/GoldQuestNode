@@ -78,7 +78,6 @@ const common = {
           return callback(null, { status: true, message: "Token is valid" });
         } else {
           connectionRelease(connection);
-          return callback(null, { status: true, message: "Token is valid" });
           // If the token has expired, refresh it
           const newToken = generateToken();
           const newTokenExpiry = getTokenExpiry();
