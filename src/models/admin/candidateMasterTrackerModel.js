@@ -854,6 +854,7 @@ const Customer = {
               \`branch_id\` int(11) NOT NULL,
               \`customer_id\` int(11) NOT NULL,
               \`status\` VARCHAR(100) DEFAULT NULL,
+              \`is_submitted\` TINYINT(1) DEFAULT 0,
               \`created_at\` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
               \`updated_at\` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
               PRIMARY KEY (\`id\`),

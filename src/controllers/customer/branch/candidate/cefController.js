@@ -1,5 +1,6 @@
 const Candidate = require("../../../../models/customer/branch/candidateApplicationModel");
 const Customer = require("../../../../models/customer/customerModel");
+const AppModel = require("../../../../models/appModel");
 const Branch = require("../../../../models/customer/branch/branchModel");
 const BranchCommon = require("../../../../models/customer/branch/commonModel");
 const CEF = require("../../../../models/customer/branch/cefModel");
@@ -19,6 +20,11 @@ const {
 const {
   cefSubmitMail,
 } = require("../../../../mailer/customer/branch/candidate/cefSubmitMail");
+
+
+const {
+  reminderMail,
+} = require("../../../../mailer/customer/branch/candidate/reminderMail");
 
 exports.formJson = (req, res) => {
   const { service_id } = req.query;
@@ -219,6 +225,150 @@ exports.test = (req, res) => {
   });
 };
 
+exports.unsubmittedApplications = (req, res) => {
+  console.log("Starting filledOrUnfilledServices function...");
+  CEF.unsubmittedApplications((err, applications) => {
+    if (err) {
+      console.error("Database error:", err);
+      return res.status(500).json({
+        status: false,
+        message: "Database error occurred",
+      });
+    }
+
+    if (!applications.length) {
+      return res.status(200).json({
+        status: true,
+        data: [],
+      });
+    }
+
+    // Create an array of promises for each application
+    const applicationPromises = applications.map((application) => {
+      return new Promise((resolve, reject) => {
+        const serviceIds = application.services;
+
+        let serviceIdsArr = [];
+        if (serviceIds) {
+          serviceIdsArr = Array.isArray(serviceIds) ? serviceIds : serviceIds.split(',').map(s => s.trim());
+        }
+
+        // Fetch service data for each application
+        CEF.filledOrUnfilledServices(serviceIds, application.candidate_application_id, (err, serviceData) => {
+          if (err) {
+            console.error("Error fetching service data:", err);
+            return reject({
+              status: false,
+              message: "Error fetching service data",
+            });
+          }
+          application.filledServices = serviceData;
+
+          // Once all service names are fetched, get app info
+          AppModel.appInfo("frontend", (err, appInfo) => {
+            if (err) {
+              console.error("Database error:", err);
+              if (!res.headersSent) {
+                return res.status(500).json({
+                  status: false,
+                  message: err.message,
+                });
+              }
+            }
+
+            if (appInfo) {
+              const toArr = [
+                { name: application.application_name, email: application.email }
+              ];
+              const toCC = [];
+
+              const appHost = appInfo.host || "www.example.com";
+              const base64_app_id = btoa(application.candidate_application_id);
+              const base64_branch_id = btoa(application.branch_id);
+              const base64_customer_id = btoa(application.customer_id);
+              const base64_link_with_ids = `YXBwX2lk=${base64_app_id}&YnJhbmNoX2lk=${base64_branch_id}&Y3VzdG9tZXJfaWQ==${base64_customer_id}`;
+
+              let bgv_href = '';
+              let dav_href = '';
+
+              if (application.cef_submitted == 0) {
+                bgv_href = `${appHost}/background-form?${base64_link_with_ids}`;
+              }
+
+              // Fetch and process digital address service
+              Service.digitlAddressService((err, serviceEntry) => {
+                if (err) {
+                  console.error("Database error:", err);
+                  return reject({
+                    status: false,
+                    message: err.message,
+                  });
+                }
+
+                if (serviceEntry) {
+                  const digitalAddressID = parseInt(serviceEntry.id, 10);
+                  if (serviceIdsArr.includes(digitalAddressID)) {
+                    dav_href = `${appHost}/digital-form?${base64_link_with_ids}`;
+                  }
+                }
+
+                // Send application creation reminder email
+                reminderMail(
+                  "candidate application",
+                  "reminder",
+                  application.application_name,
+                  application.customer_name,
+                  application.branch_name,
+                  bgv_href,
+                  dav_href,
+                  serviceData,
+                  toArr || [],
+                  toCC || []
+                )
+                  .then(() => {
+                    console.log("Reminder email sent.");
+
+                    CEF.updateReminderDetails(
+                      { candidateAppId: application.candidate_application_id },
+                      (err, result) => {
+                        resolve(application);
+                      }
+                    );
+                  })
+                  .catch((emailError) => {
+                    console.error("Error sending reminder email:", emailError);
+                    resolve(application);  // Still resolve the application, but without email success
+                  });
+              });
+            }
+          });
+        });
+      });
+    });
+
+    // Wait for all promises to resolve
+    Promise.all(applicationPromises)
+      .then((updatedApplications) => {
+        if (!res.headersSent) {
+          return res.status(200).json({
+            status: true,
+            data: updatedApplications,
+          });
+        }
+      })
+      .catch((error) => {
+        console.error("Error processing applications:", error);
+        if (!res.headersSent) {
+          return res.status(500).json({
+            status: false,
+            message: "Error processing applications",
+          });
+        }
+      });
+  });
+};
+
+
 exports.submit = (req, res) => {
   const {
     branch_id,
@@ -226,11 +376,11 @@ exports.submit = (req, res) => {
     application_id,
     personal_information,
     annexure,
-    is_submit,
+    is_submitted,
     send_mail,
   } = req.body;
 
-  let submitStatus = is_submit;
+  let submitStatus = is_submitted;
   if (submitStatus === 1) {
     const requiredFields = {
       branch_id,
@@ -702,10 +852,10 @@ exports.upload = async (req, res) => {
       db_table: dbTable,
       db_column: dbColumn,
       send_mail,
-      is_submit,
+      is_submitted,
     } = req.body;
 
-    let submitStatus = is_submit; // Use a local variable to avoid direct modification
+    let submitStatus = is_submitted; // Use a local variable to avoid direct modification
 
     if (submitStatus !== 1) {
       submitStatus = 0;

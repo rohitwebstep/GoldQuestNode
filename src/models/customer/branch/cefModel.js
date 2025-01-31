@@ -31,10 +31,10 @@ const cef = {
 
     // If no duplicates are found, proceed with updating the admin record
     const sql = `
-        UPDATE \`candidate_applications\` 
+        UPDATE \`cef_applications\` 
         SET 
           \`is_submitted\` = ?
-        WHERE \`id\` = ?
+        WHERE \`candidate_application_id\` = ?
       `;
 
     startConnection((err, connection) => {
@@ -50,6 +50,203 @@ const cef = {
           return callback(queryErr, null);
         }
         callback(null, results);
+      });
+    });
+  },
+
+  updateReminderDetails: (data, callback) => {
+    const { candidateAppId } = data;
+
+    // SQL query to update the last reminder sent date to the current date
+    const cefSQL = `
+      UPDATE \`cef_applications\` 
+      SET 
+        \`last_reminder_sent_at\` = CURDATE() 
+      WHERE \`candidate_application_id\` = ?
+    `;
+
+
+    // SQL query to update the last reminder sent date to the current date
+    const davSQL = `
+      UPDATE \`dav_applications\` 
+      SET 
+        \`last_reminder_sent_at\` = CURDATE() 
+      WHERE \`candidate_application_id\` = ?
+    `;
+
+    startConnection((err, connection) => {
+      if (err) {
+        return callback(err, null);
+      }
+
+      connection.query(cefSQL, [candidateAppId], (queryErr, results) => {
+        connectionRelease(connection); // Release the connection
+
+        if (queryErr) {
+          console.error("Database query error: 51", queryErr);
+          return callback(queryErr, null);
+        }
+        startConnection((err, connection) => {
+          if (err) {
+            return callback(err, null);
+          }
+
+          connection.query(davSQL, [candidateAppId], (queryErr, results) => {
+            connectionRelease(connection); // Release the connection
+
+            if (queryErr) {
+              console.error("Database query error: 51", queryErr);
+              return callback(queryErr, null);
+            }
+            callback(null, results);
+          });
+        });
+      });
+    });
+  },
+
+  unsubmittedApplications: (callback) => {
+    const sql = `
+    SELECT 
+      ca.id AS candidate_application_id, 
+      ca.name AS application_name, 
+      ca.email, 
+      ca.branch_id, 
+      ca.customer_id,
+      ca.services, 
+      c.name AS customer_name, 
+      b.name AS branch_name,
+      cef.\`is_submitted\` AS cef_submitted,
+      da.\`is_submitted\` AS dav_submitted
+    FROM \`cef_applications\` cef
+    INNER JOIN \`candidate_applications\` ca ON ca.id = cef.candidate_application_id
+    INNER JOIN \`customers\` c ON c.id = ca.customer_id
+    INNER JOIN \`branches\` b ON b.id = ca.branch_id
+    LEFT JOIN \`dav_applications\` da ON da.candidate_application_id = ca.id
+    WHERE 
+      cef.\`is_submitted\` = 0
+      AND (da.\`is_submitted\` = 1 OR da.\`is_submitted\` IS NULL)
+      AND (cef.\`last_reminder_sent_at\` < CURDATE() OR cef.\`last_reminder_sent_at\` IS NULL)
+    
+    UNION
+  
+    SELECT 
+      ca.id AS candidate_application_id, 
+      ca.name AS application_name, 
+      ca.email, 
+      ca.branch_id, 
+      ca.customer_id,
+      ca.services, 
+      c.name AS customer_name, 
+      b.name AS branch_name,
+      cef.\`is_submitted\` AS cef_submitted,
+      da.\`is_submitted\` AS dav_submitted
+    FROM \`dav_applications\` da
+    INNER JOIN \`candidate_applications\` ca ON ca.id = da.candidate_application_id
+    INNER JOIN \`customers\` c ON c.id = ca.customer_id
+    INNER JOIN \`branches\` b ON b.id = ca.branch_id
+    LEFT JOIN \`cef_applications\` cef ON cef.candidate_application_id = ca.id
+    WHERE 
+      da.\`is_submitted\` = 0
+      AND (cef.\`is_submitted\` = 1 OR cef.\`is_submitted\` IS NULL)
+      AND (da.\`last_reminder_sent_at\` < CURDATE() OR da.\`last_reminder_sent_at\` IS NULL)
+  `;
+
+    startConnection((err, connection) => {
+      if (err) {
+        return callback(err, null);
+      }
+
+      connection.query(sql, (queryErr, results) => {
+        connectionRelease(connection); // Release the connection
+
+        if (queryErr) {
+          console.error("Database query error: 51", queryErr);
+          return callback(queryErr, null);
+        }
+        callback(null, results);
+      });
+    });
+  },
+
+  filledOrUnfilledServices: (servicesIds, candidate_application_id, callback) => {
+    if (!servicesIds) {
+      return callback(null, {});
+    }
+    let services = Array.isArray(servicesIds) ? servicesIds : servicesIds.split(',').map(s => s.trim());
+    if (!Array.isArray(services) || services.length === 0) {
+      return callback(null, {}); // Return empty if no services are provided
+    }
+
+    startConnection((err, connection) => {
+      if (err) {
+        console.error("Database connection failed:", err);
+        return callback({ message: "Failed to connect to the database", error: err }, null);
+      }
+
+      let completedQueries = 0;
+      const serviceData = {}; // Store data for each service.
+
+      // Helper function to check completion
+      const checkCompletion = () => {
+        if (completedQueries === services.length) {
+          connectionRelease(connection);
+          callback(null, serviceData);
+        }
+      };
+
+      // Loop through each service and perform actions
+      services.forEach((service, index) => {
+        const query = "SELECT `json` FROM `cef_service_forms` WHERE `service_id` = ?";
+
+        connection.query(query, [service], (err, result) => {
+          if (err) {
+            console.error(`Error fetching JSON for service ${service}:`, err);
+            completedQueries++;
+            return checkCompletion();
+          }
+
+          if (result.length === 0) {
+            console.warn(`No JSON found for service: ${service}`);
+            completedQueries++;
+            return checkCompletion();
+          }
+
+          const rawJson = result[0].json;
+          const sanitizedJson = rawJson
+            .replace(/\\"/g, '"')
+            .replace(/\\'/g, "'");
+          const jsonData = JSON.parse(sanitizedJson);
+
+          const dbTable = jsonData.db_table || null;
+          const heading = jsonData.heading || `Service ${service}`;
+
+          if (!dbTable) {
+            console.warn(`Missing db_table for service: ${service}`);
+            serviceData[service] = { heading, is_submitted: false };
+            completedQueries++;
+            return checkCompletion();
+          }
+
+          const sql = `SELECT is_submitted FROM \`cef_${dbTable}\` WHERE \`candidate_application_id\` = ?`;
+
+          connection.query(sql, [candidate_application_id], (queryErr, dbTableResults) => {
+            if (queryErr) {
+              if (queryErr.code === "ER_NO_SUCH_TABLE") {
+                console.warn(`Table "cef_${dbTable}" does not exist. Skipping service: ${service}`);
+                serviceData[service] = { heading, is_submitted: false };
+              } else {
+                console.error(`Error executing query for service ${service}:`, queryErr);
+                serviceData[service] = { heading, is_submitted: false };
+              }
+            } else {
+              const isSubmitted = dbTableResults.length > 0 && dbTableResults[0].is_submitted === 1;
+              serviceData[service] = { heading, is_submitted: isSubmitted };
+            }
+            completedQueries++;
+            checkCompletion();
+          });
+        });
       });
     });
   },
@@ -174,6 +371,7 @@ const cef = {
                 \`branch_id\` INT(11) NOT NULL,
                 \`customer_id\` INT(11) NOT NULL,
                 \`status\` VARCHAR(100) DEFAULT NULL,
+                \`is_submitted\` TINYINT(1) DEFAULT 0,
                 \`created_at\` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
                 \`updated_at\` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                 PRIMARY KEY (\`id\`),
@@ -442,6 +640,7 @@ const cef = {
                 \`branch_id\` INT(11) NOT NULL,
                 \`customer_id\` INT(11) NOT NULL,
                 \`status\` VARCHAR(100) DEFAULT NULL,
+                \`is_submitted\` TINYINT(1) DEFAULT 0,
                 \`created_at\` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
                 \`updated_at\` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                 PRIMARY KEY (\`id\`),
@@ -626,6 +825,7 @@ const cef = {
               \`branch_id\` INT(11) NOT NULL,
               \`customer_id\` INT(11) NOT NULL,
               \`status\` VARCHAR(100) DEFAULT NULL,
+              \`is_submitted\` TINYINT(1) DEFAULT 0,
               \`created_at\` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
               \`updated_at\` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
               PRIMARY KEY (\`id\`),
@@ -828,8 +1028,8 @@ const cef = {
                       dbTableFileInputs
                     )) {
                       const selectQuery = `SELECT ${fileInputNames.length > 0
-                          ? fileInputNames.join(", ")
-                          : "*"
+                        ? fileInputNames.join(", ")
+                        : "*"
                         } FROM cef_${dbTable} WHERE candidate_application_id = ?`;
 
                       connection.query(
