@@ -7,7 +7,7 @@ const { upload, saveImage, saveImages, deleteFolder } = require("../utils/cloudI
 
 exports.deleteFolder = async (req, res) => {
   try {
-    const deleteResponse = await deleteFolder("test");
+    const deleteResponse = await deleteFolder("test1");
     res.json({ success: true, message: "Folder deleted successfully", data: deleteResponse });
   } catch (error) {
     res.status(500).json({ success: false, message: "Failed to delete folder", error: error.message });

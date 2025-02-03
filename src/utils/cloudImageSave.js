@@ -244,52 +244,78 @@ const savePdf = async (doc, pdfFileName, targetDir) => {
 
 // Function to delete a folder from the FTP server
 const deleteFolder = async (folderPath) => {
-  console.log(`Attempting to delete folder at path: ${folderPath}`);
+  // console.log(`Attempting to delete folder at path: ${folderPath}`);
   const client = new ftp.Client();
-  client.ftp.verbose = true;
+  client.ftp.verbose = true; // Enables verbose logging of FTP commands
   client.ftp.timeout = 300000;
 
   try {
+    // console.log("🖥 Connecting to FTP server...");
     await client.access({
       host: cloudImageFTPHost,
       user: cloudImageFTPUser,
       password: cloudImageFTPPassword,
       secure: cloudImageFTPSecure,
     });
+    // console.log(`✅ Connected to FTP server as user: ${cloudImageFTPUser}`);
 
-    // ✅ List root directories to check if 'uploads/test' exists
-    const rootDirs = await client.list("/");
-    const folderExists = rootDirs.some(dir => dir.name === folderPath.split("/")[1]);
+    // Recursively check if the folder exists by traversing subdirectories
+    const checkFolderExists = async (currentPath) => {
+      // Extract the folder name from the path
+      const folderName = currentPath.split("/").pop();
+      const filteredFolderNameArr = currentPath.split("/").filter(name => name);
+
+      // Remove the last folder and join the rest
+      const updatedFolderPath = filteredFolderNameArr.slice(0, -1).join("/");
+
+      // ✅ List root directories to check if the folderPath exists
+      const rootDirs = await client.list(updatedFolderPath);
+      // Check if the folder exists in the current directory
+      const folder = rootDirs.find(dir => dir.name === folderName && dir.type === 2); // type 2 is a directory
+      if (folder) {
+        // console.log(`✅ Found folder: ${folderName} in path: ${currentPath}`);
+        return true;
+      } else {
+        // console.log(`❌ Folder: ${folderName} not found in path: ${currentPath}`);
+        return false;
+      }
+    };
+
+    const folderExists = await checkFolderExists(folderPath);
 
     if (!folderExists) {
       console.error(`❌ Folder does not exist: ${folderPath}`);
       throw new Error(`Folder not found: ${folderPath}`);
     }
 
-    console.log(`✅ Folder found: ${folderPath}`);
+    // console.log(`✅ Folder found: ${folderPath}`);
 
-    // 🔹 Change to parent directory before deletion
+    // 🔹 Change to the parent directory before deletion
     const parentDir = path.dirname(folderPath);
     await client.cd(parentDir);
-
-    console.log(`📁 Navigated to parent directory: ${parentDir}`);
+    // console.log(`📁 Navigated to parent directory: ${parentDir}`);
 
     // List files inside the folder
+    // console.log(`🔍 Listing files in folder: ${folderPath}`);
     const files = await client.list(folderPath);
+    // console.log(`📄 Files to be deleted in ${folderPath}:`, files);
+
     for (let file of files) {
       const filePath = `${folderPath}/${file.name}`;
       await client.remove(filePath);
-      console.log(`🗑 Deleted file: ${filePath}`);
+      // console.log(`🗑 Deleted file: ${filePath}`);
     }
 
     // 🔥 Delete the folder itself
+    // console.log(`🗑 Deleting folder: ${folderPath}`);
     await client.removeDir(folderPath);
-    console.log(`✅ Deleted folder: ${folderPath}`);
+    // console.log(`✅ Deleted folder: ${folderPath}`);
 
   } catch (err) {
-    console.error("❌ Error during FTP folder deletion:", err);
+    // console.error("❌ Error during FTP folder deletion:", err);
     throw err;
   } finally {
+    // console.log("🔒 Closing FTP client connection...");
     client.close();
   }
 };
