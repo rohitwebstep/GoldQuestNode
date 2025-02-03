@@ -345,9 +345,10 @@ const candidateApplication = {
   },
 
   isApplicationExist: (app_id, branch_id, customer_id, callback) => {
-    const sql = `SELECT CA.*, C.is_custom_bgv AS is_custom_bgv, C.name AS company_name
+    const sql = `SELECT CA.*, C.is_custom_bgv AS is_custom_bgv, C.name AS customer_name, B.name AS branch_name
       FROM candidate_applications AS CA 
-      INNER JOIN customers AS C ON C.id = ?
+      INNER JOIN customers AS C ON C.id = CA.customer_id
+      INNER JOIN branches AS B ON B.id = CA.branch_id
       WHERE CA.id = ? 
         AND CA.branch_id = ? 
         AND CA.customer_id = ?`;
@@ -362,7 +363,7 @@ const candidateApplication = {
 
       connection.query(
         sql,
-        [customer_id, app_id, branch_id, customer_id],
+        [app_id, branch_id, customer_id],
         (err, results) => {
           if (err) {
             console.error("Database query error: 106", err);
