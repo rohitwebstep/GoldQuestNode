@@ -53,7 +53,7 @@ const subUser = {
               \`client_spoc\` INT NOT NULL,
               \`zip\` LONGTEXT NOT NULL,
               \`remarks\` TEXT DEFAULT NULL,
-              \`is_notification_read\` TINYINT(1) DEFAULT 0
+              \`is_notification_read\` TINYINT(1) DEFAULT 0,
               \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
               \`updated_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
               KEY \`branch_id\` (\`branch_id\`),
