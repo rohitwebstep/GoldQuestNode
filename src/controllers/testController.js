@@ -3,7 +3,17 @@ const path = require("path");
 const Test = require("../models/testModel");
 const axios = require("axios");
 const sharp = require("sharp");
-const { upload, saveImage, saveImages } = require("../utils/cloudImageSave");
+const { upload, saveImage, saveImages, deleteFolder } = require("../utils/cloudImageSave");
+
+exports.deleteFolder = async (req, res) => {
+  try {
+    const deleteResponse = await deleteFolder("test");
+    res.json({ success: true, message: "Folder deleted successfully", data: deleteResponse });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Failed to delete folder", error: error.message });
+  }
+};
+
 
 exports.uploadImage = (req, res) => {
   // Define the target directory to move files to

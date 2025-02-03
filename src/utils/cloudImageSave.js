@@ -246,11 +246,10 @@ const savePdf = async (doc, pdfFileName, targetDir) => {
 const deleteFolder = async (folderPath) => {
   console.log(`Attempting to delete folder at path: ${folderPath}`);
   const client = new ftp.Client();
-  client.ftp.verbose = true; // Enable verbose logging for FTP connection
-  client.ftp.timeout = 300000; // Set a timeout for FTP operations
+  client.ftp.verbose = true;
+  client.ftp.timeout = 300000;
 
   try {
-    // Connect to FTP server using previously fetched app information
     await client.access({
       host: cloudImageFTPHost,
       user: cloudImageFTPUser,
@@ -258,29 +257,40 @@ const deleteFolder = async (folderPath) => {
       secure: cloudImageFTPSecure,
     });
 
-    // Ensure the folder exists before attempting to delete it
-    await client.ensureDir(folderPath); // Navigate to the target folder
-    console.log(`Navigated to folder: ${folderPath}`);
+    // ✅ List root directories to check if 'uploads/test' exists
+    const rootDirs = await client.list("/");
+    const folderExists = rootDirs.some(dir => dir.name === folderPath.split("/")[1]);
 
-    // List the contents of the folder and remove each file individually
-    const files = await client.list(folderPath); // List the contents of the folder
-    if (files.length > 0) {
-      console.log(`Folder contains files, deleting them one by one...`);
-      for (let file of files) {
-        const filePath = `${folderPath}/${file.name}`;
-        await client.remove(filePath); // Remove each file individually
-        console.log(`Deleted file: ${filePath}`);
-      }
+    if (!folderExists) {
+      console.error(`❌ Folder does not exist: ${folderPath}`);
+      throw new Error(`Folder not found: ${folderPath}`);
     }
 
-    // Now that the folder is empty, remove the folder itself
-    await client.removeDir(folderPath); // Remove the empty directory
-    console.log(`Deleted folder: ${folderPath}`);
+    console.log(`✅ Folder found: ${folderPath}`);
+
+    // 🔹 Change to parent directory before deletion
+    const parentDir = path.dirname(folderPath);
+    await client.cd(parentDir);
+
+    console.log(`📁 Navigated to parent directory: ${parentDir}`);
+
+    // List files inside the folder
+    const files = await client.list(folderPath);
+    for (let file of files) {
+      const filePath = `${folderPath}/${file.name}`;
+      await client.remove(filePath);
+      console.log(`🗑 Deleted file: ${filePath}`);
+    }
+
+    // 🔥 Delete the folder itself
+    await client.removeDir(folderPath);
+    console.log(`✅ Deleted folder: ${folderPath}`);
+
   } catch (err) {
-    console.error("Error during FTP folder deletion:", err);
-    throw err; // Rethrow the error if deletion fails
+    console.error("❌ Error during FTP folder deletion:", err);
+    throw err;
   } finally {
-    client.close(); // Close the FTP connection
+    client.close();
   }
 };
 
