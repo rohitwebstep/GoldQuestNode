@@ -295,7 +295,7 @@ exports.create = (req, res) => {
               console.error("Error checking unique ID:", err);
               return res.status(500).json({
                 status: false,
-                message: "Internal server error",
+                message: err.message,
                 token: newToken,
               });
             }
@@ -315,7 +315,7 @@ exports.create = (req, res) => {
                   console.error("Error checking username:", err);
                   return res.status(500).json({
                     status: false,
-                    message: "Internal server error",
+                    message: err.message,
                     token: newToken,
                   });
                 }
@@ -1438,7 +1438,7 @@ exports.update = (req, res) => {
                         console.error("Error checking unique ID:", err);
                         return res.status(500).json({
                           status: false,
-                          message: "Internal server error",
+                          message: err.message,
                           token: newToken,
                         });
                       }
@@ -1472,7 +1472,7 @@ exports.update = (req, res) => {
                           console.error("Error checking username:", err);
                           return res.status(500).json({
                             status: false,
-                            message: "Internal server error",
+                            message: err.message,
                             token: newToken,
                           });
                         }
@@ -1593,8 +1593,7 @@ exports.update = (req, res) => {
                                     );
                                     return res.status(500).json({
                                       status: false,
-                                      message:
-                                        "Internal server error while updating head branch email.",
+                                      message: err.message,
                                       token: newToken,
                                     });
                                   }

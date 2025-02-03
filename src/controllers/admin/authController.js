@@ -564,7 +564,7 @@ exports.validateLogin = (req, res) => {
         console.error("Error checking token validity:", err);
         return res
           .status(500)
-          .json({ status: false, message: "Internal server error 2." });
+          .json({ status: false, message: err.message });
       }
 
       if (!tokenResult.status) {
@@ -632,7 +632,7 @@ exports.updatePassword = (req, res) => {
       console.error("Token validation error:", err);
       return res.status(500).json({
         status: false,
-        message: "Internal server error during token validation.",
+        message: err.message,
       });
     }
 
@@ -853,7 +853,7 @@ exports.forgotPassword = (req, res) => {
       console.error("Database error:", err);
       return res
         .status(500)
-        .json({ status: false, message: "Internal server error 3." });
+        .json({ status: false, message: err.message });
     }
 
     // Return error if no admin found

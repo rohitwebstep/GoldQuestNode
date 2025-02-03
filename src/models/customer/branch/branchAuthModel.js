@@ -197,7 +197,7 @@ const Branch = {
         if (err) {
           console.error("Database query failed:", err);
           return callback(
-            { message: "Internal server error", error: err },
+            err,
             null
           );
         }

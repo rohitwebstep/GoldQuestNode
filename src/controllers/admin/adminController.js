@@ -213,7 +213,7 @@ exports.create = (req, res) => {
         console.error("Error checking token validity:", err);
         return res.status(500).json({
           status: false,
-          message: "Internal server error",
+          message: err.message,
         });
       }
 
@@ -382,7 +382,7 @@ exports.update = (req, res) => {
         console.error("Error checking token validity:", err);
         return res
           .status(500)
-          .json({ status: false, message: "Internal server error" });
+          .json({ status: false, message: err.message });
       }
 
       if (!tokenResult.status) {
@@ -504,7 +504,7 @@ exports.delete = (req, res) => {
         console.error("Error checking token validity:", err);
         return res
           .status(500)
-          .json({ status: false, message: "Internal server error" });
+          .json({ status: false, message: err.message });
       }
 
       if (!tokenResult.status) {
@@ -659,7 +659,7 @@ exports.upload = async (req, res) => {
                   console.error("Token validation error:", err);
                   return res
                     .status(500)
-                    .json({ status: false, message: "Internal server error." });
+                    .json({ status: false, message: err.message });
                 }
 
                 if (!tokenResult.status) {
