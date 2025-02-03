@@ -160,6 +160,15 @@ exports.isApplicationExist = (req, res) => {
             }
             */
 
+                if (
+                  currentCEFApplication && currentCEFApplication.is_submitted == 1
+                ) {
+                  return res.status(400).json({
+                    status: false,
+                    message: "An application has already been submitted.",
+                  });
+                }
+
                 const service_ids = Array.isArray(
                   currentCandidateApplication.services
                 )
@@ -514,9 +523,20 @@ exports.submit = (req, res) => {
                 });
               }
 
+              /*
               if (
                 currentCEFApplication &&
                 Object.keys(currentCEFApplication).length > 0
+              ) {
+                return res.status(400).json({
+                  status: false,
+                  message: "An application has already been submitted.",
+                });
+              }
+              */
+
+              if (
+                currentCEFApplication && currentCEFApplication.is_submitted == 1
               ) {
                 return res.status(400).json({
                   status: false,
