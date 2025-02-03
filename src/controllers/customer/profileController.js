@@ -2008,7 +2008,7 @@ exports.delete = (req, res) => {
 
             try {
               // Attempt to delete the folder associated with the customer
-              const folderDeletionResponse = await deleteFolder(`uploads/customers/${clientUniqueId}`);
+              const folderDeletionResponse = await deleteFolder(`/uploads/customers/${clientUniqueId}`);
 
               // Respond with success if customer and folder are deleted successfully
               return res.status(200).json({
