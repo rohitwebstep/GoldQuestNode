@@ -2002,15 +2002,34 @@ exports.delete = (req, res) => {
               null,
               () => { }
             );
-            const clientUniqueId = result.client_unique_id;
-            // const deletResponse = await deleteFolder("uploads/test");
+
             const data = result.data;
-            res.status(200).json({
-              status: true,
-              message: "Customer deleted successfully.",
-              data,
-              token: newToken,
-            });
+            const clientUniqueId = result.client_unique_id;
+
+            try {
+              // Attempt to delete the folder associated with the customer
+              const folderDeletionResponse = await deleteFolder(`uploads/customers/${clientUniqueId}`);
+
+              // Respond with success if customer and folder are deleted successfully
+              return res.status(200).json({
+                status: true,
+                message: "Customer and associated folder deleted successfully.",
+                data,
+                token: newToken,
+              });
+            } catch (error) {
+              // Handle error during folder deletion and log it
+              console.error("Error during folder deletion:", error.message);
+
+              // Respond with success for customer deletion, but include folder deletion error
+              return res.status(200).json({
+                status: true,
+                message: "Customer deleted successfully, but there was an issue deleting the folder.",
+                data,
+                error: error.message,
+                token: newToken,
+              });
+            }
           });
         });
       }
