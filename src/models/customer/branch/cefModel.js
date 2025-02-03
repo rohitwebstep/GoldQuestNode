@@ -568,7 +568,9 @@ const cef = {
                   console.error("Error updating application:", updateErr);
                   return callback(updateErr, null);
                 }
-                callback(null, updateResult);
+                // Return the id (primary key) of the updated row
+                const updatedId = entryResults[0].id; // Get the existing `id` from the SELECT result
+                callback(null, { insertId: updatedId, result: updateResult });
               }
             );
           } else {
