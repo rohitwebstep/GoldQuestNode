@@ -589,6 +589,7 @@ exports.submit = (req, res) => {
                                 );
                               }
 
+                              /*
                               if (
                                 currentCMEFormData &&
                                 Object.keys(currentCMEFormData).length > 0
@@ -597,6 +598,7 @@ exports.submit = (req, res) => {
                                   "Annexure has already been filed."
                                 );
                               }
+                              */
 
                               CEF.createOrUpdateAnnexure(
                                 cefResult.insertId,
