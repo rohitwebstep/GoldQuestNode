@@ -212,7 +212,7 @@ exports.create = (req, res) => {
       Number(custom_template) === 1)
   ) {
     custom_template_string = "yes";
-    requiredFields.custom_address = custom_address;
+    // requiredFields.custom_address = custom_address;
   }
 
   // Check for missing fields
@@ -1270,7 +1270,7 @@ exports.update = (req, res) => {
       Number(custom_template) === 1)
   ) {
     custom_template_string = "yes";
-    requiredFields.custom_address = custom_address;
+    // requiredFields.custom_address = custom_address;
   }
   // Check for missing fields
   const missingFields = Object.keys(requiredFields)
@@ -1573,8 +1573,7 @@ exports.update = (req, res) => {
                               );
                               return res.status(500).json({
                                 status: false,
-                                message:
-                                  "Failed to update customer meta. Please try again.",
+                                message: err.message,
                                 token: newToken,
                               });
                             }
