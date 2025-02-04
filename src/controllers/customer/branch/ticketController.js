@@ -69,7 +69,7 @@ exports.list = (req, res) => {
             console.error("Error validating token:", tokenErr);
             return res.status(500).json({
               status: false,
-              message: "Token validation error. Please try again later.",
+              message: tokenErr.message,
             });
           }
 
@@ -161,7 +161,7 @@ exports.view = (req, res) => {
             console.error("Error validating token:", tokenErr);
             return res.status(500).json({
               status: false,
-              message: "Token validation error. Please try again later.",
+              message: tokenErr.message,
             });
           }
 
@@ -281,7 +281,7 @@ exports.chat = (req, res) => {
                   console.error("Error validating token:", tokenErr);
                   return res.status(500).json({
                     status: false,
-                    message: "Token validation error. Please try again later.",
+                    message: tokenErr.message,
                   });
                 }
 
@@ -481,7 +481,7 @@ exports.create = (req, res) => {
                   console.error("Error validating token:", tokenErr);
                   return res.status(500).json({
                     status: false,
-                    message: "Token validation error. Please try again later.",
+                    message: tokenErr.message,
                   });
                 }
 
@@ -745,7 +745,7 @@ exports.delete = (req, res) => {
                   console.error("Error validating token:", tokenErr);
                   return res.status(500).json({
                     status: false,
-                    message: "Token validation error. Please try again later.",
+                    message: tokenErr.message,
                   });
                 }
 
