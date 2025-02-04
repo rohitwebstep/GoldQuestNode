@@ -447,7 +447,7 @@ exports.verifyTwoFactor = (req, res) => {
       console.error("Error finding branch:", err);
       return res.status(500).json({
         status: false,
-        message: "An internal error occurred while verifying the user.",
+        message: err.message,
       });
     }
 

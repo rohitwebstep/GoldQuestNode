@@ -357,7 +357,7 @@ exports.annexureDataByServiceIds = (req, res) => {
           console.error("Error checking token validity:", tokenErr);
           return res.status(500).json({
             status: false,
-            message: "An internal error occurred while validating the token.",
+            message: tokenErr.message,
           });
         }
 

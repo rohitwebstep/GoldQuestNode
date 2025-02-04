@@ -133,8 +133,7 @@ exports.callbackRequest = (req, res) => {
         console.error("Error checking token validity:", tokenErr);
         return res.status(500).json({
           status: false,
-          message:
-            "An internal error occurred while validating the branch token. Please try again.",
+          message:tokenErr.message,
         });
       }
 
