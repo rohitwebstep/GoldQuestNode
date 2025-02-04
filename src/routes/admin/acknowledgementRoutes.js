@@ -5,5 +5,6 @@ const acknowledgementController = require("../../controllers/admin/acknowledgeme
 // Authentication routes
 router.get("/list", acknowledgementController.list);
 router.put("/send-notification", acknowledgementController.sendNotification);
+router.get("/send-auto-notification", acknowledgementController.sendAutoNotification);
 
 module.exports = router;

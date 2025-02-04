@@ -377,7 +377,6 @@ exports.unsubmittedApplications = (req, res) => {
   });
 };
 
-
 exports.submit = (req, res) => {
   const {
     branch_id,
