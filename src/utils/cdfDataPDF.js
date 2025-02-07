@@ -154,7 +154,7 @@ module.exports = {
             console.error("Database error:", err);
             return reject(
               new Error(
-                "An error occurred while checking application existence."
+                err.message
               )
             );
           }

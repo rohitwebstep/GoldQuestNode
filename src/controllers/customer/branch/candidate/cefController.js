@@ -104,7 +104,7 @@ exports.isApplicationExist = (req, res) => {
         console.error("Database error:", err);
         return res.status(500).json({
           status: false,
-          message: "An error occurred while checking application existence.",
+          message: err.message,
         });
       }
 
@@ -420,7 +420,7 @@ exports.submit = (req, res) => {
         console.error("Database error:", err);
         return res.status(500).json({
           status: false,
-          message: "An error occurred while checking application existence.",
+          message: err.message,
         });
       }
 
@@ -911,7 +911,7 @@ exports.upload = async (req, res) => {
           console.error("Database error during application existence check:", err);
           return res.status(500).json({
             status: false,
-            message: "An error occurred while checking application existence.",
+            message: err.message,
           });
         }
 
