@@ -12,6 +12,8 @@ const candidateMasterTrackerRoutes = require("./routes/admin/candidateMasterTrac
 const generateInvoiceRoutes = require("./routes/admin/generateInvoiceRoutes");
 const acknowledgementRoutes = require("./routes/admin/acknowledgementRoutes");
 const externalLoginCredentials = require("./routes/admin/externalLoginCredentialsRoutes");
+const jsonFormRoutes = require("./routes/admin/jsonFormRoutes");
+
 const reportSummaryRoutes = require("./routes/admin/reportSummaryRoutes");
 const customerRoutes = require("./routes/customer/indexRoutes");
 const branchRoutes = require("./routes/customer/branch/indexRoutes");
@@ -67,6 +69,8 @@ app.use("/uploads", express.static("uploads"));
 
 // Define routes
 app.use("/admin", adminRoutes);
+app.use("/json-form", jsonFormRoutes);
+
 app.use("/ticket", ticketRoutes);
 app.use("/user-history", userHistoryRoutes);
 app.use("/client-master-tracker", clientMasterTrackerRoutes);
