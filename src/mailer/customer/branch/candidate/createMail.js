@@ -9,18 +9,46 @@ const generateTable = (services) => {
             </tr>`;
   }
 
-  let rows = services
-    .map((service, index) => {
-      const [title, description] = service.split(":"); // Split the service into title and description
-      return `<tr>
-              <td>${index + 1}</td> <!-- Serial number -->
-              <td>${title}</td> <!-- Title -->
-              <td>${description.trim()}</td> <!-- Description -->
-            </tr>`;
-    })
-    .join("");
+  console.log("Original Services - ", services);
 
-  return rows;
+  // Object to store merged services
+  const mergedServices = {};
+
+  services.forEach((service) => {
+    const match = service.match(/(.*?)(?:[-\s]?(\d+))?:\s*(.*)/);
+    // Updated regex to handle hyphen (-), space, or no space before the number
+
+    if (!match) return;
+
+    const baseTitle = match[1].trim(); // Base title (e.g., "PREVIOUS EMPLOYMENT")
+    const version = match[2] ? match[2].trim() : ""; // Extracts version number (if exists)
+    const description = match[3].trim(); // Extracts description
+
+    // Create a unique key using the base title and description
+    const key = `${baseTitle}:${description}`;
+
+    if (mergedServices[key]) {
+      // Append version numbers if not already present
+      if (version && !mergedServices[key].versions.includes(version)) {
+        mergedServices[key].versions.push(version);
+      }
+    } else {
+      // Store new entry with an array for versions
+      mergedServices[key] = { name: baseTitle, versions: version ? [version] : [], description };
+    }
+  });
+
+  console.log("Merged Services - ", mergedServices);
+
+  // Generate table rows
+  return Object.values(mergedServices)
+    .map(({ name, versions, description }, index) => `
+      <tr>
+        <td>${index + 1}</td>
+        <td>${name}${versions.length ? `-${versions.join("/")}` : ""}</td>
+        <td>${description}</td>
+      </tr>`)
+    .join("");
 };
 
 // Function to send email
@@ -151,7 +179,7 @@ async function createMail(
       })
       .filter((cc) => cc !== "") // Remove any empty CCs from failed parses
       .join(", ");
-      
+
     // Send email
     const info = await transporter.sendMail({
       from: `"${smtp.title}" <${smtp.username}>`,

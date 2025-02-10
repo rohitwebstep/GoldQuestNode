@@ -388,7 +388,7 @@ exports.create = (req, res) => {
 
                               // Add the service name and description to the array
                               serviceNames.push(
-                                `${currentService.title}: ${currentService.description}`
+                                `${currentService.title}: ${currentService.email_description}`
                               );
 
                               // Recursively fetch the next service
@@ -773,7 +773,7 @@ function sendNotificationEmails(
 
                 // Add the service name and description to the serviceNames array
                 serviceNames.push(
-                  `${currentService.title}: ${currentService.description}`
+                  `${currentService.title}: ${currentService.email_description}`
                 );
                 fetchServiceNames(index + 1); // Recursively fetch next service
               }

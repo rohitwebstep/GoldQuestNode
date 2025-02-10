@@ -1082,7 +1082,7 @@ exports.sendLink = (req, res) => {
                             }
 
                             serviceNames.push(
-                              `${currentService.title}: ${currentService.description}`
+                              `${currentService.title}: ${currentService.email_description}`
                             );
                             fetchServiceNames(index + 1);
                           }

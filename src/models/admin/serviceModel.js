@@ -1,7 +1,7 @@
 const { pool, startConnection, connectionRelease } = require("../../config/db");
 
 const Service = {
-  create: (title, description, short_code, group, sac_code, admin_id, callback) => {
+  create: (title, description, email_description, short_code, group, sac_code, admin_id, callback) => {
     // Step 1: Check if a service with the same title already exists
     const checkServiceSql = `
     SELECT * FROM \`services\` WHERE \`title\` = ? OR \`short_code\` = ?
@@ -49,13 +49,13 @@ const Service = {
 
           // Step 3: Insert the new service
           const insertServiceSql = `
-          INSERT INTO \`services\` (\`title\`, \`description\`, \`short_code\`, \`group\`, \`sac_code\`, \`admin_id\`)
-          VALUES (?, ?, ?, ?, ?, ?)
+          INSERT INTO \`services\` (\`title\`, \`description\`, \`email_description\`, \`short_code\`, \`group\`, \`sac_code\`, \`admin_id\`)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
         `;
 
           connection.query(
             insertServiceSql,
-            [title, description, short_code, group, sac_code, admin_id],
+            [title, description, email_description, short_code, group, sac_code, admin_id],
             (insertErr, results) => {
               connectionRelease(connection); // Release the connection
 
@@ -140,7 +140,7 @@ const Service = {
   },
 
   getServiceRequiredDocumentsByServiceId: (service_id, callback) => {
-    const sql = `SELECT * FROM \`service_required_documents\` WHERE \`service_id\` = ?`;
+    const sql = `SELECT \`email_description\`, \`title\` FROM \`services\` WHERE \`id\` = ?`;
 
     startConnection((err, connection) => {
       if (err) {
@@ -159,7 +159,7 @@ const Service = {
     });
   },
 
-  update: (id, title, description, short_code, sac_code, callback) => {
+  update: (id, title, description, email_description, short_code, sac_code, callback) => {
     // Step 1: Check if a service with the same title already exists
     const checkServiceSql = `
         SELECT * FROM \`services\` WHERE \`title\` = ? OR \`short_code\` = ? AND \`id\` != ?
@@ -206,7 +206,7 @@ const Service = {
           }
           const sql = `
                       UPDATE \`services\`
-                      SET \`title\` = ?, \`description\` = ? , \`short_code\` = ?, \`sac_code\` = ?
+                      SET \`title\` = ?, \`description\` = ? , \`email_description\` = ?, \`short_code\` = ?, \`sac_code\` = ?
                       WHERE \`id\` = ?
                     `;
 
@@ -217,7 +217,7 @@ const Service = {
 
             connection.query(
               sql,
-              [title, description, short_code, sac_code, id],
+              [title, description, email_description, short_code, sac_code, id],
               (queryErr, results) => {
                 connectionRelease(connection); // Release the connection
 
