@@ -29,6 +29,8 @@ exports.create = (req, res) => {
     email,
     services,
     package,
+    purpose_of_application,
+    nationality
   } = req.body;
 
   // Define required fields
@@ -40,6 +42,7 @@ exports.create = (req, res) => {
     employee_id,
     mobile_number,
     email,
+    nationality,
   };
 
   // Check for missing fields
@@ -143,6 +146,8 @@ exports.create = (req, res) => {
                   email,
                   services: services || null,
                   package: package || null,
+                  purpose_of_application,
+                  nationality,
                   customer_id,
                 },
                 (err, result) => {
@@ -158,7 +163,7 @@ exports.create = (req, res) => {
                       "0",
                       null,
                       err,
-                      () => {}
+                      () => { }
                     );
                     return res.status(500).json({
                       status: false,
@@ -174,7 +179,7 @@ exports.create = (req, res) => {
                     "1",
                     `{id: ${result.insertId}}`,
                     null,
-                    () => {}
+                    () => { }
                   );
 
                   BranchCommon.getBranchandCustomerEmailsForNotification(
@@ -238,9 +243,9 @@ exports.create = (req, res) => {
 
                         const serviceIds = services
                           ? services
-                              .split(",")
-                              .map((id) => parseInt(id.trim(), 10))
-                              .filter(Number.isInteger)
+                            .split(",")
+                            .map((id) => parseInt(id.trim(), 10))
+                            .filter(Number.isInteger)
                           : [];
 
                         const serviceNames = [];
@@ -487,8 +492,7 @@ exports.bulkCreate = (req, res) => {
 
           if (missingFields.length > 0) {
             emptyValues.push(
-              `${
-                app.applicant_full_name || "Unnamed applicant"
+              `${app.applicant_full_name || "Unnamed applicant"
               } (missing fields: ${missingFields.join(", ")})`
             );
             return false; // Exclude applications with missing fields
@@ -504,8 +508,7 @@ exports.bulkCreate = (req, res) => {
 
           if (emptyFields.length > 0) {
             emptyValues.push(
-              `${
-                app.applicant_full_name || "Unnamed applicant"
+              `${app.applicant_full_name || "Unnamed applicant"
               } (empty fields: ${emptyFields.join(", ")})`
             );
           }
@@ -618,7 +621,7 @@ exports.bulkCreate = (req, res) => {
                         "1",
                         `{id: ${result.insertId}}`,
                         null,
-                        () => {}
+                        () => { }
                       );
                       app.insertId = result.insertId;
                       resolve(app);
@@ -896,7 +899,7 @@ function sendNotificationEmails(
                             // After processing each application, check if all are processed
                             if (
                               processedApplications + failedApplications ===
-                                updatedApplications.length &&
+                              updatedApplications.length &&
                               !responseSent
                             ) {
                               responseSent = true; // Ensure the response is only sent once
@@ -1038,6 +1041,8 @@ exports.update = (req, res) => {
     email,
     services,
     package,
+    purpose_of_application,
+    nationality,
   } = req.body;
 
   // Define required fields
@@ -1049,6 +1054,7 @@ exports.update = (req, res) => {
     employee_id,
     mobile_number,
     email,
+    nationality,
   };
 
   // Check for missing fields
@@ -1190,6 +1196,8 @@ exports.update = (req, res) => {
                     email,
                     services: services || null,
                     package: package || null,
+                    purpose_of_application: purpose_of_application || null,
+                    nationality: nationality || null,
                   },
                   candidate_application_id,
                   (err, result) => {
@@ -1208,7 +1216,7 @@ exports.update = (req, res) => {
                           ...changes,
                         }),
                         err,
-                        () => {}
+                        () => { }
                       );
                       return res.status(500).json({
                         status: false,
@@ -1224,7 +1232,7 @@ exports.update = (req, res) => {
                       "1",
                       JSON.stringify({ candidate_application_id, ...changes }),
                       null,
-                      () => {}
+                      () => { }
                     );
 
                     res.status(200).json({
@@ -1332,7 +1340,7 @@ exports.delete = (req, res) => {
                   "0",
                   JSON.stringify({ id }),
                   err,
-                  () => {}
+                  () => { }
                 );
                 return res.status(500).json({
                   status: false,
@@ -1348,7 +1356,7 @@ exports.delete = (req, res) => {
                 "1",
                 JSON.stringify({ id }),
                 null,
-                () => {}
+                () => { }
               );
 
               res.status(200).json({

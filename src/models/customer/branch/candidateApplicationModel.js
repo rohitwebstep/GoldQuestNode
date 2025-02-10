@@ -61,6 +61,8 @@ const candidateApplication = {
       email,
       services,
       package,
+      purpose_of_application,
+      nationality,
       customer_id,
     } = data;
 
@@ -73,6 +75,8 @@ const candidateApplication = {
           \`email\`,
           \`services\`,
           \`package\`,
+              \`purpose_of_application\`,
+    \`nationality\`,
           \`customer_id\`
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `;
@@ -85,6 +89,8 @@ const candidateApplication = {
       replaceEmptyWithNull(email),
       replaceEmptyWithNull(services),
       replaceEmptyWithNull(package),
+      replaceEmptyWithNull(purpose_of_application),
+      replaceEmptyWithNull(nationality),
       replaceEmptyWithNull(customer_id),
     ];
 
@@ -276,7 +282,7 @@ const candidateApplication = {
   },
 
   update: (data, candidate_application_id, callback) => {
-    const { name, employee_id, mobile_number, email, services, package } = data;
+    const { name, employee_id, mobile_number, email, services, package, purpose_of_application, nationality } = data;
 
     const sql = `
       UPDATE \`candidate_applications\`
@@ -286,7 +292,9 @@ const candidateApplication = {
         \`mobile_number\` = ?,
         \`email\` = ?,
         \`services\` = ?,
-        \`package\` = ?
+        \`package\` = ?,
+        \`purpose_of_application\` = ?,
+        \`nationality\` = ?
       WHERE
         \`id\` = ?
     `;
@@ -298,6 +306,8 @@ const candidateApplication = {
       replaceEmptyWithNull(email),
       replaceEmptyWithNull(services),
       replaceEmptyWithNull(package),
+      replaceEmptyWithNull(purpose_of_application),
+      replaceEmptyWithNull(nationality),
       replaceEmptyWithNull(candidate_application_id),
     ];
 
