@@ -75,10 +75,10 @@ const candidateApplication = {
           \`email\`,
           \`services\`,
           \`package\`,
-              \`purpose_of_application\`,
-    \`nationality\`,
+          \`purpose_of_application\`,
+          \`nationality\`,
           \`customer_id\`
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
 
     const values = [
