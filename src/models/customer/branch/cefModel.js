@@ -261,7 +261,7 @@ const cef = {
       }
 
       let completedQueries = 0;
-      const serviceData = {}; // Initialize an object to store data for each service.
+      const serviceData = {}; // Object to store data for each service.
 
       // Helper function to check completion
       const checkCompletion = () => {
@@ -273,60 +273,65 @@ const cef = {
 
       // Step 1: Loop through each service and perform actions
       services.forEach((service) => {
-        const query =
-          "SELECT `json` FROM `cef_service_forms` WHERE `service_id` = ?";
+        const query = "SELECT `json` FROM `cef_service_forms` WHERE `service_id` = ?";
+        const serviceQuery = "SELECT `group` FROM `services` WHERE `id` = ?";
 
         connection.query(query, [service], (err, result) => {
           if (err) {
             console.error("Error fetching JSON for service:", service, err);
-          } else if (result.length > 0) {
-            try {
-              // Parse the JSON data
-              const rawJson = result[0].json;
-              const sanitizedJson = rawJson
-                .replace(/\\"/g, '"')
-                .replace(/\\'/g, "'");
-              const jsonData = JSON.parse(sanitizedJson);
-              const dbTable = jsonData.db_table;
+            completedQueries++;
+            checkCompletion();
+            return;
+          }
 
-              const sql = `SELECT * FROM \`cef_${dbTable}\` WHERE \`candidate_application_id\` = ?`;
-
-              connection.query(
-                sql,
-                [candidate_application_id],
-                (queryErr, dbTableResults) => {
-                  if (queryErr) {
-                    if (queryErr.code === "ER_NO_SUCH_TABLE") {
-                      console.warn(
-                        `Table "${dbTable}" does not exist. Skipping.`
-                      );
-                      serviceData[service] = { jsonData, data: null };
-                    } else {
-                      console.error("Error executing query:", queryErr);
-                    }
-                  } else {
-                    const dbTableResult =
-                      dbTableResults.length > 0 ? dbTableResults[0] : null;
-                    serviceData[service] = {
-                      jsonData,
-                      data: dbTableResult,
-                    };
-                  }
-                  completedQueries++;
-                  checkCompletion();
-                }
-              );
-            } catch (parseErr) {
-              console.error(
-                "Error parsing JSON for service:",
-                service,
-                parseErr
-              );
-              completedQueries++;
-              checkCompletion();
-            }
-          } else {
+          if (result.length === 0) {
             console.warn(`No JSON found for service: ${service}`);
+            completedQueries++;
+            checkCompletion();
+            return;
+          }
+
+          try {
+            // Parse the JSON data safely
+            const rawJson = result[0].json;
+            const sanitizedJson = rawJson.replace(/\\"/g, '"').replace(/\\'/g, "'");
+            const jsonData = JSON.parse(sanitizedJson);
+            const dbTable = jsonData.db_table;
+
+            const sql = `SELECT * FROM \`cef_${dbTable}\` WHERE \`candidate_application_id\` = ?`;
+
+            connection.query(sql, [candidate_application_id], (queryErr, dbTableResults) => {
+              if (queryErr) {
+                if (queryErr.code === "ER_NO_SUCH_TABLE") {
+                  console.warn(`Table "${dbTable}" does not exist. Skipping.`);
+                  serviceData[service] = { jsonData, data: null, group: null };
+                } else {
+                  console.error("Error executing query:", queryErr);
+                }
+                completedQueries++;
+                checkCompletion();
+                return;
+              }
+
+              const dbTableResult = dbTableResults.length > 0 ? dbTableResults[0] : null;
+
+              // Fetch the service group in a separate query
+              connection.query(serviceQuery, [service], (serviceErr, serviceResult) => {
+                if (serviceErr) {
+                  console.error("Error fetching service group for service:", service, serviceErr);
+                  serviceData[service] = { jsonData, data: dbTableResult, group: null };
+                } else {
+                  const serviceGroup = serviceResult.length > 0 ? serviceResult[0].group : null;
+                  serviceData[service] = { jsonData, data: dbTableResult, group: serviceGroup };
+                }
+
+                completedQueries++;
+                checkCompletion();
+              });
+            });
+
+          } catch (parseErr) {
+            console.error("Error parsing JSON for service:", service, parseErr);
             completedQueries++;
             checkCompletion();
           }
