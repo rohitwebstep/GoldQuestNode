@@ -1306,22 +1306,22 @@ module.exports = {
                         endButtonTextYPosition
                       );
 
-                      const imgPath = '../assets/images/verified.png'; // Ensure this path is accessible
-
-                      // Calculate the width and height of the image dynamically using jsPDF's getImageProperties
-                      const imgProperties = doc.getImageProperties(imgPath);
-                      const imgWidth = 50;  // Adjust this scale factor as needed
-                      const imgHeight = 40; // Adjust this scale factor as needed
-
+                      // Read the image file and convert it to Base64
+                      const imgPath = '../assets/images/verified.png';  // Ensure this path is correct
+                      const imageBase64 = fs.readFileSync(imgPath, { encoding: 'base64' });
+                      const imgData = `data:image/png;base64,${imageBase64}`;
+                      
+                      // Calculate the width and height of the image dynamically
+                      const imgWidth = 50;
+                      const imgHeight = 40;
+                      
                       // Calculate the X position to center the image horizontally
                       const centerX = (pageWidth - imgWidth) / 2;
-
-                      // Calculate the Y position (adjust this based on where you want the image)
-                      const centerY = endOfDetailY + 20; // Example: Place the image 20 units below the "END OF DETAIL REPORT" text
-
-                      // Add the image to the PDF at the calculated position
-                      doc.addImage(imgPath, 'PNG', centerX, centerY, imgWidth, imgHeight);
-
+                      const centerY = endOfDetailY + 20; // Place 20 units below "END OF DETAIL REPORT"
+                      
+                      // Add the image to the PDF
+                      doc.addImage(imgData, 'PNG', centerX, centerY, imgWidth, imgHeight);
+                      
                       addFooter(doc, appHost);
                       const pdfPathCloud = await savePdf(
                         doc,
