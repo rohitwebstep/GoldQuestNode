@@ -66,6 +66,8 @@ const generateTable = (services) => {
     `)
     .join("");
 
+    return mergedTableHTML;
+
   // console.log(mergedTableHTML);
 };
 

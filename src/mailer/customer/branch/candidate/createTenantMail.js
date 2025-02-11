@@ -4,11 +4,11 @@ const { startConnection, connectionRelease } = require("../../../../config/db");
 const generateTable = (services) => {
     if (!Array.isArray(services) || services.length === 0) {
         return `<tr>
-              <td colspan="3" style="text-align: center;">No instructions available for the selected services.</td>
-            </tr>`;
+                <td colspan="3" style="text-align: center;">No instructions available for the selected services.</td>
+              </tr>`;
     }
 
-    console.log("Original Services - ", services);
+    // console.log("Original Services - ", services);
 
     const mergedServices = {};
 
@@ -41,18 +41,35 @@ const generateTable = (services) => {
         }
     });
 
-    console.log("Merged Services - ", mergedServices);
+    // console.log("Merged Services - ", mergedServices);
 
-    return Object.values(mergedServices)
-        .map(({ name, versions, descriptions }, index) => `
-      <tr>
-        <td>${index + 1}</td>
-        <td>${name}${versions.length ? `-${versions.join("/")}` : ""}</td>
-        <td>${descriptions.join("<br>")}</td>
-      </tr>`).join("");
+    const mergedDescriptionsMap = new Map();
+
+    Object.values(mergedServices).forEach(({ name, versions, descriptions }) => {
+        const key = descriptions.join(" "); // Using descriptions as key to merge same descriptions
+        if (!mergedDescriptionsMap.has(key)) {
+            mergedDescriptionsMap.set(key, { names: [name], versions: [...versions] });
+        } else {
+            const existing = mergedDescriptionsMap.get(key);
+            existing.names.push(name);
+            existing.versions.push(...versions);
+        }
+    });
+
+    const mergedTableHTML = Array.from(mergedDescriptionsMap.entries())
+        .map(([description, { names, versions }], index) => `
+        <tr>
+          <td>${index + 1}</td>
+          <td>${names.join(" / ")}${versions.length ? `-${versions.join("/")}` : ""}</td>
+          <td>${description}</td>
+        </tr>
+      `)
+        .join("");
+
+    return mergedTableHTML;
+
+    // console.log(mergedTableHTML);
 };
-
-
 
 // Function to send email
 async function createTenantMail(
