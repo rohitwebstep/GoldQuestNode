@@ -8,7 +8,7 @@ const generateTable = (services) => {
             </tr>`;
   }
 
-  console.log("Original Services - ", services);
+  // console.log("Original Services - ", services);
 
   const mergedServices = {};
 
@@ -23,7 +23,7 @@ const generateTable = (services) => {
 
     if (typeof description !== "string" || !description.trim() || description.trim().toLowerCase() === "null") {
       return;
-    }    
+    }
 
     // Use base title as a key
     if (!mergedServices[baseTitle]) {
@@ -41,18 +41,33 @@ const generateTable = (services) => {
     }
   });
 
-  console.log("Merged Services - ", mergedServices);
+  // console.log("Merged Services - ", mergedServices);
 
-  return Object.values(mergedServices)
-    .map(({ name, versions, descriptions }, index) => `
+  const mergedDescriptionsMap = new Map();
+
+  Object.values(mergedServices).forEach(({ name, versions, descriptions }) => {
+    const key = descriptions.join(" "); // Using descriptions as key to merge same descriptions
+    if (!mergedDescriptionsMap.has(key)) {
+      mergedDescriptionsMap.set(key, { names: [name], versions: [...versions] });
+    } else {
+      const existing = mergedDescriptionsMap.get(key);
+      existing.names.push(name);
+      existing.versions.push(...versions);
+    }
+  });
+
+  const mergedTableHTML = Array.from(mergedDescriptionsMap.entries())
+    .map(([description, { names, versions }], index) => `
       <tr>
         <td>${index + 1}</td>
-        <td>${name}${versions.length ? `-${versions.join("/")}` : ""}</td>
-        <td>${descriptions.join("<br>")}</td>
-      </tr>`).join("");
+        <td>${names.join(" / ")}${versions.length ? `-${versions.join("/")}` : ""}</td>
+        <td>${description}</td>
+      </tr>
+    `)
+    .join("");
+
+  // console.log(mergedTableHTML);
 };
-
-
 
 // Function to send email
 async function createMail(
