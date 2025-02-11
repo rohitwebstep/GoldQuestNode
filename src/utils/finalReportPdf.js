@@ -1111,9 +1111,9 @@ module.exports = {
                       const adjustedDisclaimerButtonHeight =
                         disclaimerButtonHeight + buttonBottomPadding;
 
-                      const disclaimerTextPart1 = `This report is confidential and is meant for the exclusive use of the Client. This report has been prepared solely for the purpose set out pursuant to our letter of engagement (LoE)/Agreement signed with you and is not to be used for any other purpose. The Client recognizes that we are not the source of the data gathered and our reports are based on the information provided. The Client is responsible for employment decisions based on the information provided in this report.You can mail us at `;
-                      const anchorText = "compliance@goldquestglobal.com";
-                      const disclaimerTextPart2 = " for any clarifications.";
+                      const disclaimerTextPart1 = `This report is confidential and is meant for the exclusive use of the Client. This report has been prepared solely for the purpose set out pursuant to our letter of engagement (LoE)/Agreement signed with you and is not to be used for any other purpose. The Client recognizes that we are not the source of the data gathered and our reports are based on the information purpose. The Client recognizes that we are not the source of the data gathered and our reports are based on the information responsible for employment decisions based on the information provided in this report.`;
+                      const anchorText = "";
+                      const disclaimerTextPart2 = "";
 
                       doc.setFont("helvetica", "normal");
                       doc.setFontSize(10);
@@ -1305,6 +1305,22 @@ module.exports = {
                         endButtonTextXPosition,
                         endButtonTextYPosition
                       );
+
+                      const imgPath = '../assets/images/verified.png'; // Ensure this path is accessible
+
+                      // Calculate the width and height of the image dynamically using jsPDF's getImageProperties
+                      const imgProperties = doc.getImageProperties(imgPath);
+                      const imgWidth = 50;  // Adjust this scale factor as needed
+                      const imgHeight = 40; // Adjust this scale factor as needed
+
+                      // Calculate the X position to center the image horizontally
+                      const centerX = (pageWidth - imgWidth) / 2;
+
+                      // Calculate the Y position (adjust this based on where you want the image)
+                      const centerY = endOfDetailY + 20; // Example: Place the image 20 units below the "END OF DETAIL REPORT" text
+
+                      // Add the image to the PDF at the calculated position
+                      doc.addImage(imgPath, 'PNG', centerX, centerY, imgWidth, imgHeight);
 
                       addFooter(doc, appHost);
                       const pdfPathCloud = await savePdf(
