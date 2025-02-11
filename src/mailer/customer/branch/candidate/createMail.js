@@ -24,6 +24,8 @@ const generateTable = (services) => {
     const version = match[2] ? match[2].trim() : ""; // Extracts version number (if exists)
     const description = match[3].trim(); // Extracts description
 
+    if (!description) return; // Skip if description is null or empty
+
     // Create a unique key using the base title and description
     const key = `${baseTitle}:${description}`;
 
