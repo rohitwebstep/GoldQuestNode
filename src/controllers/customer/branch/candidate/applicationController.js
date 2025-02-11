@@ -11,6 +11,10 @@ const {
 } = require("../../../../mailer/customer/branch/candidate/createMail");
 
 const {
+  createTenantMail,
+} = require("../../../../mailer/customer/branch/candidate/createTenantMail");
+
+const {
   bulkCreateMail,
 } = require("../../../../mailer/customer/branch/candidate/bulkCreateMail");
 
@@ -319,45 +323,88 @@ exports.create = (req, res) => {
                                   }
                                 );
 
-                                // Send application creation email
-                                createMail(
-                                  "candidate application",
-                                  "create",
-                                  name,
-                                  customerName,
-                                  result.insertId,
-                                  bgv_href,
-                                  serviceNames,
-                                  toArr || [],
-                                  ccArr || []
-                                )
-                                  .then(() => {
-                                    return res.status(201).json({
-                                      status: true,
-                                      message:
-                                        "Candidate application created successfully and email sent.",
-                                      data: {
+                                if (purpose_of_application?.toLowerCase() === "tenant") {
+                                  // Send application creation email
+                                  createTenantMail(
+                                    "candidate application",
+                                    "create-tenant",
+                                    name,
+                                    customerName,
+                                    result.insertId,
+                                    bgv_href,
+                                    serviceNames,
+                                    toArr || [],
+                                    ccArr || []
+                                  )
+                                    .then(() => {
+                                      return res.status(201).json({
+                                        status: true,
+                                        message:
+                                          "Candidate application created successfully and email sent.",
+                                        data: {
+                                          candidate: result,
+                                          package,
+                                        },
+                                        token: newToken,
+                                        toArr: toArr || [],
+                                        ccArr: ccArr || [],
+                                      });
+                                    })
+                                    .catch((emailError) => {
+                                      console.error(
+                                        "Error sending application creation email:",
+                                        emailError
+                                      );
+                                      return res.status(201).json({
+                                        status: true,
+                                        message:
+                                          "Candidate application created successfully, but email failed to send.",
                                         candidate: result,
-                                        package,
-                                      },
-                                      token: newToken,
-                                      toArr: toArr || [],
-                                      ccArr: ccArr || [],
+                                        token: newToken,
+                                      });
                                     });
-                                  })
-                                  .catch((emailError) => {
-                                    console.error(
-                                      "Error sending application creation email:",
-                                      emailError
-                                    );
-                                    return res.status(201).json({
-                                      status: true,
-                                      message:
-                                        "Candidate application created successfully, but email failed to send.",
-                                      candidate: result,
-                                      token: newToken,
+                                } else {
+
+                                  // Send application creation email
+                                  createMail(
+                                    "candidate application",
+                                    "create",
+                                    name,
+                                    customerName,
+                                    result.insertId,
+                                    bgv_href,
+                                    serviceNames,
+                                    toArr || [],
+                                    ccArr || []
+                                  )
+                                    .then(() => {
+                                      return res.status(201).json({
+                                        status: true,
+                                        message:
+                                          "Candidate application created successfully and email sent.",
+                                        data: {
+                                          candidate: result,
+                                          package,
+                                        },
+                                        token: newToken,
+                                        toArr: toArr || [],
+                                        ccArr: ccArr || [],
+                                      });
+                                    })
+                                    .catch((emailError) => {
+                                      console.error(
+                                        "Error sending application creation email:",
+                                        emailError
+                                      );
+                                      return res.status(201).json({
+                                        status: true,
+                                        message:
+                                          "Candidate application created successfully, but email failed to send.",
+                                        candidate: result,
+                                        token: newToken,
+                                      });
                                     });
-                                  });
+                                }
                               }
                             });
                             return;
