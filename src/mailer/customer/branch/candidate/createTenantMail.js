@@ -118,9 +118,9 @@ async function createTenantMail(
         // return;
         // Replace placeholders in the email template
         let template = email.template
-            .replace(/{{candidate_name}}/g, name)
+            .replace(/{{tenant_name}}/g, name)
             .replace(/{{table_rows}}/g, table_rows)
-            .replace(/{{company_name}}/g, customerName)
+            .replace(/{{landlord_name}}/g, customerName)
             .replace(/{{form_href}}/g, href);
 
         // Validate recipient email(s)
