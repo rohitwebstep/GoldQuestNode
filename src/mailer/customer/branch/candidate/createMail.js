@@ -1,7 +1,6 @@
 const nodemailer = require("nodemailer");
 const { startConnection, connectionRelease } = require("../../../../config/db"); // Import the existing MySQL connection
 
-// Function to generate HTML table from service details
 const generateTable = (services) => {
   if (!Array.isArray(services) || services.length === 0) {
     return `<tr>
@@ -11,47 +10,49 @@ const generateTable = (services) => {
 
   console.log("Original Services - ", services);
 
-  // Object to store merged services
   const mergedServices = {};
 
   services.forEach((service) => {
     const match = service.match(/(.*?)(?:[-\s]?(\d+))?:\s*(.*)/);
-    // Updated regex to handle hyphen (-), space, or no space before the number
 
     if (!match) return;
 
-    const baseTitle = match[1].trim(); // Base title (e.g., "PREVIOUS EMPLOYMENT")
-    const version = match[2] ? match[2].trim() : ""; // Extracts version number (if exists)
+    const baseTitle = match[1].trim(); // Extracts base title
+    const version = match[2] ? match[2].trim() : ""; // Extracts version if present
     const description = match[3].trim(); // Extracts description
 
-    if (!description) return; // Skip if description is null or empty
+    if (typeof description !== "string" || !description.trim() || description.trim().toLowerCase() === "null") {
+      return;
+    }    
 
-    // Create a unique key using the base title and description
-    const key = `${baseTitle}:${description}`;
+    // Use base title as a key
+    if (!mergedServices[baseTitle]) {
+      mergedServices[baseTitle] = { name: baseTitle, versions: [], descriptions: [] };
+    }
 
-    if (mergedServices[key]) {
-      // Append version numbers if not already present
-      if (version && !mergedServices[key].versions.includes(version)) {
-        mergedServices[key].versions.push(version);
-      }
-    } else {
-      // Store new entry with an array for versions
-      mergedServices[key] = { name: baseTitle, versions: version ? [version] : [], description };
+    // Append version if not already added
+    if (version && !mergedServices[baseTitle].versions.includes(version)) {
+      mergedServices[baseTitle].versions.push(version);
+    }
+
+    // Append description if not already added
+    if (!mergedServices[baseTitle].descriptions.includes(description)) {
+      mergedServices[baseTitle].descriptions.push(description);
     }
   });
 
   console.log("Merged Services - ", mergedServices);
 
-  // Generate table rows
   return Object.values(mergedServices)
-    .map(({ name, versions, description }, index) => `
+    .map(({ name, versions, descriptions }, index) => `
       <tr>
         <td>${index + 1}</td>
         <td>${name}${versions.length ? `-${versions.join("/")}` : ""}</td>
-        <td>${description}</td>
-      </tr>`)
-    .join("");
+        <td>${descriptions.join("<br>")}</td>
+      </tr>`).join("");
 };
+
+
 
 // Function to send email
 async function createMail(
@@ -114,7 +115,7 @@ async function createMail(
 
     // Generate the HTML table from service details
     const table_rows = generateTable(services);
-
+    // return;
     // Replace placeholders in the email template
     let template = email.template
       .replace(/{{candidate_name}}/g, name)
