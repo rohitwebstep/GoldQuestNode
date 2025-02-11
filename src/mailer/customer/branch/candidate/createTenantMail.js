@@ -48,27 +48,32 @@ const generateTable = (services) => {
     Object.values(mergedServices).forEach(({ name, versions, descriptions }) => {
         const key = descriptions.join(" "); // Using descriptions as key to merge same descriptions
         if (!mergedDescriptionsMap.has(key)) {
-            mergedDescriptionsMap.set(key, { names: [name], versions: [...versions] });
+            mergedDescriptionsMap.set(key, [{ name, versions }]);
         } else {
-            const existing = mergedDescriptionsMap.get(key);
-            existing.names.push(name);
-            existing.versions.push(...versions);
+            mergedDescriptionsMap.get(key).push({ name, versions });
         }
     });
 
     const mergedTableHTML = Array.from(mergedDescriptionsMap.entries())
-        .map(([description, { names, versions }], index) => `
-        <tr>
-          <td>${index + 1}</td>
-          <td>${names.join(" / ")}${versions.length ? `-${versions.join("/")}` : ""}</td>
-          <td>${description}</td>
-        </tr>
-      `)
+        .map(([description, services], index) => {
+            // Format service names with their respective versions
+            const serviceNames = services
+                .map(({ name, versions }) => versions.length ? `${name} (${versions.join("/")})` : name)
+                .join(" / ");
+
+            return `
+            <tr>
+              <td>${index + 1}</td>
+              <td>${serviceNames}</td>
+              <td>${description}</td>
+            </tr>
+          `;
+        })
         .join("");
 
+    console.log(mergedTableHTML);
     return mergedTableHTML;
 
-    // console.log(mergedTableHTML);
 };
 
 // Function to send email

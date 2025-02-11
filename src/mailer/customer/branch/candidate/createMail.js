@@ -3,7 +3,7 @@ const { startConnection, connectionRelease } = require("../../../../config/db");
 
 const generateTable = (services) => {
   if (!Array.isArray(services) || services.length === 0) {
-    return `<tr>
+      return `<tr>
               <td colspan="3" style="text-align: center;">No instructions available for the selected services.</td>
             </tr>`;
   }
@@ -13,32 +13,32 @@ const generateTable = (services) => {
   const mergedServices = {};
 
   services.forEach((service) => {
-    const match = service.match(/(.*?)(?:[-\s]?(\d+))?:\s*(.*)/);
+      const match = service.match(/(.*?)(?:[-\s]?(\d+))?:\s*(.*)/);
 
-    if (!match) return;
+      if (!match) return;
 
-    const baseTitle = match[1].trim(); // Extracts base title
-    const version = match[2] ? match[2].trim() : ""; // Extracts version if present
-    const description = match[3].trim(); // Extracts description
+      const baseTitle = match[1].trim(); // Extracts base title
+      const version = match[2] ? match[2].trim() : ""; // Extracts version if present
+      const description = match[3].trim(); // Extracts description
 
-    if (typeof description !== "string" || !description.trim() || description.trim().toLowerCase() === "null") {
-      return;
-    }
+      if (typeof description !== "string" || !description.trim() || description.trim().toLowerCase() === "null") {
+          return;
+      }
 
-    // Use base title as a key
-    if (!mergedServices[baseTitle]) {
-      mergedServices[baseTitle] = { name: baseTitle, versions: [], descriptions: [] };
-    }
+      // Use base title as a key
+      if (!mergedServices[baseTitle]) {
+          mergedServices[baseTitle] = { name: baseTitle, versions: [], descriptions: [] };
+      }
 
-    // Append version if not already added
-    if (version && !mergedServices[baseTitle].versions.includes(version)) {
-      mergedServices[baseTitle].versions.push(version);
-    }
+      // Append version if not already added
+      if (version && !mergedServices[baseTitle].versions.includes(version)) {
+          mergedServices[baseTitle].versions.push(version);
+      }
 
-    // Append description if not already added
-    if (!mergedServices[baseTitle].descriptions.includes(description)) {
-      mergedServices[baseTitle].descriptions.push(description);
-    }
+      // Append description if not already added
+      if (!mergedServices[baseTitle].descriptions.includes(description)) {
+          mergedServices[baseTitle].descriptions.push(description);
+      }
   });
 
   // console.log("Merged Services - ", mergedServices);
@@ -46,29 +46,34 @@ const generateTable = (services) => {
   const mergedDescriptionsMap = new Map();
 
   Object.values(mergedServices).forEach(({ name, versions, descriptions }) => {
-    const key = descriptions.join(" "); // Using descriptions as key to merge same descriptions
-    if (!mergedDescriptionsMap.has(key)) {
-      mergedDescriptionsMap.set(key, { names: [name], versions: [...versions] });
-    } else {
-      const existing = mergedDescriptionsMap.get(key);
-      existing.names.push(name);
-      existing.versions.push(...versions);
-    }
+      const key = descriptions.join(" "); // Using descriptions as key to merge same descriptions
+      if (!mergedDescriptionsMap.has(key)) {
+          mergedDescriptionsMap.set(key, [{ name, versions }]);
+      } else {
+          mergedDescriptionsMap.get(key).push({ name, versions });
+      }
   });
 
   const mergedTableHTML = Array.from(mergedDescriptionsMap.entries())
-    .map(([description, { names, versions }], index) => `
-      <tr>
-        <td>${index + 1}</td>
-        <td>${names.join(" / ")}${versions.length ? `-${versions.join("/")}` : ""}</td>
-        <td>${description}</td>
-      </tr>
-    `)
-    .join("");
+      .map(([description, services], index) => {
+          // Format service names with their respective versions
+          const serviceNames = services
+              .map(({ name, versions }) => versions.length ? `${name} (${versions.join("/")})` : name)
+              .join(" / ");
 
-    return mergedTableHTML;
+          return `
+          <tr>
+            <td>${index + 1}</td>
+            <td>${serviceNames}</td>
+            <td>${description}</td>
+          </tr>
+        `;
+      })
+      .join("");
 
-  // console.log(mergedTableHTML);
+  console.log(mergedTableHTML);
+  return mergedTableHTML;
+
 };
 
 // Function to send email
