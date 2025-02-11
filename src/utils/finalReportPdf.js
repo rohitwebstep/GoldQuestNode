@@ -1306,22 +1306,32 @@ module.exports = {
                         endButtonTextYPosition
                       );
 
-                      // Read the image file and convert it to Base64
-                      const imgPath = '../assets/images/verified.png';  // Ensure this path is correct
-                      const imageBase64 = fs.readFileSync(imgPath, { encoding: 'base64' });
-                      const imgData = `data:image/png;base64,${imageBase64}`;
-                      
-                      // Calculate the width and height of the image dynamically
-                      const imgWidth = 50;
-                      const imgHeight = 40;
-                      
-                      // Calculate the X position to center the image horizontally
-                      const centerX = (pageWidth - imgWidth) / 2;
-                      const centerY = endOfDetailY + 20; // Place 20 units below "END OF DETAIL REPORT"
-                      
-                      // Add the image to the PDF
-                      doc.addImage(imgData, 'PNG', centerX, centerY, imgWidth, imgHeight);
-                      
+                      const imgPath = path.join(__dirname, '../assets/images/verified.png'); // Resolve absolute path
+
+                      // Check if the image file exists
+                      if (fs.existsSync(imgPath)) {
+                        try {
+                          // Read the image file and convert it to Base64
+                          const imageBase64 = fs.readFileSync(imgPath, { encoding: 'base64' });
+                          const imgData = `data:image/png;base64,${imageBase64}`;
+
+                          // Calculate the width and height of the image dynamically
+                          const imgWidth = 50;
+                          const imgHeight = 40;
+
+                          // Calculate the X position to center the image horizontally
+                          const centerX = (pageWidth - imgWidth) / 2;
+                          const centerY = endOfDetailY + 20; // Place 20 units below "END OF DETAIL REPORT"
+
+                          // Add the image to the PDF
+                          doc.addImage(imgData, 'PNG', centerX, centerY, imgWidth, imgHeight);
+                        } catch (error) {
+                          console.error('Error reading the image file:', error);
+                        }
+                      } else {
+                        console.warn('Image file not found:', imgPath);
+                      }
+
                       addFooter(doc, appHost);
                       const pdfPathCloud = await savePdf(
                         doc,
