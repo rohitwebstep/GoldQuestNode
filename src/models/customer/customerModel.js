@@ -891,150 +891,25 @@ const Customer = {
   },
   */
 
-  delete: (admin_id, customerId, from, to, callback) => {
+  delete: (customerId, callback) => {
+    const sql = `
+      DELETE FROM \`customers\`
+      WHERE \`id\` = ?
+    `;
+
     startConnection((err, connection) => {
       if (err) {
-        return callback({ message: "Failed to connect to the database", error: err }, null);
+        return callback(err, null);
       }
 
-      // Step 1: Fetch customer details
-      const customerSql = `SELECT * FROM \`customers\` WHERE \`id\` = ?;`;
-      connection.query(customerSql, [customerId], (err, customerResults) => {
-        if (err) {
-          connectionRelease(connection);
-          console.error("Database query error (fetch customer):", err);
-          return callback(err, null);
+      connection.query(sql, [customerId], (queryErr, results) => {
+        connectionRelease(connection); // Release the connection
+
+        if (queryErr) {
+          console.error("Database query error: 51", queryErr);
+          return callback(queryErr, null);
         }
-
-        if (customerResults.length === 0) {
-          connectionRelease(connection);
-          return callback({ message: "No customer found with the provided ID." }, null);
-        }
-
-        const customer = customerResults[0];
-        const clientUniqueId = customer.client_unique_id;
-
-        // Step 2: Check for branches associated with the customer
-        const branchSql = `SELECT * FROM \`branches\` WHERE \`customer_id\` = ?;`;
-        connection.query(branchSql, [customerId], (err, branchResults) => {
-          if (err) {
-            connectionRelease(connection);
-            console.error("Database query error (fetch branches):", err);
-            return callback(err, null);
-          }
-
-          if (branchResults.length === 0) {
-            // No branches, delete customer immediately
-            const deleteCustomerSql = `DELETE FROM \`customers\` WHERE \`id\` = ?;`;
-            connection.query(deleteCustomerSql, [customerId], (err) => {
-              connectionRelease(connection);
-              if (err) {
-                console.error("Error deleting customer:", err);
-                return callback({ message: "Failed to delete customer", error: err }, null);
-              }
-
-              return callback(null, {
-                client_unique_id: clientUniqueId,
-                data: {
-                  name: customer.name,
-                  email: customer.email,
-                  mobile: customer.mobile,
-                },
-              });
-            });
-          } else {
-            // Customer has branches, collect application data
-            const branchData = branchResults;
-            const combinedData = [];
-            let pendingQueries = branchData.length;
-
-            branchData.forEach((branch) => {
-              const clientAppSql = `
-              SELECT \`name\`, \`application_id\`, \`created_at\` 
-              FROM \`client_applications\` 
-              WHERE \`branch_id\` = ? 
-              AND \`created_at\` BETWEEN ? AND ?;
-            `;
-
-              const candidateAppSql = `
-              SELECT \`id\`, \`name\`, \`created_at\` 
-              FROM \`candidate_applications\` 
-              WHERE \`branch_id\` = ? 
-              AND \`created_at\` BETWEEN ? AND ?;
-            `;
-
-              connection.query(clientAppSql, [branch.id, from, to], (err, clientApplications) => {
-                if (err) console.error("Error fetching client applications:", err);
-
-                connection.query(candidateAppSql, [branch.id, from, to], (err, candidateApplications) => {
-                  if (err) console.error("Error fetching candidate applications:", err);
-
-                  const formattedCandidateApplications = candidateApplications.map((candidate) => ({
-                    name: candidate.name,
-                    application_id: `cd-${clientUniqueId}-${candidate.id}`,
-                    created_at: candidate.created_at
-                  }));
-
-                  combinedData.push({
-                    branchId: branch.id,
-                    branchName: branch.name,
-                    clientApplications: clientApplications,
-                    candidateApplications: formattedCandidateApplications,
-                  });
-
-                  pendingQueries--;
-
-                  if (pendingQueries === 0) {
-                    // Step 3: Insert delete request
-                    const insertDeleteRequestSql = `
-                                        INSERT INTO \`delete_requests\` 
-                                        (\`admin_id\`, \`customer_id\`, \`client_unique_id\`, \`from\`, \`to\`, \`status\`, \`accepted_at\`, \`created_at\`, \`updated_at\`) 
-                                        VALUES (?, ?, ?, ?, ?, 'pending', NOW(), NOW(), NOW());
-                                    `;
-
-                    connection.query(insertDeleteRequestSql, [admin_id, customerId, clientUniqueId, from, to], (err) => {
-                      if (err) {
-                        console.error("Error inserting delete request:", err);
-                        connectionRelease(connection);
-                        return callback({ message: "Failed to process delete request", error: err }, null);
-                      }
-
-                      return callback(null, {
-                        client_unique_id: clientUniqueId,
-                        data: {
-                          name: customer.name,
-                          email: customer.email,
-                          mobile: customer.mobile,
-                          branches: combinedData,
-                        },
-                      });
-                      return;
-                      // Step 4: Delete customer
-                      const deleteCustomerSql = `DELETE FROM \`customers\` WHERE \`id\` = ?;`;
-                      connection.query(deleteCustomerSql, [customerId], (err) => {
-                        connectionRelease(connection);
-                        if (err) {
-                          console.error("Error deleting customer:", err);
-                          return callback({ message: "Failed to delete customer", error: err }, null);
-                        }
-
-                        return callback(null, {
-                          client_unique_id: clientUniqueId,
-                          data: {
-                            name: customer.name,
-                            email: customer.email,
-                            mobile: customer.mobile,
-                            branches: combinedData,
-                          },
-                        });
-                      });
-                    });
-                  }
-                });
-              });
-            });
-          }
-        });
+        callback(null, results);
       });
     });
   },

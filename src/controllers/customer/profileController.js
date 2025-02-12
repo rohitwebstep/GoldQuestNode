@@ -1975,7 +1975,7 @@ exports.delete = (req, res) => {
           }
 
           // Delete the customer
-          Customer.delete(admin_id, id, from, to, async (err, result) => {
+          Customer.delete(id, async (err, result) => {
             if (err) {
               console.error("Database error during customer deletion:", err);
               AdminCommon.adminActivityLog(
@@ -1995,17 +1995,6 @@ exports.delete = (req, res) => {
               });
             }
 
-            console.log(`result - `, result);
-
-            return res.status(200).json({
-              status: true,
-              message: "Customer deleted successfully, but there was an issue deleting the folder.",
-              result,
-              token: newToken,
-            });
-
-            return;
-
             AdminCommon.adminActivityLog(
               admin_id,
               "Customer",
@@ -2016,8 +2005,7 @@ exports.delete = (req, res) => {
               () => { }
             );
 
-            const data = result.data;
-            const clientUniqueId = result.client_unique_id;
+            const clientUniqueId = currentCustomer.client_unique_id;
 
             try {
               // Attempt to delete the folder associated with the customer
@@ -2027,7 +2015,6 @@ exports.delete = (req, res) => {
               return res.status(200).json({
                 status: true,
                 message: "Customer and associated folder deleted successfully.",
-                data,
                 token: newToken,
               });
             } catch (error) {
@@ -2038,7 +2025,6 @@ exports.delete = (req, res) => {
               return res.status(200).json({
                 status: true,
                 message: "Customer deleted successfully, but there was an issue deleting the folder.",
-                data,
                 error: error.message,
                 token: newToken,
               });
