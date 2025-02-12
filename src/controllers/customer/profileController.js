@@ -10,7 +10,7 @@ const AppModel = require("../../models/appModel");
 const Admin = require("../../models/admin/adminModel");
 
 const { createMail } = require("../../mailer/customer/createMail");
-
+const { deleteRequestCertificatePdf } = require("../../utils/deleteRequestCertificatePdf");
 const fs = require("fs");
 const path = require("path");
 const {

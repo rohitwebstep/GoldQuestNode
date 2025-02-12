@@ -170,6 +170,29 @@ const DeleteRequest = {
         });
     },
 
+    updateCertificate: (id, certificatePath, callback) => {
+        const sql = `
+            UPDATE \`delete_requests\`
+            SET certificate = ?
+            WHERE id = ?;
+        `;
+
+        startConnection((err, connection) => {
+            if (err) return callback(err, null);
+
+            connection.query(sql, [certificatePath, id], (queryErr, results) => {
+                connectionRelease(connection); // Release the connection
+
+                if (queryErr) {
+                    console.error("Database query error in updateCertificate:", queryErr);
+                    return callback(queryErr, null);
+                }
+
+                callback(null, results);
+            });
+        });
+    },
+
     getDeleteRequestById: (id, callback) => {
         const sql = `SELECT * FROM \`delete_requests\` WHERE \`id\` = ?`;
 
