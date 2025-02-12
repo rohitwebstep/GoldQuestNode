@@ -22,6 +22,7 @@ const packageRoutes = require("./routes/admin/packageRoutes");
 const serviceRoutes = require("./routes/admin/serviceRoutes");
 const holidayRoutes = require("./routes/admin/holidayRoutes");
 const testRoutes = require("./routes/testRoutes");
+const deleteRequestRoutes = require("./routes/admin/deleteRequestRoutes");
 const tatDelayRoutes = require("./routes/admin/tatDelayRoutes");
 const weeklyReportRoutes = require("./routes/admin/weeklyReportRoutes");
 
@@ -76,6 +77,7 @@ app.use("/user-history", userHistoryRoutes);
 app.use("/client-master-tracker", clientMasterTrackerRoutes);
 app.use("/candidate-master-tracker", candidateMasterTrackerRoutes);
 app.use("/generate-invoice", generateInvoiceRoutes);
+app.use("/delete-request", deleteRequestRoutes);
 app.use("/weekly-reports", weeklyReportRoutes);
 app.use("/acknowledgement", acknowledgementRoutes);
 app.use("/external-login-credentials", externalLoginCredentials);

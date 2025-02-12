@@ -1905,12 +1905,14 @@ exports.inactive = (req, res) => {
 };
 
 exports.delete = (req, res) => {
-  const { id, admin_id, _token } = req.query;
+  const { id, admin_id, from, to, _token } = req.query;
 
   // Validate required fields
   const missingFields = [];
   if (!id || id === "") missingFields.push("Customer ID");
   if (!admin_id || admin_id === "") missingFields.push("Admin ID");
+  if (!from || from === "") missingFields.push("From date");
+  if (!to || to === "") missingFields.push("To Date");
   if (!_token || _token === "") missingFields.push("Token");
 
   if (missingFields.length > 0) {
@@ -1973,7 +1975,7 @@ exports.delete = (req, res) => {
           }
 
           // Delete the customer
-          Customer.delete(id, async (err, result) => {
+          Customer.delete(admin_id, id, from, to, async (err, result) => {
             if (err) {
               console.error("Database error during customer deletion:", err);
               AdminCommon.adminActivityLog(
@@ -1992,6 +1994,18 @@ exports.delete = (req, res) => {
                 token: newToken,
               });
             }
+
+            console.log(`result - `, result);
+
+            return res.status(200).json({
+              status: true,
+              message: "Customer deleted successfully, but there was an issue deleting the folder.",
+              result,
+              token: newToken,
+            });
+
+            return;
+
             AdminCommon.adminActivityLog(
               admin_id,
               "Customer",

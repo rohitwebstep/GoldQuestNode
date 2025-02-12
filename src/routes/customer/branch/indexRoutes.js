@@ -9,6 +9,7 @@ const subUserRoutes = require("./subUserRoutes");
 const bulkRoutes = require("./bulkRoutes");
 const reportCaseStatusRoutes = require("./reportCaseStatusRoutes");
 const candidateRoutes = require("./candidateRoutes");
+const deleteRequestRoutes = require("./deleteRequestRoutes");
 
 // Basic routes
 router.post("/login", authController.login);
@@ -51,4 +52,5 @@ router.use("/bulk", bulkRoutes);
 router.use("/sub-user", subUserRoutes);
 router.use("/report-case-status", reportCaseStatusRoutes);
 router.use("/candidate-application", candidateRoutes);
+router.use("/delete-request", deleteRequestRoutes);
 module.exports = router;
