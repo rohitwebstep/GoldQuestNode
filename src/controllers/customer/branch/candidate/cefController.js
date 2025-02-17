@@ -772,7 +772,7 @@ const sendNotificationEmails = (
                 attachments +=
                   (attachments ? "," : "") + `${imageHost}/${pdfPath}`;
 
-                Admin.list((err, adminResult) => {
+                  Admin.filterAdmins({ status: "active", role: "admin" }, (err, adminResult) => {
                   if (err) {
                     console.error("Database error:", err);
                     return res.status(500).json({

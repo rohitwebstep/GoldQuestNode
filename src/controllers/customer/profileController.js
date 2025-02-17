@@ -993,11 +993,12 @@ exports.upload = async (req, res) => {
 
                                   Admin.filterAdmins({ status: "active", role: "admin" }, (err, adminsResult) => {
                                     if (err) {
-                                      return reject(
-                                        new Error(
-                                          err.message
-                                        )
-                                      );
+                                      console.error("Database error:", err);
+                                      return res.status(500).json({
+                                        status: false,
+                                        message: "Error retrieving admin details.",
+                                        token: newToken,
+                                      });
                                     }
 
                                     const ccArray = adminsResult.length > 0
@@ -1044,11 +1045,12 @@ exports.upload = async (req, res) => {
 
                               Admin.filterAdmins({ status: "active", role: "admin" }, (err, adminsResult) => {
                                 if (err) {
-                                  return reject(
-                                    new Error(
-                                      err.message
-                                    )
-                                  );
+                                  console.error("Database error:", err);
+                                  return res.status(500).json({
+                                    status: false,
+                                    message: "Error retrieving admin details.",
+                                    token: newToken,
+                                  });
                                 }
 
                                 const ccArray = adminsResult.length > 0
