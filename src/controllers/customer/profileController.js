@@ -575,62 +575,92 @@ exports.create = (req, res) => {
                                                       );
                                                     }
 
-                                                    const customerName =
-                                                      currentCustomer.name;
-                                                    const customerJsonArr =
-                                                      JSON.parse(
-                                                        currentCustomer.emails
-                                                      );
+                                                    Admin.filterAdmins({ status: "active", role: "admin" }, (err, adminsResult) => {
+                                                      if (err) {
+                                                        return reject(
+                                                          new Error(
+                                                            err.message
+                                                          )
+                                                        );
+                                                      }
 
-                                                    // Create a recipient list
-                                                    const customerRecipientList =
-                                                      customerJsonArr.map(
-                                                        (email) => ({
-                                                          name: customerName,
-                                                          email: email,
-                                                        })
-                                                      );
-                                                    // Create email for head branch
-                                                    createMail(
-                                                      "customer",
-                                                      "create",
-                                                      company_name,
-                                                      formattedBranches,
-                                                      dbBranch.is_head,
-                                                      customerRecipientList,
-                                                      password,
-                                                      appHost
-                                                    )
-                                                      .then(resolve)
-                                                      .catch(reject);
+                                                      const ccArray = adminsResult.length > 0
+                                                        ? adminsResult.map(({ name, email }) => ({ name, email }))
+                                                        : [];
+
+                                                      const customerName =
+                                                        currentCustomer.name;
+                                                      const customerJsonArr =
+                                                        JSON.parse(
+                                                          currentCustomer.emails
+                                                        );
+
+                                                      // Create a recipient list
+                                                      const customerRecipientList =
+                                                        customerJsonArr.map(
+                                                          (email) => ({
+                                                            name: customerName,
+                                                            email: email,
+                                                          })
+                                                        );
+                                                      // Create email for head branch
+                                                      createMail(
+                                                        "customer",
+                                                        "create",
+                                                        company_name,
+                                                        formattedBranches,
+                                                        dbBranch.is_head,
+                                                        customerRecipientList,
+                                                        ccArray || [],
+                                                        password,
+                                                        appHost
+                                                      )
+                                                        .then(resolve)
+                                                        .catch(reject);
+                                                    });
                                                   }
                                                 );
                                               }
                                             );
                                           } else {
-                                            // For non-head branches
-                                            return createMail(
-                                              "customer",
-                                              "create",
-                                              company_name,
-                                              [
-                                                {
-                                                  email: dbBranch.email,
-                                                  name: dbBranch.name,
-                                                },
-                                              ],
-                                              dbBranch.is_head,
-                                              [],
-                                              password,
-                                              appHost
-                                            ).catch((emailError) => {
-                                              console.error(
-                                                "Error sending email:",
-                                                emailError
-                                              );
-                                              return Promise.resolve(
-                                                "Email sending failed for this branch."
-                                              );
+                                            Admin.filterAdmins({ status: "active", role: "admin" }, (err, adminsResult) => {
+                                              if (err) {
+                                                return reject(
+                                                  new Error(
+                                                    err.message
+                                                  )
+                                                );
+                                              }
+
+                                              const ccArray = adminsResult.length > 0
+                                                ? adminsResult.map(({ name, email }) => ({ name, email }))
+                                                : [];
+
+                                              // For non-head branches
+                                              return createMail(
+                                                "customer",
+                                                "create",
+                                                company_name,
+                                                [
+                                                  {
+                                                    email: dbBranch.email,
+                                                    name: dbBranch.name,
+                                                  },
+                                                ],
+                                                dbBranch.is_head,
+                                                [],
+                                                ccArray || [],
+                                                password,
+                                                appHost
+                                              ).catch((emailError) => {
+                                                console.error(
+                                                  "Error sending email:",
+                                                  emailError
+                                                );
+                                                return Promise.resolve(
+                                                  "Email sending failed for this branch."
+                                                );
+                                              });
                                             });
                                           }
                                         }
@@ -643,9 +673,7 @@ exports.create = (req, res) => {
                                             status: true,
                                             message:
                                               "Customer and branches created successfully.",
-                                            branches: formattedBranches,
                                             data: { customerId },
-                                            password,
                                             token: newToken,
                                           });
                                         })
@@ -671,8 +699,7 @@ exports.create = (req, res) => {
                                 message:
                                   "Customer and branches created successfully.",
                                 token: newToken,
-                                data: { customerId },
-                                password,
+                                data: { customerId }
                               });
                             }
                           })
@@ -963,66 +990,99 @@ exports.upload = async (req, res) => {
                                       token: newToken,
                                     });
                                   }
-                                  const customerName = currentCustomer.name;
-                                  const customerJsonArr = JSON.parse(
-                                    currentCustomer.emails
-                                  );
-                                  // Create a recipient list
-                                  const customerRecipientList =
-                                    customerJsonArr.map((email) => ({
-                                      name: customerName,
-                                      email: email,
-                                    }));
-                                  // Send email with all formatted branches
-                                  const emailPromise = createMail(
-                                    "customer",
-                                    "create",
-                                    company_name,
-                                    formattedBranches,
-                                    dbBranch.is_head,
-                                    customerRecipientList,
-                                    password,
-                                    appHost
-                                  ).catch((emailError) => {
-                                    console.error(
-                                      "Error sending email:",
-                                      emailError
-                                    );
-                                    return Promise.resolve(
-                                      "Email sending failed for this branch."
-                                    );
-                                  });
 
-                                  emailPromises.push(emailPromise);
+                                  Admin.filterAdmins({ status: "active", role: "admin" }, (err, adminsResult) => {
+                                    if (err) {
+                                      return reject(
+                                        new Error(
+                                          err.message
+                                        )
+                                      );
+                                    }
+
+                                    const ccArray = adminsResult.length > 0
+                                      ? adminsResult.map(({ name, email }) => ({ name, email }))
+                                      : [];
+
+                                    const customerName = currentCustomer.name;
+                                    const customerJsonArr = JSON.parse(
+                                      currentCustomer.emails
+                                    );
+                                    // Create a recipient list
+                                    const customerRecipientList =
+                                      customerJsonArr.map((email) => ({
+                                        name: customerName,
+                                        email: email,
+                                      }));
+
+                                    // Send email with all formatted branches
+                                    const emailPromise = createMail(
+                                      "customer",
+                                      "create",
+                                      company_name,
+                                      formattedBranches,
+                                      dbBranch.is_head,
+                                      customerRecipientList,
+                                      ccArray || [],
+                                      password,
+                                      appHost
+                                    ).catch((emailError) => {
+                                      console.error(
+                                        "Error sending email:",
+                                        emailError
+                                      );
+                                      return Promise.resolve(
+                                        "Email sending failed for this branch."
+                                      );
+                                    });
+
+                                    emailPromises.push(emailPromise);
+                                  });
                                 }
                               );
                             } else {
-                              // Send email with the single formatted branch
-                              const emailPromise = createMail(
-                                "customer",
-                                "create",
-                                company_name,
-                                [
-                                  {
-                                    email: dbBranch.email,
-                                    name: dbBranch.name,
-                                  },
-                                ], // Send only the current branch
-                                dbBranch.is_head,
-                                [],
-                                password,
-                                appHost
-                              ).catch((emailError) => {
-                                console.error(
-                                  "Error sending email:",
-                                  emailError
-                                );
-                                return Promise.resolve(
-                                  "Email sending failed for this branch."
-                                );
-                              });
 
-                              emailPromises.push(emailPromise);
+                              Admin.filterAdmins({ status: "active", role: "admin" }, (err, adminsResult) => {
+                                if (err) {
+                                  return reject(
+                                    new Error(
+                                      err.message
+                                    )
+                                  );
+                                }
+
+                                const ccArray = adminsResult.length > 0
+                                  ? adminsResult.map(({ name, email }) => ({ name, email }))
+                                  : [];
+
+                                // Send email with the single formatted branch
+                                const emailPromise = createMail(
+                                  "customer",
+                                  "create",
+                                  company_name,
+                                  [
+                                    {
+                                      email: dbBranch.email,
+                                      name: dbBranch.name,
+                                    },
+                                  ], // Send only the current branch
+                                  dbBranch.is_head,
+                                  [],
+                                  ccArray || [],
+                                  password,
+                                  appHost
+                                ).catch((emailError) => {
+                                  console.error(
+                                    "Error sending email:",
+                                    emailError
+                                  );
+                                  return Promise.resolve(
+                                    "Email sending failed for this branch."
+                                  );
+                                });
+
+                                emailPromises.push(emailPromise);
+                              });
                             }
                           });
 

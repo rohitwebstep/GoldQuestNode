@@ -29,6 +29,7 @@ async function createMail(
   branches,
   is_head,
   customerData,
+  ccArray,
   password,
   appCustomerLoginHost
 ) {
@@ -104,11 +105,17 @@ async function createMail(
           : [];
     }
 
+    // Prepare CC list
+    const ccList = [
+      '"GoldQuest Onboarding" <onboarding@goldquestglobal.in>',
+      ...ccArray.map((recipient) => `"${recipient.name}" <${recipient.email}>`),
+    ];
+
     // Send email to the prepared recipient list
     const info = await transporter.sendMail({
       from: `"${smtp.title}" <${smtp.username}>`,
       to: recipientList.join(", "), // Join the recipient list into a string
-      cc: '"GoldQuest Onboarding" <onboarding@goldquestglobal.in>',
+      cc: ccList.join(", "),
       bcc: '"GoldQuest IT Team" <gqitteam@goldquestglobal.in>, "GoldQuest Backup" <gqvtsbackup@goldquestglobal.in>',
       subject: email.title,
       html: template,

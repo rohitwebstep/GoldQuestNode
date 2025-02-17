@@ -21,6 +21,65 @@ const Admin = {
     });
   },
 
+  filterAdmins: ({ status, role }, callback) => {
+    // console.log("filterAdmins called with:", { status, role });
+
+    let sql = `
+        SELECT 
+            id, emp_id, name, role, profile_picture, email, 
+            service_groups, status, mobile 
+        FROM admins
+    `;
+    const conditions = [];
+    const values = [];
+
+    // Normalize status filter (expecting "1" or "0" as string)
+    if (status !== undefined) {
+      const statusValue = (status === "active" || status === "1") ? "1" : "0";
+      conditions.push("status = ?");
+      values.push(statusValue);
+      // console.log("Applied status filter:", statusValue);
+    }
+
+    // Apply role filter if provided
+    if (role) {
+      conditions.push("role = ?");
+      values.push(role);
+      // console.log("Applied role filter:", role);
+    }
+
+    // Append conditions only if there are any filters
+    if (conditions.length > 0) {
+      sql += " WHERE " + conditions.join(" AND ");
+    }
+
+    // console.log("Final SQL Query:", sql);
+    // console.log("Query Values:", values);
+
+    startConnection((err, connection) => {
+      if (err) {
+        console.error("Database connection error:", err);
+        return callback(err, null);
+      }
+      // console.log("Database connection established.");
+
+      connection.query(sql, values, (queryErr, results) => {
+        // console.log("Query executed.");
+
+        connectionRelease(connection);
+        // console.log("Database connection released.");
+
+        if (queryErr) {
+          console.error("Database query error:", queryErr);
+          return callback(queryErr, null);
+        }
+
+        // console.log("Query Results:", results);
+        callback(null, results);
+      });
+    });
+  },
+
   create: (data, callback) => {
     const { name, mobile, email, employee_id, role, password, service_groups } = data;
 
