@@ -130,7 +130,7 @@ const Permission = {
 
       connection.query(
         sql,
-        [permission_json, service_ids, id],
+        [permission_json, id],
         (queryErr, results) => {
           connectionRelease(connection); // Release the connection
 
