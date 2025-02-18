@@ -28,7 +28,7 @@ const common = {
     let currentRole;
 
     // If sub_user_id is provided, query the `branch_sub_users` table
-    if (sub_user_id != null && sub_user_id.trim() !== "") {
+    if (sub_user_id != null && String(sub_user_id).trim() !== "") {
       sql = `SELECT \`login_token\`, \`token_expiry\` FROM \`branch_sub_users\` WHERE \`id\` = ?`;
       queryParams = [sub_user_id]; // Querying by sub_user_id
       currentRole = "Sub User";
