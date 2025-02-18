@@ -8,7 +8,7 @@ const getCurrentTime = () => new Date();
 
 // Utility function to get token expiry time (15 minutes from the current time)
 const getTokenExpiry = () => {
-  const expiryDurationInMinutes = 15; // Duration for token expiry in minutes
+  const expiryDurationInMinutes = 3; // Duration for token expiry in minutes
   return new Date(getCurrentTime().getTime() + expiryDurationInMinutes * 60000);
 };
 
