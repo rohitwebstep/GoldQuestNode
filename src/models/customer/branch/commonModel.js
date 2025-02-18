@@ -69,7 +69,7 @@ const common = {
         if (_token !== currentToken) {
           connectionRelease(connection);
           return callback(
-            { status: false, message: "Invalid token provided" },
+            { status: false, message: `Invalid token provided of ${currentRole}` },
             null
           );
         }
