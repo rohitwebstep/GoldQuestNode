@@ -15,6 +15,7 @@ router.get("/logout", authController.logout);
 router.get("/list", adminController.list);
 router.post("/verify-admin-login", authController.validateLogin);
 
+router.get("/create-listing", adminController.createListing);
 router.post("/create", adminController.create);
 router.post("/upload", adminController.upload);
 router.get("/list", adminController.list);

@@ -3,6 +3,7 @@ const App = require("../../models/appModel");
 const Common = require("../../models/admin/commonModel");
 const Service = require("../../models/admin/serviceModel");
 const Package = require("../../models/admin/packageModel");
+const Permission = require("../../models/admin/permissionModel");
 
 const { createMail } = require("../../mailer/admin/createMail");
 
@@ -78,7 +79,7 @@ exports.addClientListings = (req, res) => {
     });
   }
 
-  const action = "client_management";
+  const action = "internal_login_credentials";
   Common.isAdminAuthorizedForAction(admin_id, action, (authResult) => {
     if (!authResult || !authResult.status) {
       return res.status(403).json({
@@ -150,6 +151,86 @@ exports.addClientListings = (req, res) => {
   });
 };
 
+exports.createListing = (req, res) => {
+  const { admin_id, _token } = req.query;
+
+  // Check for missing fields
+  let missingFields = [];
+  if (!admin_id || admin_id === "") missingFields.push("Admin ID");
+  if (!_token || _token === "") missingFields.push("Token");
+
+  if (missingFields.length > 0) {
+    return res.status(400).json({
+      status: false,
+      message: `Missing required fields: ${missingFields.join(", ")}`,
+    });
+  }
+
+  const action = "internal_login_credentials";
+
+  Common.isAdminAuthorizedForAction(admin_id, action, (authResult) => {
+    if (!authResult || !authResult.status) {
+      return res.status(403).json({
+        status: false,
+        err: authResult,
+        message: authResult ? authResult.message : "Authorization failed",
+      });
+    }
+
+    Common.isAdminTokenValid(_token, admin_id, (err, tokenResult) => {
+      if (err) {
+        console.error("Error checking token validity:", err);
+        return res.status(500).json({
+          status: false,
+          message: "Token validation failed",
+        });
+      }
+
+      if (!tokenResult || !tokenResult.status) {
+        return res.status(401).json({
+          status: false,
+          err: tokenResult,
+          message: tokenResult ? tokenResult.message : "Invalid token",
+        });
+      }
+
+      const newToken = tokenResult.newToken;
+
+      // Fetch all required data
+      const dataPromises = [
+        new Promise((resolve) =>
+          Permission.rolesList((err, result) => {
+            if (err) return resolve([]);
+            resolve(result);
+          })
+        ),
+        new Promise((resolve) =>
+          Service.list((err, result) => {
+            if (err) return resolve([]);
+            resolve(result);
+          })
+        ),
+      ];
+
+      Promise.all(dataPromises).then(([roles, services]) => {
+        res.json({
+          status: true,
+          message: "Lists fetched successfully",
+          data: {
+            roles,
+            services,
+          },
+          totalResults: {
+            roles: roles.length,
+            services: services.length,
+          },
+          token: newToken,
+        });
+      });
+    });
+  });
+};
+
 exports.create = (req, res) => {
   const {
     admin_id,
@@ -161,7 +242,7 @@ exports.create = (req, res) => {
     password,
     employee_id,
     send_mail,
-    service_groups,
+    service_ids,
   } = req.body;
 
   // Define required fields for creating a new admin
@@ -177,7 +258,7 @@ exports.create = (req, res) => {
   };
 
   if (role.trim().toLowerCase() !== "admin") {
-    requiredFields.service_groups = service_groups;
+    requiredFields.service_ids = service_ids;
   }
 
   // Check for missing fields
@@ -235,7 +316,7 @@ exports.create = (req, res) => {
           mobile,
           role: role.toLowerCase(),
           password,
-          service_groups: service_groups || "",
+          service_ids: service_ids || "",
         },
         (err, result) => {
           if (err) {
@@ -247,7 +328,7 @@ exports.create = (req, res) => {
               "0",
               null,
               err.message,
-              () => {}
+              () => { }
             );
             return res.status(500).json({
               status: false,
@@ -264,7 +345,7 @@ exports.create = (req, res) => {
             "1",
             `{id: ${result.insertId}}`,
             null,
-            () => {}
+            () => { }
           );
 
           if (send_mail == 0) {
@@ -322,7 +403,7 @@ exports.update = (req, res) => {
     email,
     mobile,
     status,
-    service_groups,
+    service_ids,
     employee_id,
   } = req.body;
 
@@ -340,7 +421,7 @@ exports.update = (req, res) => {
   };
 
   if (role.trim().toLowerCase() !== "admin") {
-    requiredFields.service_groups = service_groups;
+    requiredFields.service_ids = service_ids;
   }
 
   // Check for missing fields
@@ -420,7 +501,7 @@ exports.update = (req, res) => {
             mobile,
             role: role.toLowerCase(),
             status,
-            service_groups: service_groups || "",
+            service_ids: service_ids || "",
           },
           (err, result) => {
             if (err) {
@@ -432,7 +513,7 @@ exports.update = (req, res) => {
                 "0",
                 null,
                 err,
-                () => {}
+                () => { }
               );
               return res.status(500).json({
                 status: false,
@@ -450,7 +531,7 @@ exports.update = (req, res) => {
               "1",
               `{id: ${id}}`,
               null,
-              () => {}
+              () => { }
             );
 
             return res.status(201).json({
@@ -544,7 +625,7 @@ exports.delete = (req, res) => {
               "0",
               JSON.stringify({ id }),
               err,
-              () => {}
+              () => { }
             );
             return res.status(500).json({
               status: false,
@@ -560,7 +641,7 @@ exports.delete = (req, res) => {
             "1",
             JSON.stringify({ id }),
             null,
-            () => {}
+            () => { }
           );
 
           res.status(200).json({

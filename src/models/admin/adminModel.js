@@ -2,7 +2,7 @@ const { pool, startConnection, connectionRelease } = require("../../config/db");
 
 const Admin = {
   list: (callback) => {
-    const sql = `SELECT \`id\`, \`emp_id\`, \`name\`, \`role\`, \`profile_picture\`, \`email\`, \`service_groups\`, \`status\`, \`mobile\` FROM \`admins\``;
+    const sql = `SELECT \`id\`, \`emp_id\`, \`name\`, \`role\`, \`profile_picture\`, \`email\`, \`service_ids\`, \`status\`, \`mobile\` FROM \`admins\``;
 
     startConnection((err, connection) => {
       if (err) {
@@ -27,7 +27,7 @@ const Admin = {
     let sql = `
         SELECT 
             id, emp_id, name, role, profile_picture, email, 
-            service_groups, status, mobile 
+            service_ids, status, mobile 
         FROM admins
     `;
     const conditions = [];
@@ -81,7 +81,7 @@ const Admin = {
   },
 
   create: (data, callback) => {
-    const { name, mobile, email, employee_id, role, password, service_groups } = data;
+    const { name, mobile, email, employee_id, role, password, service_ids } = data;
 
     // SQL query to check if any field already exists in the admins table
     const checkExistingQuery = `
@@ -141,7 +141,7 @@ const Admin = {
             }
           }
 
-          // If role is 'admin', we don't include the service_groups field
+          // If role is 'admin', we don't include the service_ids field
           let sql;
           let queryParams;
 
@@ -153,10 +153,10 @@ const Admin = {
             queryParams = [name, employee_id, mobile, email, role, "1", password];
           } else {
             sql = `
-              INSERT INTO \`admins\` (\`name\`, \`emp_id\`, \`mobile\`, \`email\`, \`role\`, \`service_groups\`, \`status\`, \`password\`) 
+              INSERT INTO \`admins\` (\`name\`, \`emp_id\`, \`mobile\`, \`email\`, \`role\`, \`service_ids\`, \`status\`, \`password\`) 
               VALUES (?, ?, ?, ?, ?, ?, ?, md5(?))
             `;
-            queryParams = [name, employee_id, mobile, email, role, JSON.stringify(service_groups), "1", password];
+            queryParams = [name, employee_id, mobile, email, role, service_ids, "1", password];
           }
 
           // Insert the new admin
@@ -176,7 +176,7 @@ const Admin = {
 
 
   update: (data, callback) => {
-    const { id, name, mobile, email, employee_id, role, status, service_groups } = data;
+    const { id, name, mobile, email, employee_id, role, status, service_ids } = data;
 
     // SQL query to check if any field already exists in the admins table
     const checkExistingQuery = `
@@ -220,7 +220,7 @@ const Admin = {
             }
           }
 
-          // If role is 'admin', we don't include the service_groups field in the update
+          // If role is 'admin', we don't include the service_ids field in the update
           let sql;
           let queryParams;
 
@@ -246,11 +246,11 @@ const Admin = {
                 \`mobile\` = ?, 
                 \`email\` = ?, 
                 \`role\` = ?, 
-                \`service_groups\` = ?, 
+                \`service_ids\` = ?, 
                 \`status\` = ? 
               WHERE \`id\` = ?
             `;
-            queryParams = [name, employee_id, mobile, email, role, JSON.stringify(service_groups), status, id];
+            queryParams = [name, employee_id, mobile, email, role, service_ids, status, id];
           }
 
           // Update the admin record
@@ -765,104 +765,52 @@ const Admin = {
 
   fetchAllowedServiceIds: (id, callback) => {
     const sql = `
-      SELECT \`service_groups\`, \`role\` FROM \`admins\`
-      WHERE \`id\` = ?
+        SELECT \`service_ids\`, \`role\` FROM \`admins\`
+        WHERE \`id\` = ?
     `;
 
     startConnection((err, connection) => {
       if (err) {
         console.error("Connection error:", err);
-        return callback(err, null);
+        return callback({ message: "Database connection error", error: err }, null);
       }
 
       connection.query(sql, [id], (queryErr, results) => {
         if (queryErr) {
-          console.error("Database query error: 13", queryErr);
-          return callback(
-            { message: "Database query error", error: queryErr },
-            null
-          );
+          console.error("Database query error:", queryErr);
+          connectionRelease(connection);
+          return callback(queryErr, null);
         }
 
         if (results.length === 0) {
+          connectionRelease(connection);
           return callback({ message: "Admin not found" }, null);
         }
 
-        const role = results[0].role;
-        const serviceGroups = results[0].service_groups;
-        let finalServiceIds = []; // Initialize as an empty array
-        let servicePromises = [];
-        let isaddressServiceAllowed = false;
+        const { role, service_ids } = results[0];
 
-        // Check if the role is not "admin"
-        if (role !== 'admin') {
+        // If the role is not "admin" or "admin_user"
+        if (!["admin", "admin_user"].includes(role)) {
           try {
-            // Parse the service_groups JSON string to an array
-            const serviceGroupsArray = JSON.parse(serviceGroups);
+            // Convert service_ids string to an array and map to numbers
+            const serviceIdsArr = service_ids ? service_ids.split(",").map(Number) : [];
 
-            // Create promises for each service group query
-            serviceGroupsArray.forEach((serviceGroup, index) => {
-              // Check if the service group contains 'address' (case-insensitive)
-              if (serviceGroup.toLowerCase().includes('address')) {
-                isaddressServiceAllowed = true;
-              }
-              const serviceSql = `
-                SELECT id FROM services WHERE \`group\` = ?
-              `;
-
-              // Create a promise for the query
-              const queryPromise = new Promise((resolve, reject) => {
-                connection.query(serviceSql, [serviceGroup], (serviceQueryErr, serviceResults) => {
-                  if (serviceQueryErr) {
-                    console.error("Error fetching service IDs for group:", serviceQueryErr);
-                    reject(serviceQueryErr); // Reject on error
-                  } else {
-                    if (serviceResults.length > 0) {
-                      serviceResults.forEach(service => {
-                        finalServiceIds.push(service.id); // Add service ID to finalServiceIds
-                      });
-                    }
-                    resolve(); // Resolve once the results are processed
-                  }
-                });
-              });
-
-              servicePromises.push(queryPromise); // Push promise into array
-            });
-
-            // Wait for all promises to resolve before calling callback
-            Promise.all(servicePromises)
-              .then(() => {
-                // Once all service IDs are fetched, release the connection and return the result
-                connectionRelease(connection);
-                callback(null, { finalServiceIds, addressServicesPermission: isaddressServiceAllowed }); // Return the final service IDs and permission
-              })
-              .catch((err) => {
-                console.error("Error while fetching service IDs:", err);
-                connectionRelease(connection);
-                callback({ message: "Error fetching service IDs", error: err }, null);
-              });
+            connectionRelease(connection);
+            return callback(null, { finalServiceIds: serviceIdsArr });
 
           } catch (parseErr) {
-            console.error("Error parsing service_groups JSON:", parseErr);
+            console.error("Error parsing service_ids:", parseErr);
             connectionRelease(connection);
-            return callback(
-              { message: "Error parsing service_groups data", error: parseErr },
-              null
-            );
+            return callback({ message: "Error parsing service_ids data", error: parseErr }, null);
           }
-        } else {
-          connectionRelease(connection);
-          return callback(null, { finalServiceIds: [], addressServicesPermission: true }); // Return empty array and true for admin role
         }
+
+        // If the role is "admin" or "admin_user"
+        connectionRelease(connection);
+        return callback(null, { finalServiceIds: [] });
       });
     });
   }
-
-
-
-
-
 };
 
 module.exports = Admin;
