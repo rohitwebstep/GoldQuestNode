@@ -46,7 +46,7 @@ exports.create = (req, res) => {
           console.error("Error validating token:", err);
           return res.status(500).json({
             status: false,
-            message: `An error occurred while validating the token. Please try again later.`,
+            message: err.message,
           });
         }
 
@@ -176,7 +176,7 @@ exports.list = (req, res) => {
           console.error("Error validating token:", err);
           return res.status(500).json({
             status: false,
-            message: `An error occurred while validating the token. Please try again later.`,
+            message: err.message,
           });
         }
 
@@ -263,7 +263,7 @@ exports.updateEmail = (req, res) => {
           console.error("Error validating token:", err);
           return res.status(500).json({
             status: false,
-            message: `An error occurred while validating the token. Please try again later.`,
+            message: err.message,
           });
         }
 
@@ -391,7 +391,7 @@ exports.updatePassword = (req, res) => {
           console.error("Error validating token:", err);
           return res.status(500).json({
             status: false,
-            message: `An error occurred while validating the token. Please try again later.`,
+            message: err.message,
           });
         }
 
@@ -515,7 +515,7 @@ exports.delete = (req, res) => {
           console.error("Error validating token:", err);
           return res.status(500).json({
             status: false,
-            message: `An error occurred while validating the token. Please try again later.`,
+            message: err.message,
           });
         }
 
