@@ -210,19 +210,27 @@ exports.createListing = (req, res) => {
             resolve(result);
           })
         ),
+        new Promise((resolve) =>
+          Admin.list((err, result) => {
+            if (err) return resolve([]);
+            resolve(result);
+          })
+        ),
       ];
 
-      Promise.all(dataPromises).then(([roles, services]) => {
+      Promise.all(dataPromises).then(([roles, services, admins]) => {
         res.json({
           status: true,
           message: "Lists fetched successfully",
           data: {
             roles,
             services,
+            admins
           },
           totalResults: {
             roles: roles.length,
             services: services.length,
+            admins: admins.length
           },
           token: newToken,
         });
