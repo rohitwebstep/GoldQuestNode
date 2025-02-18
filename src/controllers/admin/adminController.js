@@ -196,45 +196,62 @@ exports.createListing = (req, res) => {
 
       const newToken = tokenResult.newToken;
 
-      // Fetch all required data
+      // Fetch all required data using Promise.all
       const dataPromises = [
         new Promise((resolve) =>
           Permission.rolesList((err, result) => {
-            if (err) return resolve([]);
+            if (err) {
+              console.error("Error fetching roles:", err);
+              return resolve([]);
+            }
             resolve(result);
           })
         ),
         new Promise((resolve) =>
           Service.list((err, result) => {
-            if (err) return resolve([]);
+            if (err) {
+              console.error("Error fetching services:", err);
+              return resolve([]);
+            }
             resolve(result);
           })
         ),
         new Promise((resolve) =>
           Admin.list((err, result) => {
-            if (err) return resolve([]);
+            if (err) {
+              console.error("Error fetching admins:", err);
+              return resolve([]);
+            }
             resolve(result);
           })
         ),
       ];
 
-      Promise.all(dataPromises).then(([roles, services, admins]) => {
-        res.json({
-          status: true,
-          message: "Lists fetched successfully",
-          data: {
-            roles,
-            services,
-            admins
-          },
-          totalResults: {
-            roles: roles.length,
-            services: services.length,
-            admins: admins.length
-          },
-          token: newToken,
+      Promise.all(dataPromises)
+        .then(([roles, services, admins]) => {
+          res.json({
+            status: true,
+            message: "Lists fetched successfully",
+            data: {
+              roles,
+              services,
+              admins
+            },
+            totalResults: {
+              roles: roles.length,
+              services: services.length,
+              admins: admins.length
+            },
+            token: newToken,
+          });
+        })
+        .catch((error) => {
+          console.error("Error fetching data:", error);
+          res.status(500).json({
+            status: false,
+            message: "Error fetching required data",
+          });
         });
-      });
     });
   });
 };
