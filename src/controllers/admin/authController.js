@@ -83,8 +83,7 @@ exports.login = (req, res) => {
 
       const currentTime = getCurrentTime();
       const tokenExpiry = new Date(admin.token_expiry);
-
-
+      /*
       if (admin.login_token && tokenExpiry > currentTime) {
 
         // Parse the tokenExpiry and currentTime to Date objects
@@ -117,7 +116,7 @@ exports.login = (req, res) => {
           message: `Another admin is currently logged in. You can log in after ${timeRemainingMessage} if no activity is done by the current user.`,
         });
       }
-
+      */
 
       if (admin.two_factor_enabled && admin.two_factor_enabled == 1) {
         const isMobile = /^\d{10}$/.test(username);
@@ -279,6 +278,7 @@ exports.verifyTwoFactor = (req, res) => {
     const currentTime = getCurrentTime();
     const tokenExpiry = new Date(admin.token_expiry);
 
+    /*
     if (admin.login_token && tokenExpiry > currentTime) {
 
       // Parse the tokenExpiry and currentTime to Date objects
@@ -317,6 +317,7 @@ exports.verifyTwoFactor = (req, res) => {
         message: `Another admin is currently logged in. You can log in after ${timeRemainingMessage} if no activity is done by the current user.`,
       });
     }
+    */
 
     if (admin.two_factor_enabled !== 1) {
       return res.status(400).json({
