@@ -37,7 +37,6 @@ const pool = mysql.createPool({
   connectionLimit: 10,
   queueLimit: 0,
   connectTimeout: 120000, // 2 minutes for individual connection attempts
-  acquireTimeout: 100000, // 100 sec to acquire connection
 });
 
 // Function to start a connection with retry mechanism
