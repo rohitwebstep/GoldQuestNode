@@ -48,7 +48,6 @@ exports.list = (req, res) => {
             return res.status(500).json({
                 status: false,
                 message: "Failed to retrieve Branch. Please try again.",
-                token: newToken,
             });
         }
 
@@ -56,7 +55,6 @@ exports.list = (req, res) => {
             return res.status(404).json({
                 status: false,
                 message: "Branch not found.",
-                token: newToken,
             });
         }
 
@@ -64,7 +62,6 @@ exports.list = (req, res) => {
             return res.status(403).json({ // 403 Forbidden
                 status: false,
                 message: "Unauthorized access. Only head branches are allowed.",
-                token: newToken,
             });
         }
 
@@ -74,7 +71,6 @@ exports.list = (req, res) => {
                 return res.status(500).json({
                     status: false,
                     message: "Failed to retrieve Customer. Please try again.",
-                    token: newToken,
                 });
             }
 
@@ -82,7 +78,6 @@ exports.list = (req, res) => {
                 return res.status(404).json({
                     status: false,
                     message: "Customer not found.",
-                    token: newToken,
                 });
             }
 
