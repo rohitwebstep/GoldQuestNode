@@ -11,101 +11,142 @@ const subUser = {
     // Start DB connection
     startConnection((err, connection) => {
       if (err) {
-        console.error("Failed to connect to the database:", err);
+        console.error("Database connection failed:", err);
         return callback(
-          { message: "Failed to connect to the database", error: err },
+          { message: "Unable to connect to the database.", error: err },
           null
         );
       }
 
-      // Check if the email already exists for the given branch_id
-      const checkEmailSql = `
-            SELECT * FROM \`branch_sub_users\`
-            WHERE \`email\` = ? AND \`branch_id\` = ?
+      // Check if the email already exists in branch_sub_users
+      const checkSubUserEmailSql = `
+            SELECT branch_id FROM \`branch_sub_users\`
+            WHERE \`email\` = ?
         `;
 
-      connection.query(checkEmailSql, [email, branch_id], (err, results) => {
+      connection.query(checkSubUserEmailSql, [email], (err, subUserResults) => {
         if (err) {
-          console.error("Error checking email existence:", err);
-          connectionRelease(connection);
-          return callback(err, null);
-        }
-
-        // If email already exists, return error
-        if (results.length > 0) {
+          console.error("Email validation error:", err);
           connectionRelease(connection);
           return callback(
-            { message: "Email is already associated with this branch." },
+            { message: "Error validating email existence.", error: err },
             null
           );
         }
 
-        // SQL query for inserting a new record into branch_sub_users
-        const insertSql = `
-                INSERT INTO \`branch_sub_users\` (
-                  \`branch_id\`,
-                  \`customer_id\`,
-                  \`email\`,
-                  \`password\`
-                ) VALUES (?, ?, ?, ?)
-            `;
+        if (subUserResults.length > 0) {
+          const existingBranchId = subUserResults[0].branch_id;
+          connectionRelease(connection);
+          return callback(
+            {
+              message:
+                existingBranchId === branch_id
+                  ? "This email is already registered under the same branch."
+                  : "This email is already associated with a different branch.",
+            },
+            null
+          );
+        }
 
-        const values = [branch_id, customer_id, email, password];
+        // Check if the email already exists in branches
+        const checkBranchEmailSql = `
+              SELECT id FROM \`branches\`
+              WHERE \`email\` = ?
+          `;
 
-        connection.query(insertSql, values, (err, results) => {
+        connection.query(checkBranchEmailSql, [email], (err, branchResults) => {
           if (err) {
-            console.error("Error inserting branch sub-user:", err);
+            console.error("Email validation error:", err);
             connectionRelease(connection);
-            return callback(err, null);
+            return callback(
+              { message: "Error validating email existence.", error: err },
+              null
+            );
           }
 
-          // Assuming you want to send the `new_application_id` back, you should extract it from `results.insertId`
-          const new_application_id = results.insertId;
+          if (branchResults.length > 0) {
+            connectionRelease(connection);
+            return callback(
+              {
+                message: "This email is already registered as a branch email.",
+              },
+              null
+            );
+          }
 
-          // SQL query for fetching branch and customer names
-          const branchCustomerSql = `
-                    SELECT 
-                        B.name AS branch_name, 
-                        C.name AS customer_name 
-                    FROM \`branches\` AS B 
-                    INNER JOIN \`customers\` AS C 
-                    ON B.customer_id = C.id 
-                    WHERE B.id = ? AND C.id = ?
-                `;
+          // Insert new branch sub-user
+          const insertSql = `
+                  INSERT INTO \`branch_sub_users\` (
+                    \`branch_id\`,
+                    \`customer_id\`,
+                    \`email\`,
+                    \`password\`
+                  ) VALUES (?, ?, ?, ?)
+              `;
 
-          const branchCustomerValues = [branch_id, customer_id];
+          const values = [branch_id, customer_id, email, password];
 
-          connection.query(
-            branchCustomerSql,
-            branchCustomerValues,
-            (branchCustomerErr, branchCustomerResults) => {
-              // Release connection after query execution
+          connection.query(insertSql, values, (err, results) => {
+            if (err) {
+              console.error("Branch sub-user insertion failed:", err);
               connectionRelease(connection);
-
-              if (branchCustomerErr) {
-                console.error(
-                  "Error fetching branch and customer names:",
-                  branchCustomerErr
-                );
-                return callback(branchCustomerErr, null);
-              }
-
-              if (branchCustomerResults.length === 0) {
-                return callback(
-                  { message: "Branch or customer not found." },
-                  null
-                );
-              }
-
-              const { branch_name, customer_name } = branchCustomerResults[0];
-
-              return callback(null, {
-                new_application_id,
-                branch_name,
-                customer_name,
-              });
+              return callback(
+                { message: "Failed to register branch sub-user.", error: err },
+                null
+              );
             }
-          );
+
+            const new_application_id = results.insertId;
+
+            // Fetch branch and customer names
+            const branchCustomerSql = `
+                      SELECT 
+                          B.name AS branch_name, 
+                          C.name AS customer_name 
+                      FROM \`branches\` AS B 
+                      INNER JOIN \`customers\` AS C 
+                      ON B.customer_id = C.id 
+                      WHERE B.id = ? AND C.id = ?
+                  `;
+
+            connection.query(
+              branchCustomerSql,
+              [branch_id, customer_id],
+              (branchCustomerErr, branchCustomerResults) => {
+                connectionRelease(connection);
+
+                if (branchCustomerErr) {
+                  console.error(
+                    "Error fetching branch and customer details:",
+                    branchCustomerErr
+                  );
+                  return callback(
+                    {
+                      message:
+                        "An error occurred while retrieving branch and customer details.",
+                      error: branchCustomerErr,
+                    },
+                    null
+                  );
+                }
+
+                if (branchCustomerResults.length === 0) {
+                  return callback(
+                    { message: "Branch or customer details not found." },
+                    null
+                  );
+                }
+
+                const { branch_name, customer_name } = branchCustomerResults[0];
+
+                return callback(null, {
+                  new_application_id,
+                  branch_name,
+                  customer_name,
+                });
+              }
+            );
+          });
         });
       });
     });
@@ -137,6 +178,7 @@ const subUser = {
       });
     });
   },
+
   list: (branch_id, callback) => {
     // Start DB connection
     startConnection((err, connection) => {
@@ -187,46 +229,68 @@ const subUser = {
     // Start DB connection
     startConnection((err, connection) => {
       if (err) {
-        console.error("Failed to connect to the database:", err);
+        console.error("Database connection failed:", err);
         return callback(
-          { message: "Failed to connect to the database", error: err },
+          { message: "Unable to establish a database connection.", error: err },
           null
         );
       }
 
-      // Check if the email already exists for the given branch_id, excluding the current record (id)
-      const checkEmailSql = `
-          SELECT * FROM \`branch_sub_users\` WHERE \`email\` = ? AND \`branch_id\` = ? AND \`id\` != ?
+      // Check if the email already exists in `branch_sub_users`, specifying whether it's within the same or different branch
+      const checkBranchEmailSql = `
+            SELECT id, branch_id FROM \`branch_sub_users\` WHERE \`email\` = ? AND \`id\` != ?
         `;
 
-      connection.query(
-        checkEmailSql,
-        [email, branch_id, id],
-        (err, results) => {
-          if (err) {
-            console.error("Error checking email existence:", err);
-            connectionRelease(connection);
-            return callback(err, null);
-          }
+      connection.query(checkBranchEmailSql, [email, id], (err, branchResults) => {
+        if (err) {
+          console.error("Error checking email in branch_sub_users:", err);
+          connectionRelease(connection);
+          return callback(
+            { message: "Error verifying email availability.", error: err },
+            null
+          );
+        }
 
-          // If email already exists, return error
-          if (results.length > 0) {
+        if (branchResults.length > 0) {
+          const existingBranchId = branchResults[0].branch_id;
+          const message =
+            existingBranchId === branch_id
+              ? "This email is already associated with another user in the **same branch**."
+              : "This email is already associated with a user in a **different branch**.";
+
+          connectionRelease(connection);
+          return callback({ message }, null);
+        }
+
+        // Check if the email exists in the `branches` table
+        const checkMainBranchEmailSql = `
+                SELECT id FROM \`branches\` WHERE \`email\` = ?
+            `;
+
+        connection.query(checkMainBranchEmailSql, [email], (err, mainBranchResults) => {
+          if (err) {
+            console.error("Error checking email in branches:", err);
             connectionRelease(connection);
             return callback(
-              { message: "Email is already associated with this branch." },
+              { message: "Error verifying email association with the main branch.", error: err },
               null
             );
           }
 
-          // SQL query for updating the record in branch_sub_users
+          if (mainBranchResults.length > 0) {
+            connectionRelease(connection);
+            return callback(
+              { message: "This email is already associated with a **main branch**." },
+              null
+            );
+          }
+
+          // Proceed with updating the email
           const updateSql = `
-            UPDATE \`branch_sub_users\` 
-            SET 
-              \`branch_id\` = ?, 
-              \`customer_id\` = ?, 
-              \`email\` = ?
-            WHERE \`id\` = ?
-          `;
+                    UPDATE \`branch_sub_users\`
+                    SET \`branch_id\` = ?, \`customer_id\` = ?, \`email\` = ?
+                    WHERE \`id\` = ?
+                `;
 
           const values = [branch_id, customer_id, email, id];
 
@@ -235,17 +299,27 @@ const subUser = {
             connectionRelease(connection);
 
             if (err) {
-              console.error("Database query error: 109", err);
-              return callback(err, null);
+              console.error("Error updating branch sub-user email:", err);
+              return callback(
+                { message: "Failed to update the email address.", error: err },
+                null
+              );
+            }
+
+            if (results.affectedRows === 0) {
+              return callback(
+                { message: "No record found to update or no changes made." },
+                null
+              );
             }
 
             return callback(null, {
-              results,
-              message: "Record updated successfully.",
+              message: "Email updated successfully.",
+              affectedRows: results.affectedRows
             });
           });
-        }
-      );
+        });
+      });
     });
   },
 
