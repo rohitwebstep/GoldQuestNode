@@ -206,7 +206,9 @@ exports.imageUrlToBase = async (req, res) => {
   }
 
   // Split the comma-separated string into an array of image URLs
-  const imageUrlsArray = image_urls.split(",").map((url) => url.trim());
+  const imageUrlsArray = Array.isArray(image_urls)
+    ? image_urls.map(url => url.trim())
+    : image_urls.split(",").map(url => url.trim());
 
   const base64Images = [];
 
