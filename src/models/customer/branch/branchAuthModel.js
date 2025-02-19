@@ -16,7 +16,7 @@ const Branch = {
 
       // Query the branches table first
       const sqlBranches = `
-        SELECT 'branch' AS type, \`id\`, \`id\` AS branch_id, \`customer_id\`, \`name\`, \`email\`, \`status\`, \`login_token\`, \`token_expiry\`, \`otp\`, \`two_factor_enabled\`, \`otp_expiry\`
+        SELECT 'branch' AS type, \`id\`, \`id\` AS branch_id, \`customer_id\`, \`name\`, \`name\` AS \`branch_name\`, \`email\`, \`status\`, \`login_token\`, \`token_expiry\`, \`otp\`, \`two_factor_enabled\`, \`otp_expiry\`
         FROM \`branches\`
         WHERE \`email\` = ?
       `;
@@ -38,11 +38,19 @@ const Branch = {
         }
 
         // If not found in branches, query the branch_sub_users table
-        const sqlSubUsers = `
-          SELECT 'sub_user' AS type, \`id\`, \`branch_id\`, \`customer_id\`, \`email\`, \`status\`, \`login_token\`, \`token_expiry\`
-          FROM \`branch_sub_users\`
-          WHERE \`email\` = ?
-        `;
+        const sqlSubUsers =
+          `SELECT 'sub_user' AS type, 
+            sub_users.id, 
+            sub_users.branch_id, 
+            sub_users.customer_id, 
+            sub_users.email, 
+            sub_users.status, 
+            sub_users.login_token, 
+            sub_users.token_expiry, 
+            branch.name AS branch_name 
+     FROM branch_sub_users AS sub_users
+     INNER JOIN branches AS branch ON branch.id = sub_users.branch_id
+     WHERE sub_users.email = ?`;
 
         connection.query(sqlSubUsers, [username], (err, subUserResults) => {
           connectionRelease(connection);
