@@ -524,7 +524,7 @@ const Branch = {
       let queryParams = [];
 
       // Build SQL query based on the presence of sub_user_id
-      if (sub_user_id && sub_user_id.trim() !== "") {
+      if (sub_user_id != null && String(sub_user_id).trim() !== "") {
         sql = `
           SELECT \`id\`, \`customer_id\`, \`email\`, \`status\`, \`login_token\`, \`token_expiry\`
           FROM \`branch_sub_users\`
