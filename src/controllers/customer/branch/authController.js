@@ -193,7 +193,7 @@ exports.login = (req, res) => {
                 }
 
                 if (admin_id && admin_token) {
-                  const action = "client_overview";
+                  const action = "client_management";
                   AdminCommon.isAdminAuthorizedForAction(
                     admin_id,
                     action,
