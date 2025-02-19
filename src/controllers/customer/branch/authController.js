@@ -772,18 +772,13 @@ exports.logout = (req, res) => {
 
 // Branch login validation handler
 exports.validateLogin = (req, res) => {
-  const { branch_id, _token } = req.body;
+  const { sub_user_id, branch_id, _token } = req.body;
   const missingFields = [];
+
   // Validate required fields
-  if (!branch_id) {
-    missingFields.push("Branch Id");
-  }
+  if (!branch_id) missingFields.push("Branch Id");
+  if (!_token) missingFields.push("Token");
 
-  if (!_token) {
-    missingFields.push("Token");
-  }
-
-  // If there are missing fields, return an error response
   if (missingFields.length > 0) {
     return res.status(400).json({
       status: false,
@@ -792,97 +787,52 @@ exports.validateLogin = (req, res) => {
   }
 
   // Fetch branch by ID
-  BranchAuth.findById(branch_id, (err, branch) => {
+  BranchAuth.findById(sub_user_id || "", branch_id, (err, branch) => {
     if (err) {
       console.error("Database error:", err);
-      return res
-        .status(500)
-        .json({ status: false, message: err.message });
+      return res.status(500).json({ status: false, message: err.message });
     }
 
-    // If no branch found, return a 404 response
     if (!branch) {
       return res.status(404).json({
         status: false,
-        message: "Branch not found with the provided ID",
+        message: "Branch not found with the provided ID.",
       });
     }
 
     // Validate the token
     if (branch.login_token !== _token) {
-      return res
-        .status(401)
-        .json({ status: false, message: "Invalid or expired token" });
-    }
-
-    const now = new Date();
-    const tokenExpiry = new Date(new Date(branch.token_expiry).getTime() + 15 * 60 * 1000); // Add 15 minutes
-
-    if (tokenExpiry < now) {
-      return res.status(440).json({
-        status: false,
-        message: "Your session has expired. Please log in again to continue."
-      });
+      return res.status(401).json({ status: false, message: "Invalid or expired token." });
     }
 
     // Check branch status
-    if (branch.status === 0) {
-      Common.branchLoginLog(
-        branch.id,
-        "login",
-        "0",
-        "Branch account is not yet verified.",
-        () => { }
-      );
-      return res.status(400).json({
-        status: false,
-        message:
-          "Branch account is not yet verified. Please complete the verification process before proceeding.",
-      });
+    const statusMessages = {
+      0: "Branch account is not yet verified. Please complete the verification process before proceeding.",
+      2: "Branch account has been suspended. Please contact the help desk for further assistance.",
+    };
+
+    if (statusMessages[branch.status]) {
+      Common.branchLoginLog(branch.id, "login", "0", statusMessages[branch.status], () => { });
+      return res.status(400).json({ status: false, message: statusMessages[branch.status] });
     }
 
-    if (branch.status === 2) {
-      Common.branchLoginLog(
-        branch.id,
-        "login",
-        "0",
-        "branch account has been suspended.",
-        () => { }
-      );
-      return res.status(400).json({
-        status: false,
-        message:
-          "Branch account has been suspended. Please contact the help desk for further assistance.",
-      });
-    }
-    let sub_user_id;
     // Check if the existing token is still valid
-    Common.isBranchTokenValid(
-      _token,
-      sub_user_id || null,
-      branch_id,
-      (err, result) => {
-        if (err) {
-          console.error("Error checking token validity:", err);
-          return res.status(500).json({ status: false, message: err.message });
-        }
-
-        if (!result.status) {
-          return res
-            .status(401)
-            .json({ status: false, message: result.message });
-        }
-
-        const newToken = result.newToken;
-
-        // Here you can respond with success and the new token if applicable
-        return res.status(200).json({
-          status: true,
-          message: "Login verified successful",
-          token: newToken,
-        });
+    Common.isBranchTokenValid(_token, sub_user_id || "", branch_id, (err, result) => {
+      if (err) {
+        console.error("Error checking token validity:", err);
+        return res.status(500).json({ status: false, message: "Error validating token." });
       }
-    );
+
+      if (!result.status) {
+        return res.status(401).json({ status: false, message: result.message });
+      }
+
+      return res.status(200).json({
+        status: true,
+        message: "Login verified successfully.",
+        token: result.newToken,
+      });
+    });
   });
 };
 

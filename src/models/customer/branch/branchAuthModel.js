@@ -540,6 +540,9 @@ const Branch = {
         queryParams = [branch_id];
       }
 
+      console.log(`SQL Query:`, sql);
+      console.log(`Branch ID: ${branch_id}, Sub User ID: ${sub_user_id}`);
+
       // Execute the query
       connection.query(sql, queryParams, (err, results) => {
         connectionRelease(connection); // Ensure connection is released
