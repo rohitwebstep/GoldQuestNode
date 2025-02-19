@@ -1135,7 +1135,7 @@ exports.update = (req, res) => {
                     res.status(200).json({
                       status: true,
                       message: "Client application updated successfully.",
-                      package: result,
+                      result,
                       token: newToken,
                     });
                   }
