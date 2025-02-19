@@ -14,31 +14,63 @@ const Branch = {
         );
       }
 
-      const sql = `
-        SELECT \`id\`, \`customer_id\`, \`name\`, \`email\`, \`status\`, \`login_token\`, \`token_expiry\`, \`otp\`, \`two_factor_enabled\`, \`otp_expiry\`
+      // Query the branches table first
+      const sqlBranches = `
+        SELECT 'branch' AS type, \`id\`, \`id\` AS branch_id, \`customer_id\`, \`name\`, \`email\`, \`status\`, \`login_token\`, \`token_expiry\`, \`otp\`, \`two_factor_enabled\`, \`otp_expiry\`
         FROM \`branches\`
         WHERE \`email\` = ?
       `;
 
-      connection.query(sql, [username], (err, results) => {
-        connectionRelease(connection); // Ensure connection is released
-
+      connection.query(sqlBranches, [username], (err, branchResults) => {
         if (err) {
-          console.error("Database query error: 74", err);
+          connectionRelease(connection);
+          console.error("Database query error (branches):", err);
           return callback(
-            { message: "Database query error", error: err },
+            { message: "Database query error (branches)", error: err },
             null
           );
         }
 
-        if (results.length === 0) {
-          return callback(
-            { message: "No branch found with the provided email" },
-            null
-          );
+        if (branchResults.length > 0) {
+          // If found in branches, return the result
+          connectionRelease(connection);
+          return callback(null, branchResults);
         }
 
-        callback(null, results);
+        // If not found in branches, query the branch_sub_users table
+        const sqlSubUsers = `
+          SELECT 'sub_user' AS type, \`id\`, \`branch_id\`, \`customer_id\`, \`email\`, \`status\`, \`login_token\`, \`token_expiry\`
+          FROM \`branch_sub_users\`
+          WHERE \`email\` = ?
+        `;
+
+        connection.query(sqlSubUsers, [username], (err, subUserResults) => {
+          connectionRelease(connection);
+
+          if (err) {
+            console.error("Database query error (branch_sub_users):", err);
+            return callback(
+              {
+                message: "Database query error (branch_sub_users)",
+                error: err,
+              },
+              null
+            );
+          }
+
+          if (subUserResults.length === 0) {
+            // No record found in either table
+            return callback(
+              {
+                message: "No branch or sub-user found with the provided email",
+              },
+              null
+            );
+          }
+
+          // Found in branch_sub_users
+          callback(null, subUserResults);
+        });
       });
     });
   },
@@ -52,31 +84,63 @@ const Branch = {
         );
       }
 
-      const sql = `
-        SELECT *
+      // Query the branches table first
+      const sqlBranches = `
+        SELECT 'branch' AS type, *
         FROM \`branches\`
         WHERE \`email\` = ?
       `;
 
-      connection.query(sql, [username], (err, results) => {
-        connectionRelease(connection); // Ensure connection is released
-
+      connection.query(sqlBranches, [username], (err, branchResults) => {
         if (err) {
-          console.error("Database query error: 75", err);
+          connectionRelease(connection);
+          console.error("Database query error (branches):", err);
           return callback(
-            { message: "Database query error", error: err },
+            { message: "Database query error (branches)", error: err },
             null
           );
         }
 
-        if (results.length === 0) {
-          return callback(
-            { message: "No branch found with the provided email" },
-            null
-          );
+        if (branchResults.length > 0) {
+          // If found in branches, return the result
+          connectionRelease(connection);
+          return callback(null, branchResults);
         }
 
-        callback(null, results);
+        // If not found in branches, query the branch_sub_users table
+        const sqlSubUsers = `
+          SELECT 'sub_user' AS type, *
+          FROM \`branch_sub_users\`
+          WHERE \`email\` = ?
+        `;
+
+        connection.query(sqlSubUsers, [username], (err, subUserResults) => {
+          connectionRelease(connection);
+
+          if (err) {
+            console.error("Database query error (branch_sub_users):", err);
+            return callback(
+              {
+                message: "Database query error (branch_sub_users)",
+                error: err,
+              },
+              null
+            );
+          }
+
+          if (subUserResults.length === 0) {
+            // No record found in either table
+            return callback(
+              {
+                message: "No branch or sub-user found with the provided email",
+              },
+              null
+            );
+          }
+
+          // Found in branch_sub_users
+          callback(null, subUserResults);
+        });
       });
     });
   },
@@ -175,7 +239,7 @@ const Branch = {
     });
   },
 
-  validatePassword: (email, password, callback) => {
+  validatePassword: (email, password, type, callback) => {
     startConnection((err, connection) => {
       if (err) {
         return callback(
@@ -184,12 +248,27 @@ const Branch = {
         );
       }
 
-      const sql = `
+      let sql;
+      if (type === "branch") {
+        sql = `
         SELECT \`id\`
         FROM \`branches\`
         WHERE \`email\` = ?
         AND (\`password\` = MD5(?) OR \`password\` = ?)
       `;
+      } else if (type === "sub_user") {
+        sql = `
+        SELECT \`id\`
+        FROM \`branch_sub_users\`
+        WHERE \`email\` = ?
+        AND (\`password\` = MD5(?) OR \`password\` = ?)
+      `;
+      } else {
+        return callback(
+          { message: "Undefined user trying to login", error: err },
+          null
+        );
+      }
 
       connection.query(sql, [email, password, password], (err, results) => {
         connectionRelease(connection); // Ensure connection is released
@@ -197,7 +276,7 @@ const Branch = {
         if (err) {
           console.error("Database query failed:", err);
           return callback(
-            err,
+            { message: "Internal server error", error: err },
             null
           );
         }
@@ -301,7 +380,7 @@ const Branch = {
     });
   },
 
-  updateToken: (id, token, tokenExpiry, callback) => {
+  updateToken: (id, token, tokenExpiry, type, callback) => {
     startConnection((err, connection) => {
       if (err) {
         return callback(
@@ -309,12 +388,25 @@ const Branch = {
           null
         );
       }
-
-      const sql = `
+      let sql;
+      if (type === "branch") {
+        sql = `
         UPDATE \`branches\`
         SET \`login_token\` = ?, \`token_expiry\` = ?
         WHERE \`id\` = ?
       `;
+      } else if (type === "sub_user") {
+        sql = `
+        UPDATE \`branch_sub_users\`
+        SET \`login_token\` = ?, \`token_expiry\` = ?
+        WHERE \`id\` = ?
+      `;
+      } else {
+        return callback(
+          { message: "Undefined user trying to login", error: err },
+          null
+        );
+      }
 
       connection.query(sql, [token, tokenExpiry, id], (err, results) => {
         connectionRelease(connection); // Ensure connection is released
@@ -419,7 +511,7 @@ const Branch = {
     });
   },
 
-  findById: (id, callback) => {
+  findById: (sub_user_id, branch_id, callback) => {
     startConnection((err, connection) => {
       if (err) {
         return callback(
@@ -428,26 +520,45 @@ const Branch = {
         );
       }
 
-      const sql = `
-        SELECT \`id\`, \`customer_id\`, \`name\`, \`email\`, \`status\`, \`login_token\`, \`token_expiry\`
-        FROM \`branches\`
-        WHERE \`id\` = ?
-      `;
+      let sql = "";
+      let queryParams = [];
 
-      connection.query(sql, [id], (err, results) => {
+      // Build SQL query based on the presence of sub_user_id
+      if (sub_user_id && sub_user_id.trim() !== "") {
+        sql = `
+          SELECT \`id\`, \`customer_id\`, \`email\`, \`status\`, \`login_token\`, \`token_expiry\`
+          FROM \`branch_sub_users\`
+          WHERE \`branch_id\` = ? AND \`id\` = ?
+        `;
+        queryParams = [branch_id, sub_user_id];
+      } else {
+        sql = `
+          SELECT \`id\`, \`customer_id\`, \`name\`, \`email\`, \`status\`, \`login_token\`, \`token_expiry\`
+          FROM \`branches\`
+          WHERE \`id\` = ?
+        `;
+        queryParams = [branch_id];
+      }
+
+      // Execute the query
+      connection.query(sql, queryParams, (err, results) => {
         connectionRelease(connection); // Ensure connection is released
 
         if (err) {
-          console.error("Database query error: 81", err);
+          console.error("Database query error:", err);
           return callback(
             { message: "Database query error", error: err },
             null
           );
         }
+
+        // Handle case where no records are found
         if (results.length === 0) {
-          return callback({ message: "Branch not found" }, null);
+          return callback({ message: "Branch or sub_user not found" }, null);
         }
-        callback(null, results[0]); // Return the first result (should be one result if ID is unique)
+
+        // Return the first result (should be one result if ID is unique)
+        callback(null, results[0]);
       });
     });
   },
@@ -464,6 +575,41 @@ const Branch = {
       const sql = `
         SELECT \`status\`
         FROM \`branches\`
+        WHERE \`id\` = ?
+      `;
+
+      connection.query(sql, [id], (err, results) => {
+        connectionRelease(connection); // Ensure connection is released
+
+        if (err) {
+          console.error("Database query error: 82", err);
+          return callback(
+            { message: "Database query error", error: err },
+            null
+          );
+        }
+        if (results.length === 0) {
+          return callback({ message: "Branch not found" }, null);
+        }
+
+        const isActive = results[0].status == 1;
+        callback(null, { isActive });
+      });
+    });
+  },
+
+  isBranchSubUserActive: (id, callback) => {
+    startConnection((err, connection) => {
+      if (err) {
+        return callback(
+          { message: "Failed to connect to the database", error: err },
+          null
+        );
+      }
+
+      const sql = `
+        SELECT \`status\`
+        FROM \`branch_sub_users\`
         WHERE \`id\` = ?
       `;
 
