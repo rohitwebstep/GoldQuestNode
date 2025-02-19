@@ -25,6 +25,7 @@ const {
 exports.create = (req, res) => {
   const {
     branch_id,
+    sub_user_id,
     _token,
     customer_id,
     name,
@@ -86,7 +87,7 @@ exports.create = (req, res) => {
         message: result.message,
       });
     }
-    let sub_user_id;
+    
     BranchCommon.isBranchTokenValid(
       _token,
       sub_user_id || null,
@@ -1031,7 +1032,7 @@ function sendNotificationEmails(
 }
 // Controller to list all candidateApplications
 exports.list = (req, res) => {
-  const { branch_id, _token, customer_id } = req.query;
+  const { branch_id, sub_user_id, _token, customer_id } = req.query;
 
   let missingFields = [];
   if (!branch_id) missingFields.push("Branch ID");
@@ -1053,7 +1054,7 @@ exports.list = (req, res) => {
         message: result.message, // Return the message from the authorization function
       });
     }
-    let sub_user_id;
+    
     // Verify branch token
     BranchCommon.isBranchTokenValid(
       _token,
@@ -1120,6 +1121,7 @@ exports.list = (req, res) => {
 exports.update = (req, res) => {
   const {
     branch_id,
+    sub_user_id,
     candidate_application_id,
     _token,
     name,
@@ -1164,7 +1166,7 @@ exports.update = (req, res) => {
         message: result.message,
       });
     }
-    let sub_user_id;
+    
     BranchCommon.isBranchTokenValid(
       _token,
       sub_user_id || null,
@@ -1340,7 +1342,7 @@ exports.update = (req, res) => {
 };
 
 exports.delete = (req, res) => {
-  const { id, branch_id, _token } = req.query;
+  const { id, branch_id, sub_user_id, _token } = req.query;
 
   // Validate required fields
   const missingFields = [];
@@ -1365,7 +1367,7 @@ exports.delete = (req, res) => {
         message: result.message, // Return the message from the authorization function
       });
     }
-    let sub_user_id;
+    
     // Validate branch token
     BranchCommon.isBranchTokenValid(
       _token,

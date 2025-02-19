@@ -622,7 +622,7 @@ exports.verifyTwoFactor = (req, res) => {
 };
 
 exports.updatePassword = (req, res) => {
-  const { new_password, branch_id, _token } = req.body;
+  const { new_password, branch_id, sub_user_id, _token } = req.body;
 
   // Validate required fields
   const missingFields = [];
@@ -661,7 +661,7 @@ exports.updatePassword = (req, res) => {
       message: `Missing required fields: ${missingFields.join(", ")}`,
     });
   }
-  let sub_user_id;
+  
   // Validate branch token
   Common.isBranchTokenValid(
     _token,
@@ -722,7 +722,7 @@ exports.updatePassword = (req, res) => {
 
 // Branch logout handler
 exports.logout = (req, res) => {
-  const { branch_id, _token } = req.query;
+  const { branch_id, sub_user_id, _token } = req.query;
 
   // Validate required fields and create a custom message
   let missingFields = [];
@@ -735,7 +735,6 @@ exports.logout = (req, res) => {
       message: `Missing required fields: ${missingFields.join(", ")}`,
     });
   }
-  let sub_user_id;
   // Validate the branch token
   Common.isBranchTokenValid(
     _token,

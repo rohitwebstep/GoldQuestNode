@@ -7,7 +7,7 @@ const Service = require("../../../models/admin/serviceModel");
 const reportCaseStatus = require("../../../models/customer/branch/reportCaseStatusModel");
 
 exports.list = (req, res) => {
-  const { filter_status, branch_id, _token, status } = req.query;
+  const { filter_status, branch_id, _token, sub_user_id, status } = req.query;
 
   let missingFields = [];
   if (
@@ -41,7 +41,7 @@ exports.list = (req, res) => {
         message: authResult.message, // Return the authorization error message
       });
     }
-    let sub_user_id;
+    
     // Step 3: Verify the branch token
     BranchCommon.isBranchTokenValid(
       _token,
@@ -101,7 +101,7 @@ exports.list = (req, res) => {
 };
 
 exports.reportFormJsonByServiceID = (req, res) => {
-  const { service_id, branch_id, _token } = req.query;
+  const { service_id, branch_id, sub_user_id, _token } = req.query;
 
   let missingFields = [];
   if (
@@ -142,7 +142,7 @@ exports.reportFormJsonByServiceID = (req, res) => {
         message: authResult.message, // Return the authorization error message
       });
     }
-    let sub_user_id;
+    
     // Step 3: Verify the branch token
     BranchCommon.isBranchTokenValid(
       _token,
@@ -202,7 +202,7 @@ exports.reportFormJsonByServiceID = (req, res) => {
 };
 
 exports.annexureData = (req, res) => {
-  const { application_id, db_table, branch_id, _token } = req.query;
+  const { application_id, db_table, branch_id, sub_user_id, _token } = req.query;
 
   let missingFields = [];
   if (
@@ -252,7 +252,7 @@ exports.annexureData = (req, res) => {
         message: authResult.message, // Return the authorization error message
       });
     }
-    let sub_user_id;
+    
     // Step 3: Verify the branch token
     BranchCommon.isBranchTokenValid(
       _token,

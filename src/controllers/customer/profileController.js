@@ -2099,7 +2099,7 @@ exports.delete = (req, res) => {
 };
 
 exports.customerBasicInfoWithBranchAuth = (req, res) => {
-  const { customer_id, branch_id, branch_token } = req.query;
+  const { customer_id, branch_id, sub_user_id, branch_token } = req.query;
 
   let missingFields = [];
   if (!customer_id || customer_id === "") missingFields.push("Customer ID");
@@ -2113,7 +2113,6 @@ exports.customerBasicInfoWithBranchAuth = (req, res) => {
     });
   }
 
-  let sub_user_id;
   // Verify admin token
   BranchCommon.isBranchTokenValid(
     branch_token,
