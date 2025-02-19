@@ -915,6 +915,7 @@ exports.list = (req, res) => {
 exports.update = (req, res) => {
   const {
     branch_id,
+    sub_user_id,
     _token,
     client_application_id,
     name,
@@ -930,7 +931,6 @@ exports.update = (req, res) => {
   // Define required fields
   const requiredFields = {
     branch_id,
-    sub_user_id,
     _token,
     client_application_id,
     name,
