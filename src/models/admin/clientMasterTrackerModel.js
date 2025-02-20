@@ -415,8 +415,14 @@ const Customer = {
               \`client_application_id\` bigint(20) NOT NULL,
               \`branch_id\` int(11) NOT NULL,
               \`customer_id\` int(11) NOT NULL,
-              \`status\` VARCHAR(100) DEFAULT NULL,
+              \`status\` ENUM(
+                          'nil', 'initiated', 'hold', 'closure_advice', 'wip', 'insuff', 'completed', 
+                          'stopcheck', 'active_employment', 'not_doable', 'candidate_denied', 
+                          'completed_green', 'completed_orange', 'completed_red', 'completed_yellow', 'completed_pink'
+                        ) DEFAULT NULL,
               \`is_submitted\` TINYINT(1) DEFAULT 0,
+              \`is_billed\` TINYINT(1) DEFAULT 0,
+              \`billed_date\` TIMESTAMP NULL DEFAULT NULL,
               \`created_at\` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
               \`updated_at\` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
               PRIMARY KEY (\`id\`),
@@ -590,8 +596,14 @@ const Customer = {
                 \`client_application_id\` bigint(20) NOT NULL,
                 \`branch_id\` int(11) NOT NULL,
                 \`customer_id\` int(11) NOT NULL,
-                \`status\` VARCHAR(100) DEFAULT NULL,
+                \`status\` ENUM(
+                          'nil', 'initiated', 'hold', 'closure_advice', 'wip', 'insuff', 'completed', 
+                          'stopcheck', 'active_employment', 'not_doable', 'candidate_denied', 
+                          'completed_green', 'completed_orange', 'completed_red', 'completed_yellow', 'completed_pink'
+                        ) DEFAULT NULL,
                 \`is_submitted\` TINYINT(1) DEFAULT 0,
+                \`is_billed\` TINYINT(1) DEFAULT 0,
+                \`billed_date\` TIMESTAMP NULL DEFAULT NULL,
                 \`created_at\` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
                 \`updated_at\` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                 PRIMARY KEY (\`id\`),
@@ -823,8 +835,14 @@ const Customer = {
                 \`client_application_id\` bigint(20) NOT NULL,
                 \`branch_id\` int(11) NOT NULL,
                 \`customer_id\` int(11) NOT NULL,
-                \`status\` VARCHAR(100) DEFAULT NULL,
+                \`status\` ENUM(
+                          'nil', 'initiated', 'hold', 'closure_advice', 'wip', 'insuff', 'completed', 
+                          'stopcheck', 'active_employment', 'not_doable', 'candidate_denied', 
+                          'completed_green', 'completed_orange', 'completed_red', 'completed_yellow', 'completed_pink'
+                        ) DEFAULT NULL,
                 \`is_submitted\` TINYINT(1) DEFAULT 0,
+                \`is_billed\` TINYINT(1) DEFAULT 0,
+                \`billed_date\` TIMESTAMP NULL DEFAULT NULL,
                 \`created_at\` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
                 \`updated_at\` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                 PRIMARY KEY (\`id\`),
@@ -995,8 +1013,14 @@ const Customer = {
               \`client_application_id\` bigint(20) NOT NULL,
               \`branch_id\` int(11) NOT NULL,
               \`customer_id\` int(11) NOT NULL,
-              \`status\` VARCHAR(100) DEFAULT NULL,
+              \`status\` ENUM(
+                          'nil', 'initiated', 'hold', 'closure_advice', 'wip', 'insuff', 'completed', 
+                          'stopcheck', 'active_employment', 'not_doable', 'candidate_denied', 
+                          'completed_green', 'completed_orange', 'completed_red', 'completed_yellow', 'completed_pink'
+                        ) DEFAULT NULL,
               \`is_submitted\` TINYINT(1) DEFAULT 0,
+              \`is_billed\` TINYINT(1) DEFAULT 0,
+              \`billed_date\` TIMESTAMP NULL DEFAULT NULL,
               \`created_at\` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
               \`updated_at\` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
               PRIMARY KEY (\`id\`),
@@ -1173,11 +1197,10 @@ const Customer = {
                   for (const [dbTable, fileInputNames] of Object.entries(
                     dbTableFileInputs
                   )) {
-                    const selectQuery = `SELECT ${
-                      fileInputNames && fileInputNames.length > 0
+                    const selectQuery = `SELECT ${fileInputNames && fileInputNames.length > 0
                         ? fileInputNames.join(", ")
                         : "*"
-                    } FROM ${dbTable} WHERE client_application_id = ?`;
+                      } FROM ${dbTable} WHERE client_application_id = ?`;
 
                     connection.query(
                       selectQuery,
