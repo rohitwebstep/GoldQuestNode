@@ -384,6 +384,8 @@ exports.submit = (req, res) => {
     application_id,
     personal_information,
     annexure,
+    is_employment_gap,
+    is_education_gap,
     is_submitted,
     send_mail,
   } = req.body;
@@ -546,6 +548,8 @@ exports.submit = (req, res) => {
               // Create new CEF application
               CEF.create(
                 personal_information,
+                is_employment_gap,
+                is_education_gap,
                 application_id,
                 branch_id,
                 customer_id,

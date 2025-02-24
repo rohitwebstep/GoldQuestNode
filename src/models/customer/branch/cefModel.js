@@ -463,6 +463,8 @@ const cef = {
 
   create: (
     personal_information,
+    is_employment_gap,
+    is_education_gap,
     candidate_application_id,
     branch_id,
     customer_id,
@@ -512,6 +514,8 @@ const cef = {
             .then(() => {
               cef.insertOrUpdateEntry(
                 personal_information,
+                is_employment_gap,
+                is_education_gap,
                 candidate_application_id,
                 branch_id,
                 customer_id,
@@ -526,6 +530,8 @@ const cef = {
         } else {
           cef.insertOrUpdateEntry(
             personal_information,
+            is_employment_gap,
+            is_education_gap,
             candidate_application_id,
             branch_id,
             customer_id,
@@ -539,6 +545,8 @@ const cef = {
   // Helper function for inserting or updating the entry
   insertOrUpdateEntry: (
     personal_information,
+    is_employment_gap,
+    is_education_gap,
     candidate_application_id,
     branch_id,
     customer_id,
@@ -562,6 +570,9 @@ const cef = {
             connectionRelease(connection);
             return callback(entryErr, null);
           }
+
+          personal_information.is_employment_gap = is_employment_gap;
+          personal_information.is_education_gap = is_education_gap;
 
           if (entryResults.length > 0) {
             // Entry exists, so update it
