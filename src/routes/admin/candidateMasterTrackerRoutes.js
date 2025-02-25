@@ -13,6 +13,12 @@ router.get(
   "/applications-by-branch",
   candidateMasterTrackerController.applicationListByBranch
 );
+
+router.get(
+  "/gap-check",
+  candidateMasterTrackerController.gapCheck
+);
+
 router.get(
   "/bgv-application-by-id",
   candidateMasterTrackerController.cefApplicationByID

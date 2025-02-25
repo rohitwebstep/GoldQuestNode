@@ -290,7 +290,7 @@ const cef = {
             checkCompletion();
             return;
           }
-
+          console.log(`result - `, result);
           try {
             // Parse the JSON data safely
             const rawJson = result[0].json;

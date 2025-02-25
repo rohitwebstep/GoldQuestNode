@@ -91,6 +91,34 @@ const Service = {
     });
   },
 
+  serviceByTitle: (searchWords, callback) => {
+    if (!Array.isArray(searchWords) || searchWords.length === 0) {
+      return callback(new Error("Invalid search words"), null);
+    }
+
+    // Convert search words to lowercase for case-insensitive matching
+    const likeClauses = searchWords.map(word => `LOWER(title) LIKE LOWER(?)`).join(" AND ");
+    const sql = `SELECT * FROM \`services\` WHERE ${likeClauses} LIMIT 1`; // Added LIMIT 1
+    const values = searchWords.map(word => `%${word.toLowerCase()}%`);
+
+    startConnection((err, connection) => {
+      if (err) {
+        return callback(err, null);
+      }
+
+      connection.query(sql, values, (queryErr, results) => {
+        connectionRelease(connection); // Release the connection
+        
+        if (queryErr) {
+          console.error("Database query error: 47", queryErr);
+          return callback(queryErr, null);
+        }
+
+        callback(null, results.length > 0 ? results[0] : null); // Return only the first result
+      });
+    });
+  },
+
   digitlAddressService: (callback) => {
     const sql = `
       SELECT * FROM \`services\`
