@@ -46,6 +46,16 @@ async function createMail(
     if (smtpRows.length === 0) throw new Error("SMTP credentials not found");
     const smtp = smtpRows[0];
 
+    // Fetch SMTP credentials
+    const [appInfoRows] = await connection
+      .promise()
+      .query(
+        "SELECT host FROM app_info WHERE interface_type = ? AND status = '1'",
+        ['frontend']
+      );
+    if (appInfoRows.length === 0) throw new Error("App Info not found");
+    const appInfo = appInfoRows[0];
+
     // Create transporter
     const transporter = nodemailer.createTransport({
       host: smtp.host,
@@ -63,7 +73,8 @@ async function createMail(
       .replace(/{{email}}/g, sub_user_email)
       .replace(/{{password}}/g, sub_user_password)
       .replace(/{{branch_name}}/g, branch_name)
-      .replace(/{{customer_name}}/g, customer_name);
+      .replace(/{{customer_name}}/g, customer_name)
+      .replace(/{{login_url}}/g, appInfo.host || 'bgvadmin.goldquestglobal.in');
 
     // Prepare CC list
     const ccList = ccArr

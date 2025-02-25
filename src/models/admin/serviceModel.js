@@ -161,9 +161,7 @@ const Service = {
 
   update: (id, title, description, email_description, short_code, sac_code, callback) => {
     // Step 1: Check if a service with the same title already exists
-    const checkServiceSql = `
-        SELECT * FROM \`services\` WHERE \`title\` = ? OR \`short_code\` = ? AND \`id\` != ?
-      `;
+    const checkServiceSql = `SELECT * FROM \`services\` WHERE (\`title\` = ? OR \`short_code\` = ?) AND \`id\` != ?`;
 
     startConnection((err, connection) => {
       if (err) {
