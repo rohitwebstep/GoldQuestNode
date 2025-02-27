@@ -630,6 +630,13 @@ const cef = {
     mainJson,
     callback
   ) => {
+    const removeKeys = [
+      'created_at', 'updated_at', 'id',
+      'cef_id', 'candidate_application_id',
+      'branch_id', 'customer_id'
+    ];
+
+    removeKeys.forEach(key => delete mainJson[key]);
     const fields = Object.keys(mainJson);
 
     startConnection((err, connection) => {
