@@ -75,7 +75,7 @@ exports.create = (req, res) => {
         message: result.message,
       });
     }
-    
+
     // Validate branch token
     BranchCommon.isBranchTokenValid(
       _token,
@@ -284,24 +284,23 @@ exports.create = (req, res) => {
                                           email: admin.email,
                                         })
                                       );
-
-                                      // Prepare recipient list (toArr) with branch details
                                       const toArr = [
-                                        {
-                                          name: branch.name,
-                                          email: branch.email,
-                                        },
-                                        ...adminList, // Include admin emails in the recipient list
+                                        { name: branch.name, email: branch.email },
                                       ];
+                                      const ccArr1 = customer.emails
+                                        .split(",")
+                                        .map((email) => ({
+                                          name: customer.name,
+                                          email: email.trim(),
+                                        }));
 
-                                      // Prepare CC list (ccArr) from customer emails
-                                      const ccArr = JSON.parse(
-                                        customer.emails
-                                      ).map((email) => ({
-                                        name: customer.name,
-                                        email: email.trim(),
-                                      }));
-
+                                      const ccArr = [
+                                        ...ccArr1,
+                                        ...adminList.map((admin) => ({
+                                          name: admin.name,
+                                          email: admin.email,
+                                        })),
+                                      ];
                                       const appHost =
                                         appInfo.host || "www.example.com";
                                       const appName =
@@ -705,126 +704,156 @@ function sendNotificationEmails(
         });
       }
 
-      // Fetch emails for notification
-      BranchCommon.getBranchandCustomerEmailsForNotification(
-        branch_id,
-        (emailError, emailData) => {
-          if (emailError) {
-            console.error("Error fetching emails:", emailError);
-            return res.status(500).json({
-              status: false,
-              message: "Failed to retrieve email addresses.",
-              token: newToken,
-            });
-          }
+      Admin.list((err, adminResult) => {
+        if (err) {
+          console.error("Database error:", err);
+          return res.status(500).json({
+            status: false,
+            message:
+              "Error retrieving admin details.",
+            token: newToken,
+          });
+        }
 
-          const { branch, customer } = emailData;
-          const toArr = [{ name: branch.name, email: branch.email }];
-          const ccArr = JSON.parse(customer.emails).map((email) => ({
-            name: customer.name,
-            email: email.trim(),
-          }));
-
-          const serviceIds =
-            typeof services === "string" && services.trim() !== ""
-              ? services.split(",").map((id) => id.trim())
-              : [];
-          const serviceNames = [];
-
-          const fetchServiceNames = (index = 0) => {
-            let responseSent = false; // Flag to track if the response has already been sent
-
-            if (index >= serviceIds.length) {
-              AppModel.appInfo("frontend", async (err, appInfo) => {
-                if (err) {
-                  console.error("Database error:", err);
-                  return res.status(500).json({
-                    status: false,
-                    message:
-                      "An error occurred while retrieving application information. Please try again.",
-                  });
-                }
-
-                if (!appInfo) {
-                  console.error(
-                    "Database error during app info retrieval:",
-                    err
-                  );
-                  return reject(
-                    new Error("Information of the application not found.")
-                  );
-                }
-                const appHost = appInfo.host || "www.example.com";
-                const appName = appInfo.name || "Example Company";
-                bulkCreateMail(
-                  "client application",
-                  "bulk-create",
-                  updatedApplications,
-                  branch.name,
-                  customer.name,
-                  serviceNames,
-                  "",
-                  appHost,
-                  toArr,
-                  ccArr
-                )
-                  .then(() => {
-                    if (!responseSent) {
-                      responseSent = true; // Mark the response as sent
-                      return res.status(201).json({
-                        status: true,
-                        message:
-                          "Client application created successfully and email sent.",
-                        token: newToken,
-                      });
-                    }
-                  })
-                  .catch((emailError) => {
-                    if (!responseSent) {
-                      console.error(
-                        "Error sending email (controller):",
-                        emailError
-                      );
-                      responseSent = true; // Mark the response as sent
-                      return res.status(201).json({
-                        status: true,
-                        message:
-                          "Client application created successfully, but failed to send email.",
-                        token: newToken,
-                      });
-                    }
-                  });
-                return;
+        // Extract admin emails into adminList
+        const adminList = adminResult.map(
+          (admin) => ({
+            name: admin.name,
+            email: admin.email,
+          })
+        );
+        // Fetch emails for notification
+        BranchCommon.getBranchandCustomerEmailsForNotification(
+          branch_id,
+          (emailError, emailData) => {
+            if (emailError) {
+              console.error("Error fetching emails:", emailError);
+              return res.status(500).json({
+                status: false,
+                message: "Failed to retrieve email addresses.",
+                token: newToken,
               });
             }
 
-            const id = serviceIds[index];
+            const { branch, customer } = emailData;
+            const toArr = [{ name: branch.name, email: branch.email }];
 
-            Service.getServiceById(id, (err, currentService) => {
-              if (err) {
-                console.error("Error fetching service data:", err);
-                if (!responseSent) {
-                  responseSent = true; // Mark the response as sent
-                  return res.status(500).json({
-                    status: false,
-                    message: err.message,
-                    token: newToken,
-                  });
+            const ccArr1 = customer.emails
+              .split(",")
+              .map((email) => ({
+                name: customer.name,
+                email: email.trim(),
+              }));
+
+            const ccArr = [
+              ...ccArr1,
+              ...adminList.map((admin) => ({
+                name: admin.name,
+                email: admin.email,
+              })),
+            ];
+
+            const serviceIds =
+              typeof services === "string" && services.trim() !== ""
+                ? services.split(",").map((id) => id.trim())
+                : [];
+            const serviceNames = [];
+
+            const fetchServiceNames = (index = 0) => {
+              let responseSent = false; // Flag to track if the response has already been sent
+
+              if (index >= serviceIds.length) {
+                AppModel.appInfo("frontend", async (err, appInfo) => {
+                  if (err) {
+                    console.error("Database error:", err);
+                    return res.status(500).json({
+                      status: false,
+                      message:
+                        "An error occurred while retrieving application information. Please try again.",
+                    });
+                  }
+
+                  if (!appInfo) {
+                    console.error(
+                      "Database error during app info retrieval:",
+                      err
+                    );
+                    return reject(
+                      new Error("Information of the application not found.")
+                    );
+                  }
+                  const appHost = appInfo.host || "www.example.com";
+                  const appName = appInfo.name || "Example Company";
+                  bulkCreateMail(
+                    "client application",
+                    "bulk-create",
+                    updatedApplications,
+                    branch.name,
+                    customer.name,
+                    serviceNames,
+                    "",
+                    appHost,
+                    toArr,
+                    ccArr
+                  )
+                    .then(() => {
+                      if (!responseSent) {
+                        responseSent = true; // Mark the response as sent
+                        return res.status(201).json({
+                          status: true,
+                          message:
+                            "Client application created successfully and email sent.",
+                          token: newToken,
+                        });
+                      }
+                    })
+                    .catch((emailError) => {
+                      if (!responseSent) {
+                        console.error(
+                          "Error sending email (controller):",
+                          emailError
+                        );
+                        responseSent = true; // Mark the response as sent
+                        return res.status(201).json({
+                          status: true,
+                          message:
+                            "Client application created successfully, but failed to send email.",
+                          token: newToken,
+                        });
+                      }
+                    });
+                  return;
+                });
+              }
+
+              const id = serviceIds[index];
+
+              Service.getServiceById(id, (err, currentService) => {
+                if (err) {
+                  console.error("Error fetching service data:", err);
+                  if (!responseSent) {
+                    responseSent = true; // Mark the response as sent
+                    return res.status(500).json({
+                      status: false,
+                      message: err.message,
+                      token: newToken,
+                    });
+                  }
                 }
-              }
 
-              if (!currentService || !currentService.title) {
-                return fetchServiceNames(index + 1);
-              }
+                if (!currentService || !currentService.title) {
+                  return fetchServiceNames(index + 1);
+                }
 
-              serviceNames.push(currentService.title);
-              fetchServiceNames(index + 1);
-            });
-          };
+                serviceNames.push(currentService.title);
+                fetchServiceNames(index + 1);
+              });
+            };
 
-          fetchServiceNames();
-        }
-      );
+            fetchServiceNames();
+          }
+        );
+      });
     });
   });
 }
@@ -960,7 +989,7 @@ exports.update = (req, res) => {
         message: result.message,
       });
     }
-    
+
     BranchCommon.isBranchTokenValid(
       _token,
       sub_user_id || null,
@@ -1214,7 +1243,7 @@ exports.upload = async (req, res) => {
           message: result.message,
         });
       }
-      
+
       BranchCommon.isBranchTokenValid(
         token,
         sub_user_id || null,
@@ -1654,7 +1683,7 @@ exports.delete = (req, res) => {
         message: result.message, // Return the message from the authorization function
       });
     }
-    
+
     // Validate branch token
     BranchCommon.isBranchTokenValid(
       _token,
