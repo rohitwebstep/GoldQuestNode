@@ -32,7 +32,7 @@ const Branch = {
         FROM \`tickets\` AS T
         INNER JOIN \`branches\` AS B ON B.id = T.branch_id
         INNER JOIN \`customers\` AS C ON C.id = T.customer_id
-        ORDER BY T.\`created_at\` ASC
+        ORDER BY T.\`created_at\` DESC
       `;
 
       connection.query(sql, (err, results) => {
