@@ -239,7 +239,7 @@ exports.login = (req, res) => {
                             token,
                             newTokenExpiry,
                             record.type,
-                            (err) => {
+                            (err, result) => {
                               if (err) {
                                 console.error("Database error:", err);
                                 Common.branchLoginLog(
@@ -297,7 +297,7 @@ exports.login = (req, res) => {
                         record.id,
                         null,
                         null,
-                        record.type, (err) => {
+                        record.type, (err, result) => {
                           if (err) {
                             Common.branchLoginLog(
                               record.id,
@@ -372,7 +372,7 @@ exports.login = (req, res) => {
                       token,
                       newTokenExpiry,
                       record.type,
-                      (err) => {
+                      (err, result) => {
                         if (err) {
                           console.error("Database error:", err);
                           Common.branchLoginLog(
@@ -466,7 +466,7 @@ exports.verifyTwoFactor = (req, res) => {
     }
 
     const branch = result[0];
-
+    
     // Validate account status
     if (branch.status === 0) {
       Common.branchLoginLog(
@@ -549,7 +549,6 @@ exports.verifyTwoFactor = (req, res) => {
 
     // Validate OTP
     const otpExpiry = new Date(branch.otp_expiry);
-
     if (branch.otp !== otpInt) {
       Common.branchLoginLog(branch.id, "login", "0", "Invalid OTP", () => { });
       return res.status(401).json({
@@ -577,7 +576,7 @@ exports.verifyTwoFactor = (req, res) => {
           message: "Failed to update OTP. Please try again later.",
         });
       }
-      BranchAuth.updateToken(branch.id, token, newTokenExpiry, (err) => {
+      BranchAuth.updateToken(branch.id, token, newTokenExpiry, branch.type, (err, result) => {
         if (err) {
           console.error("Error updating token:", err);
           Common.branchLoginLog(
@@ -661,7 +660,7 @@ exports.updatePassword = (req, res) => {
       message: `Missing required fields: ${missingFields.join(", ")}`,
     });
   }
-  
+
   // Validate branch token
   Common.isBranchTokenValid(
     _token,

@@ -391,11 +391,10 @@ const Branch = {
   updateToken: (id, token, tokenExpiry, type, callback) => {
     startConnection((err, connection) => {
       if (err) {
-        return callback(
-          { message: "Failed to connect to the database", error: err },
-          null
-        );
+        return callback &&
+          callback({ message: "Failed to connect to the database", error: err }, null);
       }
+
       let sql;
       if (type === "branch") {
         sql = `
@@ -410,10 +409,10 @@ const Branch = {
         WHERE \`id\` = ?
       `;
       } else {
-        return callback(
-          { message: "Undefined user trying to login", error: err },
-          null
-        );
+        if (callback) {
+          return callback({ message: "Undefined user trying to login" }, null);
+        }
+        return; // Prevent calling an undefined function
       }
 
       connection.query(sql, [token, tokenExpiry, id], (err, results) => {
@@ -421,27 +420,20 @@ const Branch = {
 
         if (err) {
           console.error("Database query error: 78", err);
-          return callback(
-            { message: "Database update error", error: err },
-            null
-          );
+          return callback &&
+            callback({ message: "Database update error", error: err }, null);
         }
 
         if (results.affectedRows === 0) {
-          return callback(
-            {
-              message:
-                "Token update failed. Branch not found or no changes made.",
-            },
-            null
-          );
+          return callback &&
+            callback({ message: "Token update failed. Branch not found or no changes made." }, null);
         }
 
-        callback(null, results);
+        callback && callback(null, results);
       });
     });
   },
-
+  
   validateLogin: (id, callback) => {
     startConnection((err, connection) => {
       if (err) {
