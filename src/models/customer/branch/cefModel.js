@@ -494,7 +494,7 @@ const cef = {
         );
         if (missingColumns.length > 0) {
           const alterQueries = missingColumns.map((column) => {
-            return `ALTER TABLE cef_applications ADD COLUMN ${column} TEXT`;
+            return `ALTER TABLE cef_applications ADD COLUMN ${column} TEXT ROW_FORMAT=DYNAMIC`;
           });
 
           const alterPromises = alterQueries.map(
@@ -726,7 +726,7 @@ const cef = {
               // 4. Add missing columns
               if (missingColumns.length > 0) {
                 const alterQueries = missingColumns.map((column) => {
-                  return `ALTER TABLE \`${db_table}\` ADD COLUMN \`${column}\` TEXT`; // Adjust data type as necessary
+                  return `ALTER TABLE \`${db_table}\` ADD COLUMN \`${column}\` TEXT ROW_FORMAT=DYNAMIC`; // Adjust data type as necessary
                 });
 
                 // Run all ALTER statements in sequence
@@ -922,7 +922,7 @@ const cef = {
 
             const addColumnPromises = missingColumns.map((column) => {
               return new Promise((resolve, reject) => {
-                const alterTableSql = `ALTER TABLE \`${db_table}\` ADD COLUMN \`${column}\` TEXT`;
+                const alterTableSql = `ALTER TABLE \`${db_table}\` ADD COLUMN \`${column}\` TEXT ROW_FORMAT=DYNAMIC`;
                 connection.query(alterTableSql, (alterErr) => {
                   if (alterErr) {
                     reject(alterErr);

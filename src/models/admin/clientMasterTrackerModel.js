@@ -703,7 +703,7 @@ const Customer = {
         const addMissingColumns = () => {
           if (missingColumns.length > 0) {
             const alterQueries = missingColumns.map((column) => {
-              return `ALTER TABLE cmt_applications ADD COLUMN ${column} TEXT`; // Adjust data type as needed
+              return `ALTER TABLE cmt_applications ADD COLUMN ${column} TEXT ROW_FORMAT=DYNAMIC`; // Adjust data type as needed
             });
 
             // Run all ALTER statements sequentially
@@ -886,7 +886,7 @@ const Customer = {
 
               if (missingColumns.length > 0) {
                 const alterQueries = missingColumns.map((column) => {
-                  return `ALTER TABLE \`${db_table}\` ADD COLUMN \`${column}\` TEXT`; // Adjust data type as necessary
+                  return `ALTER TABLE \`${db_table}\` ADD COLUMN \`${column}\` TEXT ROW_FORMAT=DYNAMIC`; // Adjust data type as necessary
                 });
 
                 const alterPromises = alterQueries.map(
@@ -1070,7 +1070,7 @@ const Customer = {
 
             const addColumnPromises = missingColumns.map((column) => {
               return new Promise((resolve, reject) => {
-                const alterTableSql = `ALTER TABLE \`${db_table}\` ADD COLUMN \`${column}\` TEXT`;
+                const alterTableSql = `ALTER TABLE \`${db_table}\` ADD COLUMN \`${column}\` TEXT ROW_FORMAT=DYNAMIC`;
                 connection.query(alterTableSql, (alterErr) => {
                   if (alterErr) {
                     reject(alterErr);
