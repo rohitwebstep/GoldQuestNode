@@ -51,7 +51,7 @@ const subUser = {
               \`sub_user_id\` INT DEFAULT NULL,
               \`customer_id\` INT NOT NULL,
               \`client_spoc\` INT NOT NULL,
-              \`zip\` LONGTEXT NOT NULL,
+              \`zip\` TEXT DEFAULT NULL,
               \`remarks\` TEXT DEFAULT NULL,
               \`is_notification_read\` TINYINT(1) DEFAULT 0,
               \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
