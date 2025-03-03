@@ -396,7 +396,7 @@ exports.create = (req, res) => {
                                         result.insertId,
                                         bgv_href,
                                         serviceNames,
-                                        adminMailArr || [],
+                                        ccArr || [],
                                         []
                                       )
                                         .then(() => {
@@ -916,7 +916,7 @@ function sendNotificationEmails(
                 serviceNames,
                 "",
                 toArr,
-                ccArr
+                []
               )
                 .then(() => {
                   AppModel.appInfo("frontend", (err, appInfo) => {
@@ -1006,7 +1006,7 @@ function sendNotificationEmails(
                             bgv_href,
                             serviceNames,
                             toArr,
-                            ccArr
+                            []
                           )
                             .then(() => {
                               return createMailForAcknowledgement(
@@ -1017,7 +1017,7 @@ function sendNotificationEmails(
                                 app.insertId,
                                 bgv_href,
                                 serviceNames,
-                                adminMailArr || [],
+                                ccArr || [],
                                 []
                               );
                             })

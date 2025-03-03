@@ -1215,7 +1215,7 @@ exports.sendLink = (req, res) => {
                                   bgv_href,
                                   serviceNames,
                                   toArr,
-                                  ccArr
+                                  []
                                 )
                                   .then(() => {
                                     cefMailSent = true;
