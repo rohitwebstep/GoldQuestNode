@@ -10,8 +10,8 @@ const App = require("../../models/appModel");
 const CEF = require("../../models/customer/branch/cefModel");
 const BranchCommon = require("../../models/customer/branch/commonModel");
 const {
-  createMail,
-} = require("../../mailer/customer/branch/candidate/createMail");
+  createMailForCandidate,
+} = require("../../mailer/customer/branch/candidate/createMailForCandidate");
 
 const {
   bulkCreateMail,
@@ -1206,9 +1206,9 @@ exports.sendLink = (req, res) => {
 
                               // Send CEF application email if required
                               if (cefSubmitted === 0) {
-                                const cefMailPromise = createMail(
+                                const cefMailPromise = createMailForCandidate(
                                   "candidate application",
-                                  "create",
+                                  "create for candidate",
                                   name,
                                   customer.name,
                                   application_id,

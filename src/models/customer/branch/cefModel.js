@@ -54,6 +54,33 @@ const cef = {
     });
   },
 
+  bgvFormOpened: (candidate_application_id, callback) => {
+
+    // If no duplicates are found, proceed with updating the admin record
+    const sql = `
+        UPDATE \`cef_applications\` 
+        SET 
+          \`is_form_opened\` = ?
+        WHERE \`candidate_application_id\` = ?
+      `;
+
+    startConnection((err, connection) => {
+      if (err) {
+        return callback(err, null);
+      }
+
+      connection.query(sql, [1, candidate_application_id], (queryErr, results) => {
+        connectionRelease(connection); // Release the connection
+
+        if (queryErr) {
+          console.error("Database query error: 51", queryErr);
+          return callback(queryErr, null);
+        }
+        callback(null, results);
+      });
+    });
+  },
+
   updateReminderDetails: (data, callback) => {
     const { candidateAppId } = data;
 
@@ -285,7 +312,6 @@ const cef = {
             checkCompletion();
             return;
           }
-          console.log(`result - `, result);
           try {
             // Parse the JSON data safely
             const rawJson = result[0].json;

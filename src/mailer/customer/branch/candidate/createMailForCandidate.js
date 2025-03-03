@@ -71,13 +71,13 @@ const generateTable = (services) => {
       })
       .join("");
 
-  console.log(mergedTableHTML);
+  // console.log(mergedTableHTML);
   return mergedTableHTML;
 
 };
 
 // Function to send email
-async function createMail(
+async function createMailForCandidate(
   module,
   action,
   name,
@@ -223,4 +223,4 @@ async function createMail(
   }
 }
 
-module.exports = { createMail };
+module.exports = { createMailForCandidate };

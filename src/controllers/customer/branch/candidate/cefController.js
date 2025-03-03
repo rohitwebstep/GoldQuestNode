@@ -126,83 +126,94 @@ exports.isApplicationExist = (req, res) => {
               });
             }
 
-            Customer.getCustomerById(
-              parseInt(customer_id),
-              (err, currentCustomer) => {
+            CEF.bgvFormOpened(
+              candidate_application_id,
+              (err, bgvFormOpenedResult) => {
                 if (err) {
-                  console.error(
-                    "Database error during customer retrieval:",
-                    err
-                  );
+                  console.error("Database error:", err);
                   return res.status(500).json({
                     status: false,
-                    message: "Failed to retrieve Customer. Please try again.",
-                    token: newToken,
+                    message: err.message,
                   });
                 }
+                Customer.getCustomerById(
+                  parseInt(customer_id),
+                  (err, currentCustomer) => {
+                    if (err) {
+                      console.error(
+                        "Database error during customer retrieval:",
+                        err
+                      );
+                      return res.status(500).json({
+                        status: false,
+                        message: "Failed to retrieve Customer. Please try again.",
+                        token: newToken,
+                      });
+                    }
 
-                if (!currentCustomer) {
-                  return res.status(404).json({
-                    status: false,
-                    message: "Customer not found.",
-                    token: newToken,
-                  });
-                }
-                /*
-            if (
-              currentCEFApplication &&
-              Object.keys(currentCEFApplication).length > 0
-            ) {
-              return res.status(400).json({
-                status: false,
-                message: "An application has already been submitted.",
-              });
-            }
-            */
-
+                    if (!currentCustomer) {
+                      return res.status(404).json({
+                        status: false,
+                        message: "Customer not found.",
+                        token: newToken,
+                      });
+                    }
+                    /*
                 if (
-                  currentCEFApplication && currentCEFApplication.is_submitted == 1
+                  currentCEFApplication &&
+                  Object.keys(currentCEFApplication).length > 0
                 ) {
                   return res.status(400).json({
                     status: false,
                     message: "An application has already been submitted.",
                   });
                 }
+                */
 
-                const service_ids = Array.isArray(
-                  currentCandidateApplication.services
-                )
-                  ? currentCandidateApplication.services
-                  : currentCandidateApplication.services
-                    .split(",")
-                    .map((item) => item.trim());
-                CEF.formJsonWithData(
-                  service_ids,
-                  candidate_application_id,
-                  (err, serviceData) => {
-                    if (err) {
-                      console.error("Database error:", err);
-                      return res.status(500).json({
+                    if (
+                      currentCEFApplication && currentCEFApplication.is_submitted == 1
+                    ) {
+                      return res.status(400).json({
                         status: false,
-                        message:
-                          "An error occurred while fetching service form json.",
-                        token: newToken,
+                        message: "An application has already been submitted.",
                       });
                     }
-                    return res.status(200).json({
-                      status: true,
-                      data: {
-                        application: currentCandidateApplication,
-                        cefApplication: currentCEFApplication,
-                        serviceData,
-                        customer: currentCustomer,
-                      },
-                      message: "Application exists.",
-                    });
+
+                    const service_ids = Array.isArray(
+                      currentCandidateApplication.services
+                    )
+                      ? currentCandidateApplication.services
+                      : currentCandidateApplication.services
+                        .split(",")
+                        .map((item) => item.trim());
+                    CEF.formJsonWithData(
+                      service_ids,
+                      candidate_application_id,
+                      (err, serviceData) => {
+                        if (err) {
+                          console.error("Database error:", err);
+                          return res.status(500).json({
+                            status: false,
+                            message:
+                              "An error occurred while fetching service form json.",
+                            token: newToken,
+                          });
+                        }
+                        return res.status(200).json({
+                          status: true,
+                          data: {
+                            application: currentCandidateApplication,
+                            cefApplication: currentCEFApplication,
+                            serviceData,
+                            customer: currentCustomer,
+                          },
+                          message: "Application exists.",
+                        });
+                      }
+                    );
                   }
                 );
-              }
-            );
+              });
           }
         );
       } else {

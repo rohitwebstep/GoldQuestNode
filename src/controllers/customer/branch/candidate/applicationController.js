@@ -7,8 +7,12 @@ const AppModel = require("../../../../models/appModel");
 const Admin = require("../../../../models/admin/adminModel");
 
 const {
-  createMail,
-} = require("../../../../mailer/customer/branch/candidate/createMail");
+  createMailForCandidate,
+} = require("../../../../mailer/customer/branch/candidate/createMailForCandidate");
+
+const {
+  createMailForAcknowledgement,
+} = require("../../../../mailer/customer/branch/candidate/createMailForAcknowledgement");
 
 const {
   createTenantMail,
@@ -87,7 +91,7 @@ exports.create = (req, res) => {
         message: result.message,
       });
     }
-    
+
     BranchCommon.isBranchTokenValid(
       _token,
       sub_user_id || null,
@@ -208,6 +212,11 @@ exports.create = (req, res) => {
                             token: newToken,
                           });
                         }
+
+                        const adminMailArr = adminResult.map(admin => ({
+                          name: admin.name,
+                          email: admin.email
+                        }));
 
                         const { branch, customer } = emailData;
 
@@ -367,9 +376,9 @@ exports.create = (req, res) => {
                                 } else {
 
                                   // Send application creation email
-                                  createMail(
+                                  createMailForCandidate(
                                     "candidate application",
-                                    "create",
+                                    "create for candidate",
                                     name,
                                     customerName,
                                     result.insertId,
@@ -379,18 +388,42 @@ exports.create = (req, res) => {
                                     ccArr || []
                                   )
                                     .then(() => {
-                                      return res.status(201).json({
-                                        status: true,
-                                        message:
-                                          "Candidate application created successfully and email sent.",
-                                        data: {
-                                          candidate: result,
-                                          package,
-                                        },
-                                        token: newToken,
-                                        toArr: toArr || [],
-                                        ccArr: ccArr || [],
-                                      });
+                                      createMailForAcknowledgement(
+                                        "candidate application",
+                                        "create for acknowledgement",
+                                        name,
+                                        customerName,
+                                        result.insertId,
+                                        bgv_href,
+                                        serviceNames,
+                                        adminMailArr || [],
+                                        []
+                                      )
+                                        .then(() => {
+                                          return res.status(201).json({
+                                            status: true,
+                                            message:
+                                              "Candidate application created successfully and email sent.",
+                                            data: {
+                                              candidate: result,
+                                              package,
+                                            },
+                                            token: newToken,
+                                          });
+                                        })
+                                        .catch((emailError) => {
+                                          console.error(
+                                            "Error sending application creation email:",
+                                            emailError
+                                          );
+                                          return res.status(201).json({
+                                            status: true,
+                                            message:
+                                              "Candidate application created successfully, but email failed to send.",
+                                            candidate: result,
+                                            token: newToken,
+                                          });
+                                        });
                                     })
                                     .catch((emailError) => {
                                       console.error(
@@ -775,6 +808,11 @@ function sendNotificationEmails(
           });
         }
 
+        const adminMailArr = adminResult.map(admin => ({
+          name: admin.name,
+          email: admin.email
+        }));
+
         // Fetch emails for notification
         BranchCommon.getBranchandCustomerEmailsForNotification(
           branch_id,
@@ -959,9 +997,9 @@ function sendNotificationEmails(
                           }
 
                           // Send application creation email
-                          createMail(
+                          createMailForCandidate(
                             "candidate application",
-                            "create",
+                            "create for candidate",
                             app.applicant_full_name,
                             customer.name,
                             app.insertId,
@@ -970,6 +1008,19 @@ function sendNotificationEmails(
                             toArr,
                             ccArr
                           )
+                            .then(() => {
+                              return createMailForAcknowledgement(
+                                "candidate application",
+                                "create for acknowledgement",
+                                app.applicant_full_name,
+                                customer.name,
+                                app.insertId,
+                                bgv_href,
+                                serviceNames,
+                                adminMailArr || [],
+                                []
+                              );
+                            })
                             .then(() => {
                               processedApplications++;
                             })
@@ -1054,7 +1105,7 @@ exports.list = (req, res) => {
         message: result.message, // Return the message from the authorization function
       });
     }
-    
+
     // Verify branch token
     BranchCommon.isBranchTokenValid(
       _token,
@@ -1166,7 +1217,7 @@ exports.update = (req, res) => {
         message: result.message,
       });
     }
-    
+
     BranchCommon.isBranchTokenValid(
       _token,
       sub_user_id || null,
@@ -1367,7 +1418,7 @@ exports.delete = (req, res) => {
         message: result.message, // Return the message from the authorization function
       });
     }
-    
+
     // Validate branch token
     BranchCommon.isBranchTokenValid(
       _token,
