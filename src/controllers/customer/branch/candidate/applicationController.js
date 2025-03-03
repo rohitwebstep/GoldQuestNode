@@ -385,7 +385,7 @@ exports.create = (req, res) => {
                                     bgv_href,
                                     serviceNames,
                                     toArr || [],
-                                    ccArr || []
+                                    []
                                   )
                                     .then(() => {
                                       createMailForAcknowledgement(
