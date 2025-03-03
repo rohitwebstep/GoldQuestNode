@@ -390,7 +390,7 @@ exports.submit = (req, res) => {
     send_mail,
   } = req.body;
 
-  let submitStatus = is_submitted;
+  let submitStatus = parseInt(is_submitted) === 1 ? 1 : 0;
   if (submitStatus === 1) {
     const requiredFields = {
       branch_id,
@@ -776,7 +776,7 @@ const sendNotificationEmails = (
                 attachments +=
                   (attachments ? "," : "") + `${imageHost}/${pdfPath}`;
 
-                  Admin.filterAdmins({ status: "active", role: "admin" }, (err, adminResult) => {
+                Admin.filterAdmins({ status: "active", role: "admin" }, (err, adminResult) => {
                   if (err) {
                     console.error("Database error:", err);
                     return res.status(500).json({
@@ -880,11 +880,7 @@ exports.upload = async (req, res) => {
       is_submitted,
     } = req.body;
 
-    let submitStatus = is_submitted; // Use a local variable to avoid direct modification
-
-    if (submitStatus !== 1) {
-      submitStatus = 0;
-    }
+    let submitStatus = parseInt(is_submitted) === 1 ? 1 : 0;
 
     const requiredFields = { branchId, customerID, candidateAppId, dbTable, dbColumn };
 
@@ -1005,6 +1001,8 @@ exports.upload = async (req, res) => {
                       });
                     }
 
+                    console.log(`send_mail - `, send_mail);
+                    console.log(`submitStatus - `, submitStatus);
                     if (parseInt(send_mail) === 1 && submitStatus == 1) {
                       sendNotificationEmails(
                         candidateAppId,
