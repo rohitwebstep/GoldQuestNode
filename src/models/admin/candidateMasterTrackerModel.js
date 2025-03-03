@@ -257,6 +257,7 @@ const Customer = {
                 cef.is_education_gap,
                 cef.created_at,
                 cef.id AS cef_id,
+                cef.is_form_opened,
                 dav.created_at AS dav_filled_date,
                 dav.id AS dav_id,
                 CASE WHEN cef.id IS NOT NULL THEN 1 ELSE 0 END AS cef_submitted,
