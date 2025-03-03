@@ -75,37 +75,27 @@ const common = {
             WHERE \`id\` = ?
           `;
 
-          startConnection((updateErr, connection) => {
-            if (updateErr) {
-              console.error("Failed to connect to the database:", updateErr);
-              return callback(
-                { status: false, message: "Database connection error" },
-                null
-              );
-            }
+          connection.query(
+            updateSql,
+            [newToken, newTokenExpiry, customer_id],
+            (updateErr) => {
+              connectionRelease(connection); // Release connection
 
-            connection.query(
-              updateSql,
-              [newToken, newTokenExpiry, customer_id],
-              (updateErr) => {
-                connectionRelease(connection); // Release connection
-
-                if (updateErr) {
-                  console.error("Error updating token:", updateErr);
-                  return callback(
-                    { status: false, message: "Error updating token" },
-                    null
-                  );
-                }
-
-                callback(null, {
-                  status: true,
-                  message: "Token was expired and has been refreshed",
-                  newToken,
-                });
+              if (updateErr) {
+                console.error("Error updating token:", updateErr);
+                return callback(
+                  { status: false, message: "Error updating token" },
+                  null
+                );
               }
-            );
-          });
+
+              callback(null, {
+                status: true,
+                message: "Token was expired and has been refreshed",
+                newToken,
+              });
+            }
+          );
         }
       });
     });

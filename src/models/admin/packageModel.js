@@ -38,27 +38,20 @@ const Package = {
       INSERT INTO \`packages\` (\`title\`, \`description\`, \`admin_id\`)
       VALUES (?, ?, ?)
     `;
+        connection.query(
+          sql,
+          [title, description, admin_id],
+          (queryErr, results) => {
+            connectionRelease(connection); // Release the connection
 
-        startConnection((err, connection) => {
-          if (err) {
-            return callback(err, null);
-          }
-
-          connection.query(
-            sql,
-            [title, description, admin_id],
-            (queryErr, results) => {
-              connectionRelease(connection); // Release the connection
-
-              if (queryErr) {
-                console.error("Database query error: 41", queryErr);
-                return callback(queryErr, null);
-              }
-
-              callback(null, results);
+            if (queryErr) {
+              console.error("Database query error: 41", queryErr);
+              return callback(queryErr, null);
             }
-          );
-        });
+
+            callback(null, results);
+          }
+        );
       });
     });
   },
@@ -147,26 +140,20 @@ const Package = {
       WHERE \`id\` = ?
     `;
 
-          startConnection((err, connection) => {
-            if (err) {
-              return callback(err, null);
-            }
+          connection.query(
+            sql,
+            [title, description, id],
+            (queryErr, results) => {
+              connectionRelease(connection); // Release the connection
 
-            connection.query(
-              sql,
-              [title, description, id],
-              (queryErr, results) => {
-                connectionRelease(connection); // Release the connection
-
-                if (queryErr) {
-                  console.error("Database query error: 44", queryErr);
-                  return callback(queryErr, null);
-                }
-
-                callback(null, results);
+              if (queryErr) {
+                console.error("Database query error: 44", queryErr);
+                return callback(queryErr, null);
               }
-            );
-          });
+
+              callback(null, results);
+            }
+          );
         }
       );
     });

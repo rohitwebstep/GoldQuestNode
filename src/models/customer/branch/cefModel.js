@@ -86,20 +86,15 @@ const cef = {
           console.error("Database query error: 51", queryErr);
           return callback(queryErr, null);
         }
-        startConnection((err, connection) => {
-          if (err) {
-            return callback(err, null);
+
+        connection.query(davSQL, [candidateAppId], (queryErr, results) => {
+          connectionRelease(connection); // Release the connection
+
+          if (queryErr) {
+            console.error("Database query error: 51", queryErr);
+            return callback(queryErr, null);
           }
-
-          connection.query(davSQL, [candidateAppId], (queryErr, results) => {
-            connectionRelease(connection); // Release the connection
-
-            if (queryErr) {
-              console.error("Database query error: 51", queryErr);
-              return callback(queryErr, null);
-            }
-            callback(null, results);
-          });
+          callback(null, results);
         });
       });
     });

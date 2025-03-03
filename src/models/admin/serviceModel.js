@@ -108,7 +108,7 @@ const Service = {
 
       connection.query(sql, values, (queryErr, results) => {
         connectionRelease(connection); // Release the connection
-        
+
         if (queryErr) {
           console.error("Database query error: 47", queryErr);
           return callback(queryErr, null);
@@ -236,25 +236,19 @@ const Service = {
                       WHERE \`id\` = ?
                     `;
 
-          startConnection((err, connection) => {
-            if (err) {
-              return callback(err, null);
-            }
+          connection.query(
+            sql,
+            [title, description, email_description, short_code, sac_code, id],
+            (queryErr, results) => {
+              connectionRelease(connection); // Release the connection
 
-            connection.query(
-              sql,
-              [title, description, email_description, short_code, sac_code, id],
-              (queryErr, results) => {
-                connectionRelease(connection); // Release the connection
-
-                if (queryErr) {
-                  console.error(" 51", queryErr);
-                  return callback(queryErr, null);
-                }
-                callback(null, results);
+              if (queryErr) {
+                console.error(" 51", queryErr);
+                return callback(queryErr, null);
               }
-            );
-          });
+              callback(null, results);
+            }
+          );
         }
       );
     });

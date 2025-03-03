@@ -58,44 +58,36 @@ const Acknowledgement = {
           const branchSql = `SELECT \`id\`, \`customer_id\`, \`name\`, \`is_head\`, \`head_id\` FROM \`branches\` WHERE \`id\` = ? AND \`status\` = ?`;
 
           // Fetch customer details
-          startConnection((err, connection) => {
-            if (err) {
-              console.error("Connection error:", err);
-              remainingQueries--;
-              if (remainingQueries === 0) {
-                connectionRelease(connection);
-                return callback(null, {
-                  data: Array.from(customerMap.values()),
-                  totalResults,
-                });
-              }
-              return;
-            }
-
-            connection.query(
-              customerSql,
-              [customer_id, "1"],
-              (customerErr, customerResult) => {
-                if (customerErr || !customerResult.length) {
-                  console.error(
-                    "Error fetching customer:",
-                    customerErr || "Customer not found"
-                  );
-                  remainingQueries--;
-                  if (remainingQueries === 0) {
-                    connectionRelease(connection);
-                    return callback(null, {
-                      data: Array.from(customerMap.values()),
-                      totalResults,
-                    });
-                  }
-                  return;
+          connection.query(
+            customerSql,
+            [customer_id, "1"],
+            (customerErr, customerResult) => {
+              if (customerErr || !customerResult.length) {
+                console.error(
+                  "Error fetching customer:",
+                  customerErr || "Customer not found"
+                );
+                remainingQueries--;
+                if (remainingQueries === 0) {
+                  connectionRelease(connection);
+                  return callback(null, {
+                    data: Array.from(customerMap.values()),
+                    totalResults,
+                  });
                 }
+                return;
+              }
 
-                // Fetch branch details
-                startConnection((err, connection) => {
-                  if (err) {
-                    console.error("Connection error:", err);
+              // Fetch branch details
+              connection.query(
+                branchSql,
+                [branch_id, "1"],
+                (branchErr, branchResult) => {
+                  if (branchErr || !branchResult.length) {
+                    console.error(
+                      "Error fetching branch:",
+                      branchErr || "Branch not found"
+                    );
                     remainingQueries--;
                     if (remainingQueries === 0) {
                       connectionRelease(connection);
@@ -107,61 +99,39 @@ const Acknowledgement = {
                     return;
                   }
 
-                  connection.query(
-                    branchSql,
-                    [branch_id, "1"],
-                    (branchErr, branchResult) => {
-                      if (branchErr || !branchResult.length) {
-                        console.error(
-                          "Error fetching branch:",
-                          branchErr || "Branch not found"
-                        );
-                        remainingQueries--;
-                        if (remainingQueries === 0) {
-                          connectionRelease(connection);
-                          return callback(null, {
-                            data: Array.from(customerMap.values()),
-                            totalResults,
-                          });
-                        }
-                        return;
-                      }
+                  const branchData = {
+                    id: branchResult[0].id,
+                    customer_id: branchResult[0].customer_id,
+                    name: branchResult[0].name,
+                    is_head: branchResult[0].is_head,
+                    head_id: branchResult[0].head_id,
+                    applicationCount: application_count,
+                  };
 
-                      const branchData = {
-                        id: branchResult[0].id,
-                        customer_id: branchResult[0].customer_id,
-                        name: branchResult[0].name,
-                        is_head: branchResult[0].is_head,
-                        head_id: branchResult[0].head_id,
-                        applicationCount: application_count,
-                      };
+                  if (!customerMap.has(customer_id)) {
+                    const customerData = customerResult[0];
+                    customerData.applicationCount = 0; // Initialize total application count
+                    customerData.branches = []; // Initialize branches array
+                    customerMap.set(customer_id, customerData);
+                  }
 
-                      if (!customerMap.has(customer_id)) {
-                        const customerData = customerResult[0];
-                        customerData.applicationCount = 0; // Initialize total application count
-                        customerData.branches = []; // Initialize branches array
-                        customerMap.set(customer_id, customerData);
-                      }
+                  const customerData = customerMap.get(customer_id);
+                  customerData.branches.push(branchData);
+                  customerData.applicationCount += application_count; // Update total for customer
+                  totalResults += application_count; // Update overall total
 
-                      const customerData = customerMap.get(customer_id);
-                      customerData.branches.push(branchData);
-                      customerData.applicationCount += application_count; // Update total for customer
-                      totalResults += application_count; // Update overall total
-
-                      remainingQueries--;
-                      if (remainingQueries === 0) {
-                        connectionRelease(connection);
-                        callback(null, {
-                          data: Array.from(customerMap.values()),
-                          totalResults,
-                        });
-                      }
-                    }
-                  );
-                });
-              }
-            );
-          });
+                  remainingQueries--;
+                  if (remainingQueries === 0) {
+                    connectionRelease(connection);
+                    callback(null, {
+                      data: Array.from(customerMap.values()),
+                      totalResults,
+                    });
+                  }
+                }
+              );
+            }
+          );
         };
 
         // Process each result
@@ -203,7 +173,7 @@ const Acknowledgement = {
         let remainingQueries = results.length; // Track number of remaining results to process
         const processResults = (result) => {
           const { id, branch_id, application_id, name, services } = result;
-          
+
           const customerSql = `SELECT id, admin_id, client_unique_id, name FROM customers WHERE id = ? AND status = ?`;
           const branchSql = `SELECT id, customer_id, name, email, is_head, head_id FROM branches WHERE id = ? AND status = ?`;
           // Fetch customer details
