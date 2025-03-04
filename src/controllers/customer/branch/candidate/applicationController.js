@@ -5,7 +5,7 @@ const Service = require("../../../../models/admin/serviceModel");
 const Customer = require("../../../../models/customer/customerModel");
 const AppModel = require("../../../../models/appModel");
 const Admin = require("../../../../models/admin/adminModel");
-
+const Branch = require("../../../../models/customer/branch/branchModel");
 const {
   createMailForCandidate,
 } = require("../../../../mailer/customer/branch/candidate/createMailForCandidate");
@@ -25,6 +25,8 @@ const {
 const {
   davMail,
 } = require("../../../../mailer/customer/branch/candidate/davMail");
+
+const CEF = require("../../../../models/customer/branch/cefModel");
 
 exports.create = (req, res) => {
   const {
@@ -1166,6 +1168,583 @@ exports.list = (req, res) => {
         );
       }
     );
+  });
+};
+
+exports.cefApplicationByID = (req, res) => {
+  const { application_id, branch_id, sub_user_id, _token } = req.query;
+
+  let missingFields = [];
+  if (
+    !application_id ||
+    application_id === "" ||
+    application_id === undefined ||
+    application_id === "undefined"
+  )
+    missingFields.push("Application ID");
+  if (
+    !branch_id ||
+    branch_id === "" ||
+    branch_id === undefined ||
+    branch_id === "undefined"
+  )
+    missingFields.push("Branch ID");
+  if (
+    !sub_user_id ||
+    sub_user_id === "" ||
+    sub_user_id === undefined ||
+    sub_user_id === "undefined"
+  )
+    missingFields.push("Admin ID");
+  if (
+    !_token ||
+    _token === "" ||
+    _token === undefined ||
+    _token === "undefined"
+  )
+    missingFields.push("Token");
+
+  if (missingFields.length > 0) {
+    return res.status(400).json({
+      status: false,
+      message: `Missing required fields: ${missingFields.join(", ")}`,
+    });
+  }
+
+  const action = "candidate_application";
+  BranchCommon.isBranchAuthorizedForAction(branch_id, action, (result) => {
+    if (!result.status) {
+      return res.status(403).json({
+        status: false,
+        message: result.message,
+      });
+    }
+
+    BranchCommon.isBranchTokenValid(
+      _token,
+      sub_user_id || null,
+      branch_id,
+      (err, result) => {
+        if (err) {
+          console.error("Error checking token validity:", err);
+          return res.status(500).json({ status: false, message: err.message });
+        }
+
+        if (!result.status) {
+          return res
+            .status(401)
+            .json({ status: false, message: result.message });
+        }
+
+        const newToken = result.newToken;
+
+        CandidateMasterTrackerModel.applicationByID(
+          application_id,
+          branch_id,
+          (err, application) => {
+            if (err) {
+              console.error("Database error:", err);
+              return res
+                .status(500)
+                .json({ status: false, message: err.message, token: newToken });
+            }
+
+            if (!application) {
+              return res.status(404).json({
+                status: false,
+                message: "Application not found",
+                token: newToken,
+              });
+            }
+
+            const service_ids = Array.isArray(application.services)
+              ? application.services
+              : application.services.split(",").map((item) => item.trim());
+
+            CandidateMasterTrackerModel.cefApplicationByID(
+              application_id,
+              branch_id,
+              (err, CEFApplicationData) => {
+                if (err) {
+                  console.error("Database error:", err);
+                  return res.status(500).json({
+                    status: false,
+                    message: err.message,
+                    token: newToken,
+                  });
+                }
+
+                Branch.getBranchById(branch_id, (err, currentBranch) => {
+                  if (err) {
+                    console.error("Database error during branch retrieval:", err);
+                    return res.status(500).json({
+                      status: false,
+                      message: "Failed to retrieve Branch. Please try again.",
+                      token: newToken,
+                    });
+                  }
+
+                  if (!currentBranch) {
+                    return res.status(404).json({
+                      status: false,
+                      message: "Branch not found.",
+                      token: newToken,
+                    });
+                  }
+
+                  Admin.list((err, adminList) => {
+                    if (err) {
+                      console.error("Database error:", err);
+                      return res.status(500).json({
+                        status: false,
+                        message: err.message,
+                        token: newToken,
+                      });
+                    }
+                    Customer.getCustomerById(
+                      parseInt(currentBranch.customer_id),
+                      (err, currentCustomer) => {
+                        if (err) {
+                          console.error(
+                            "Database error during customer retrieval:",
+                            err
+                          );
+                          return res.status(500).json({
+                            status: false,
+                            message:
+                              "Failed to retrieve Customer. Please try again.",
+                            token: newToken,
+                          });
+                        }
+
+                        if (!currentCustomer) {
+                          return res.status(404).json({
+                            status: false,
+                            message: "Customer not found.",
+                            token: newToken,
+                          });
+                        }
+
+                        CEF.formJsonWithData(
+                          service_ids,
+                          application_id,
+                          (err, serviceData) => {
+                            if (err) {
+                              console.error("Database error:", err);
+                              return res.status(500).json({
+                                status: false,
+                                message:
+                                  "An error occurred while fetching service form json.",
+                                token: newToken,
+                              });
+                            }
+                            return res.json({
+                              status: true,
+                              message: "Application fetched successfully 2",
+                              application,
+                              CEFData: CEFApplicationData,
+                              branchInfo: currentBranch,
+                              customerInfo: currentCustomer,
+                              serviceData,
+                              admins: adminList,
+                              token: newToken,
+                            });
+                          }
+                        );
+                      }
+                    );
+                  });
+                });
+              }
+            );
+          }
+        );
+      });
+  });
+};
+
+exports.davApplicationByID = (req, res) => {
+  const { application_id, branch_id, sub_user_id, _token } = req.query;
+
+  let missingFields = [];
+  if (
+    !application_id ||
+    application_id === "" ||
+    application_id === undefined ||
+    application_id === "undefined"
+  )
+    missingFields.push("Application ID");
+  if (
+    !branch_id ||
+    branch_id === "" ||
+    branch_id === undefined ||
+    branch_id === "undefined"
+  )
+    missingFields.push("Branch ID");
+  if (
+    !sub_user_id ||
+    sub_user_id === "" ||
+    sub_user_id === undefined ||
+    sub_user_id === "undefined"
+  )
+    missingFields.push("Admin ID");
+  if (
+    !_token ||
+    _token === "" ||
+    _token === undefined ||
+    _token === "undefined"
+  )
+    missingFields.push("Token");
+
+  if (missingFields.length > 0) {
+    return res.status(400).json({
+      status: false,
+      message: `Missing required fields: ${missingFields.join(", ")}`,
+    });
+  }
+
+  const action = "candidate_application";
+  BranchCommon.isBranchAuthorizedForAction(branch_id, action, (result) => {
+    if (!result.status) {
+      return res.status(403).json({
+        status: false,
+        message: result.message,
+      });
+    }
+
+    BranchCommon.isBranchTokenValid(
+      _token,
+      sub_user_id || null,
+      branch_id,
+      (err, result) => {
+        if (err) {
+          console.error("Error checking token validity:", err);
+          return res.status(500).json({ status: false, message: err.message });
+        }
+
+        if (!result.status) {
+          return res
+            .status(401)
+            .json({ status: false, message: result.message });
+        }
+
+        const newToken = result.newToken;
+
+        CandidateMasterTrackerModel.applicationByID(
+          application_id,
+          branch_id,
+          (err, application) => {
+            if (err) {
+              console.error("Database error:", err);
+              return res
+                .status(500)
+                .json({ status: false, message: err.message, token: newToken });
+            }
+
+            if (!application) {
+              return res.status(404).json({
+                status: false,
+                message: "Application not found",
+                token: newToken,
+              });
+            }
+
+            CandidateMasterTrackerModel.davApplicationByID(
+              application_id,
+              branch_id,
+              (err, DAVApplicationData) => {
+                if (err) {
+                  console.error("Database error:", err);
+                  return res.status(500).json({
+                    status: false,
+                    message: err.message,
+                    token: newToken,
+                  });
+                }
+
+                Branch.getBranchById(branch_id, (err, currentBranch) => {
+                  if (err) {
+                    console.error("Database error during branch retrieval:", err);
+                    return res.status(500).json({
+                      status: false,
+                      message: "Failed to retrieve Branch. Please try again.",
+                      token: newToken,
+                    });
+                  }
+
+                  if (!currentBranch) {
+                    return res.status(404).json({
+                      status: false,
+                      message: "Branch not found.",
+                      token: newToken,
+                    });
+                  }
+
+                  Admin.list((err, adminList) => {
+                    if (err) {
+                      console.error("Database error:", err);
+                      return res.status(500).json({
+                        status: false,
+                        message: err.message,
+                        token: newToken,
+                      });
+                    }
+                    Customer.getCustomerById(
+                      parseInt(currentBranch.customer_id),
+                      (err, currentCustomer) => {
+                        if (err) {
+                          console.error(
+                            "Database error during customer retrieval:",
+                            err
+                          );
+                          return res.status(500).json({
+                            status: false,
+                            message:
+                              "Failed to retrieve Customer. Please try again.",
+                            token: newToken,
+                          });
+                        }
+
+                        if (!currentCustomer) {
+                          return res.status(404).json({
+                            status: false,
+                            message: "Customer not found.",
+                            token: newToken,
+                          });
+                        }
+
+                        return res.json({
+                          status: true,
+                          message: "Application fetched successfully 2",
+                          application,
+                          DEFData: DAVApplicationData,
+                          branchInfo: currentBranch,
+                          customerInfo: currentCustomer,
+                          admins: adminList,
+                          token: newToken,
+                        });
+                      }
+                    );
+                  });
+                });
+              }
+            );
+          }
+        );
+      });
+  });
+};
+
+exports.gapCheck = (req, res) => {
+  const { application_id, branch_id, sub_user_id, _token } = req.query;
+
+  let missingFields = [];
+  if (
+    !application_id ||
+    application_id === "" ||
+    application_id === undefined ||
+    application_id === "undefined"
+  )
+    missingFields.push("Application ID");
+  if (
+    !branch_id ||
+    branch_id === "" ||
+    branch_id === undefined ||
+    branch_id === "undefined"
+  )
+    missingFields.push("Branch ID");
+  if (
+    !sub_user_id ||
+    sub_user_id === "" ||
+    sub_user_id === undefined ||
+    sub_user_id === "undefined"
+  )
+    missingFields.push("Admin ID");
+  if (
+    !_token ||
+    _token === "" ||
+    _token === undefined ||
+    _token === "undefined"
+  )
+    missingFields.push("Token");
+
+  if (missingFields.length > 0) {
+    return res.status(400).json({
+      status: false,
+      message: `Missing required fields: ${missingFields.join(", ")}`,
+    });
+  }
+
+  const action = "candidate_application";
+  BranchCommon.isBranchAuthorizedForAction(branch_id, action, (result) => {
+    if (!result.status) {
+      return res.status(403).json({
+        status: false,
+        message: result.message,
+      });
+    }
+
+    BranchCommon.isBranchTokenValid(
+      _token,
+      sub_user_id || null,
+      branch_id,
+      (err, result) => {
+        if (err) {
+          console.error("Error checking token validity:", err);
+          return res.status(500).json({ status: false, message: err.message });
+        }
+
+        if (!result.status) {
+          return res
+            .status(401)
+            .json({ status: false, message: result.message });
+        }
+
+        const newToken = result.newToken;
+
+        CandidateMasterTrackerModel.applicationByID(
+          application_id,
+          branch_id,
+          (err, application) => {
+            if (err) {
+              console.error("Database error:", err);
+              return res
+                .status(500)
+                .json({ status: false, message: err.message, token: newToken });
+            }
+
+            if (!application) {
+              return res.status(404).json({
+                status: false,
+                message: "Application not found",
+                token: newToken,
+              });
+            }
+
+            const searchWords = ['gap', 'check'];
+            Service.serviceByTitle(searchWords, (err, gapService) => {
+              if (err) {
+                console.error("Database error:", err);
+                return res
+                  .status(500)
+                  .json({ status: false, message: err.message, token: newToken });
+              }
+
+              if (!gapService) {
+                return res.status(404).json({
+                  status: false,
+                  message: "GAP Check service not found for this application",
+                  token: newToken,
+                });
+              }
+
+              const all_service_ids = Array.isArray(application.services)
+                ? application.services
+                : application.services.split(",").map((item) => item.trim());
+
+
+              const service_ids = [gapService.id];
+              console.log(`service_ids: ${service_ids}`);
+              CandidateMasterTrackerModel.cefApplicationByID(
+                application_id,
+                branch_id,
+                (err, CEFApplicationData) => {
+                  if (err) {
+                    console.error("Database error:", err);
+                    return res.status(500).json({
+                      status: false,
+                      message: err.message,
+                      token: newToken,
+                    });
+                  }
+
+                  Branch.getBranchById(branch_id, (err, currentBranch) => {
+                    if (err) {
+                      console.error("Database error during branch retrieval:", err);
+                      return res.status(500).json({
+                        status: false,
+                        message: "Failed to retrieve Branch. Please try again.",
+                        token: newToken,
+                      });
+                    }
+
+                    if (!currentBranch) {
+                      return res.status(404).json({
+                        status: false,
+                        message: "Branch not found.",
+                        token: newToken,
+                      });
+                    }
+
+                    Admin.list((err, adminList) => {
+                      if (err) {
+                        console.error("Database error:", err);
+                        return res.status(500).json({
+                          status: false,
+                          message: err.message,
+                          token: newToken,
+                        });
+                      }
+                      Customer.getCustomerById(
+                        parseInt(currentBranch.customer_id),
+                        (err, currentCustomer) => {
+                          if (err) {
+                            console.error(
+                              "Database error during customer retrieval:",
+                              err
+                            );
+                            return res.status(500).json({
+                              status: false,
+                              message:
+                                "Failed to retrieve Customer. Please try again.",
+                              token: newToken,
+                            });
+                          }
+
+                          if (!currentCustomer) {
+                            return res.status(404).json({
+                              status: false,
+                              message: "Customer not found.",
+                              token: newToken,
+                            });
+                          }
+
+                          CEF.formJsonWithData(
+                            service_ids,
+                            application_id,
+                            (err, serviceData) => {
+                              if (err) {
+                                console.error("Database error:", err);
+                                return res.status(500).json({
+                                  status: false,
+                                  message:
+                                    "An error occurred while fetching service form json.",
+                                  token: newToken,
+                                });
+                              }
+                              return res.json({
+                                status: true,
+                                message: "Application fetched successfully 2",
+                                application,
+                                CEFData: CEFApplicationData,
+                                branchInfo: currentBranch,
+                                customerInfo: currentCustomer,
+                                serviceData,
+                                admins: adminList,
+                                token: newToken,
+                              });
+                            }
+                          );
+                        }
+                      );
+                    });
+                  });
+                }
+              );
+            });
+          }
+        );
+      });
   });
 };
 

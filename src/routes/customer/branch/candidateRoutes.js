@@ -16,6 +16,20 @@ router.put("/update", candidateController.update);
 router.delete("/delete", candidateController.delete);
 router.delete("/", candidateController.delete);
 
+router.get(
+  "/gap-check",
+  candidateController.gapCheck
+);
+
+router.get(
+  "/bgv-application-by-id",
+  candidateController.cefApplicationByID
+);
+router.get(
+  "/dav-application-by-id",
+  candidateController.davApplicationByID
+);
+
 router.use("/backgroud-verification", cefRoutes);
 router.use("/digital-address-verification", davRoutes);
 
