@@ -164,7 +164,7 @@ const Branch = {
           \`customer_id\`, \`name\`, \`email\`, \`is_head\`, \`password\`, \`permissions\`, \`mobile_number\`
         ) VALUES (?, ?, ?, ?, MD5(?), ?, ?)
       `;
-      const permissions = `{"sub_user": true,"report_case_status": true,"ticket": true,"candidate_application": true,"client_application": true, "bulk_upload" : true}`;
+      const permissions = `{"sub_user": true,"report_case_status": true,"ticket": true,"candidate_application": true,"client_application": true, "bulk_upload" : true, "delete_request" : true}`;
       const valuesBranch = [
         BranchData.customer_id,
         BranchData.name,
