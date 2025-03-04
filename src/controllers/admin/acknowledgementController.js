@@ -3,7 +3,7 @@ const Acknowledgement = require("../../models/admin/acknowledgementModel");
 const Customer = require("../../models/customer/customerModel");
 const AdminCommon = require("../../models/admin/commonModel");
 const Service = require("../../models/admin/serviceModel");
-
+const Admin = require("../../models/admin/adminModel");
 const {
   acknowledgementMail,
 } = require("../../mailer/customer/acknowledgementMail");
@@ -165,136 +165,157 @@ exports.sendNotification = async (req, res) => {
                 });
               }
 
-              // Fetch acknowledgements for the customer
-              Acknowledgement.listByCustomerID(
-                customer_id,
-                async (err, customers) => {
-                  if (err) {
-                    console.error("Database error:", err);
-                    return res.status(500).json({
-                      status: false,
-                      message: err.message,
-                      token: newToken,
-                    });
-                  }
-
-                  // Ensure customers is in the correct format
-                  if (!Array.isArray(customers.data)) {
-                    return res.status(500).json({
-                      status: false,
-                      message: "Invalid data format.",
-                      token: newToken,
-                    });
-                  }
-
-                  // Process each customer
-                  for (const customer of customers.data) {
-                    for (const branch of customer.branches) {
-                      for (const application of branch.applications) {
-                        const serviceIds =
-                          typeof application.services === "string" &&
-                            application.services.trim() !== ""
-                            ? application.services
-                              .split(",")
-                              .map((id) => id.trim())
-                            : [];
-
-                        // Fetch and log service names in series
-                        const serviceNames = await getServiceNames(serviceIds);
-                        application.serviceNames = serviceNames.join(", ");
-                      }
+              Admin.filterAdmins({ status: "active", role: "admin" }, (err, adminResult) => {
+                if (err) {
+                  console.error("Database error:", err);
+                  return res.status(500).json({
+                    status: false,
+                    message: "Error retrieving admin details.",
+                    token: newToken,
+                  });
+                }
+                // Fetch acknowledgements for the customer
+                Acknowledgement.listByCustomerID(
+                  customer_id,
+                  async (err, customers) => {
+                    if (err) {
+                      console.error("Database error:", err);
+                      return res.status(500).json({
+                        status: false,
+                        message: err.message,
+                        token: newToken,
+                      });
                     }
-                  }
-                  if (customers.data.length > 0) {
+
+                    // Ensure customers is in the correct format
+                    if (!Array.isArray(customers.data)) {
+                      return res.status(500).json({
+                        status: false,
+                        message: "Invalid data format.",
+                        token: newToken,
+                      });
+                    }
+
+                    // Process each customer
                     for (const customer of customers.data) {
-                      // Loop through the branches
                       for (const branch of customer.branches) {
-                        let emailApplicationArr;
-                        let ccArr;
-                        if (branch.is_head !== 1) {
-                          emailApplicationArr = branch.applications;
-                          ccArr = [];
-                        } else {
-                          emailApplicationArr = customers.data;
-                          ccArr = JSON.parse(currentCustomer.emails).map(
-                            (email) => ({
-                              name: currentCustomer.name,
-                              email: email.trim(),
-                            })
-                          );
+                        for (const application of branch.applications) {
+                          const serviceIds =
+                            typeof application.services === "string" &&
+                              application.services.trim() !== ""
+                              ? application.services
+                                .split(",")
+                                .map((id) => id.trim())
+                              : [];
+
+                          // Fetch and log service names in series
+                          const serviceNames = await getServiceNames(serviceIds);
+                          application.serviceNames = serviceNames.join(", ");
                         }
-
-                        const toArr = [
-                          { name: branch.name, email: branch.email },
-                        ];
-
-                        acknowledgementMail(
-                          "acknowledgement",
-                          "email",
-                          branch.is_head,
-                          customer.name.trim(),
-                          customer.client_unique_id,
-                          emailApplicationArr,
-                          toArr,
-                          ccArr
-                        )
-                          .then(() => { })
-                          .catch((emailError) => {
-                            console.error("Error sending email:", emailError);
-
-                            return res.status(200).json({
-                              status: true,
-                              message: `failed to send mail.`,
-                              token: newToken,
-                            });
-                          });
                       }
                     }
-                  }
-                  // Send response
-                  if (customers.data.length > 0) {
-                    let applicationIds = [];
+                    if (customers.data.length > 0) {
+                      for (const customer of customers.data) {
+                        // Loop through the branches
+                        for (const branch of customer.branches) {
+                          let emailApplicationArr;
+                          let ccArr;
+                          if (branch.is_head !== 1) {
+                            emailApplicationArr = branch.applications;
+                          } else {
 
-                    customers.data.forEach((customer) => {
-                      customer.branches.forEach((branch) => {
-                        branch.applications.forEach((application) => {
-                          applicationIds.push(application.id);
+                            emailApplicationArr = customers.data;
+                          }
+                          const emailList = JSON.parse(currentCustomer.emails);
+                          const ccArr1 = emailList.map((email) => ({
+                            name: customer.name,
+                            email,
+                          }));
+
+                          const adminEmails = adminResult.map((admin) => ({
+                            name: admin.name,
+                            email: admin.email,
+                          }));
+
+                          // Merge and remove duplicate emails
+                          const uniqueEmails = Array.from(
+                            new Map([...ccArr1, ...adminEmails].map((item) => [item.email, item]))
+                          ).map(([, item]) => item);
+
+                          ccArr = uniqueEmails; // Assign unique emails to ccArr
+
+                          const toArr = [
+                            { name: branch.name, email: branch.email },
+                          ];
+
+                          acknowledgementMail(
+                            "acknowledgement",
+                            "email",
+                            branch.is_head,
+                            customer.name.trim(),
+                            customer.client_unique_id,
+                            emailApplicationArr,
+                            toArr,
+                            ccArr
+                          )
+                            .then(() => { })
+                            .catch((emailError) => {
+                              console.error("Error sending email:", emailError);
+
+                              return res.status(200).json({
+                                status: true,
+                                message: `failed to send mail.`,
+                                token: newToken,
+                              });
+                            });
+                        }
+                      }
+                    }
+                    // Send response
+                    if (customers.data.length > 0) {
+                      let applicationIds = [];
+
+                      customers.data.forEach((customer) => {
+                        customer.branches.forEach((branch) => {
+                          branch.applications.forEach((application) => {
+                            applicationIds.push(application.id);
+                          });
                         });
                       });
-                    });
 
-                    // Join the IDs into a comma-separated string
-                    const applicationIdsString = applicationIds.join(",");
-                    Acknowledgement.updateAckByCustomerID(
-                      applicationIdsString,
-                      customer_id,
-                      (err, affectedRows) => {
-                        if (err) {
-                          return res.status(500).json({
-                            message: "Error updating acknowledgment status",
-                            error: err,
+                      // Join the IDs into a comma-separated string
+                      const applicationIdsString = applicationIds.join(",");
+                      Acknowledgement.updateAckByCustomerID(
+                        applicationIdsString,
+                        customer_id,
+                        (err, affectedRows) => {
+                          if (err) {
+                            return res.status(500).json({
+                              message: "Error updating acknowledgment status",
+                              error: err,
+                              token: newToken,
+                            });
+                          }
+
+                          return res.json({
+                            status: true,
+                            message: "Customers fetched successfully",
+                            customers: customers.data,
+                            totalResults: customers.data.length,
                             token: newToken,
                           });
                         }
-
-                        return res.json({
-                          status: true,
-                          message: "Customers fetched successfully",
-                          customers: customers.data,
-                          totalResults: customers.data.length,
-                          token: newToken,
-                        });
-                      }
-                    );
-                  } else {
-                    return res.json({
-                      status: false,
-                      message: "No applications for acknowledgement",
-                      token: newToken,
-                    });
+                      );
+                    } else {
+                      return res.json({
+                        status: false,
+                        message: "No applications for acknowledgement",
+                        token: newToken,
+                      });
+                    }
                   }
-                }
-              );
+                );
+              });
             }
           );
         }

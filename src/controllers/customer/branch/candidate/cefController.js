@@ -284,84 +284,146 @@ exports.unsubmittedApplications = (req, res) => {
           }
           application.filledServices = serviceData;
 
-          // Once all service names are fetched, get app info
-          AppModel.appInfo("frontend", (err, appInfo) => {
-            if (err) {
-              console.error("Database error:", err);
-              if (!res.headersSent) {
+          BranchCommon.getBranchandCustomerEmailsForNotification(
+            application.branch_id,
+            (emailError, emailData) => {
+              if (emailError) {
+                console.error("Error fetching emails:", emailError);
                 return res.status(500).json({
                   status: false,
-                  message: err.message,
+                  message: "Failed to retrieve email addresses.",
+                  token: newToken,
                 });
               }
-            }
-
-            if (appInfo) {
-              const toArr = [
-                { name: application.application_name, email: application.email }
-              ];
-              const toCC = [];
-
-              const appHost = appInfo.host || "www.example.com";
-              const base64_app_id = btoa(application.candidate_application_id);
-              const base64_branch_id = btoa(application.branch_id);
-              const base64_customer_id = btoa(application.customer_id);
-              const base64_link_with_ids = `YXBwX2lk=${base64_app_id}&YnJhbmNoX2lk=${base64_branch_id}&Y3VzdG9tZXJfaWQ==${base64_customer_id}`;
-
-              let bgv_href = '';
-              let dav_href = '';
-
-              if (application.cef_submitted == 0) {
-                bgv_href = `${appHost}/background-form?${base64_link_with_ids}`;
-              }
-
-              // Fetch and process digital address service
-              Service.digitlAddressService((err, serviceEntry) => {
+              Admin.filterAdmins({ status: "active", role: "admin" }, (err, adminResult) => {
                 if (err) {
                   console.error("Database error:", err);
-                  return reject({
+                  return res.status(500).json({
                     status: false,
-                    message: err.message,
+                    message: "Error retrieving admin details.",
+                    token: newToken,
                   });
                 }
-
-                if (serviceEntry) {
-                  const digitalAddressID = parseInt(serviceEntry.id, 10);
-                  if (serviceIdsArr.includes(digitalAddressID)) {
-                    dav_href = `${appHost}/digital-form?${base64_link_with_ids}`;
+                // Once all service names are fetched, get app info
+                AppModel.appInfo("frontend", (err, appInfo) => {
+                  if (err) {
+                    console.error("Database error:", err);
+                    if (!res.headersSent) {
+                      return res.status(500).json({
+                        status: false,
+                        message: err.message,
+                      });
+                    }
                   }
-                }
 
-                // Send application creation reminder email
-                reminderMail(
-                  "candidate application",
-                  "reminder",
-                  application.application_name,
-                  application.customer_name,
-                  application.branch_name,
-                  bgv_href,
-                  dav_href,
-                  serviceData,
-                  toArr || [],
-                  toCC || []
-                )
-                  .then(() => {
-                    console.log("Reminder email sent.");
+                  if (appInfo) {
+                    const toArr = [
+                      { name: application.application_name, email: application.email }
+                    ];
 
-                    CEF.updateReminderDetails(
-                      { candidateAppId: application.candidate_application_id },
-                      (err, result) => {
-                        resolve(application);
+                    const adminMailArr = adminResult.map(admin => ({
+                      name: admin.name,
+                      email: admin.email
+                    }));
+
+                    const { branch, customer } = emailData;
+
+                    // Prepare recipient and CC lists
+
+                    const emailList = JSON.parse(customer.emails);
+                    const ccArr1 = emailList.map((email) => ({
+                      name: customer.name,
+                      email,
+                    }));
+
+                    const mergedEmails = [
+                      { name: branch.name, email: branch.email },
+                      ...ccArr1,
+                      ...adminResult.map((admin) => ({
+                        name: admin.name,
+                        email: admin.email,
+                      })),
+                    ];
+
+                    const uniqueEmails = [
+                      ...new Map(
+                        mergedEmails.map((item) => [item.email, item])
+                      ).values(),
+                    ];
+
+                    const ccArr2 = uniqueEmails;
+                    const ccArr = [
+                      ...new Map(
+                        [...ccArr1, ...ccArr2].map((item) => [
+                          item.email,
+                          item,
+                        ])
+                      ).values(),
+                    ];
+
+                    const appHost = appInfo.host || "www.example.com";
+                    const base64_app_id = btoa(application.candidate_application_id);
+                    const base64_branch_id = btoa(application.branch_id);
+                    const base64_customer_id = btoa(application.customer_id);
+                    const base64_link_with_ids = `YXBwX2lk=${base64_app_id}&YnJhbmNoX2lk=${base64_branch_id}&Y3VzdG9tZXJfaWQ==${base64_customer_id}`;
+
+                    let bgv_href = '';
+                    let dav_href = '';
+
+                    if (application.cef_submitted == 0) {
+                      bgv_href = `${appHost}/background-form?${base64_link_with_ids}`;
+                    }
+
+                    // Fetch and process digital address service
+                    Service.digitlAddressService((err, serviceEntry) => {
+                      if (err) {
+                        console.error("Database error:", err);
+                        return reject({
+                          status: false,
+                          message: err.message,
+                        });
                       }
-                    );
-                  })
-                  .catch((emailError) => {
-                    console.error("Error sending reminder email:", emailError);
-                    resolve(application);  // Still resolve the application, but without email success
-                  });
+
+                      if (serviceEntry) {
+                        const digitalAddressID = parseInt(serviceEntry.id, 10);
+                        if (serviceIdsArr.includes(digitalAddressID)) {
+                          dav_href = `${appHost}/digital-form?${base64_link_with_ids}`;
+                        }
+                      }
+
+                      // Send application creation reminder email
+                      reminderMail(
+                        "candidate application",
+                        "reminder",
+                        application.application_name,
+                        application.customer_name,
+                        application.branch_name,
+                        bgv_href,
+                        dav_href,
+                        serviceData,
+                        toArr || [],
+                        ccArr || []
+                      )
+                        .then(() => {
+                          console.log("Reminder email sent.");
+
+                          CEF.updateReminderDetails(
+                            { candidateAppId: application.candidate_application_id },
+                            (err, result) => {
+                              resolve(application);
+                            }
+                          );
+                        })
+                        .catch((emailError) => {
+                          console.error("Error sending reminder email:", emailError);
+                          resolve(application);  // Still resolve the application, but without email success
+                        });
+                    });
+                  }
+                });
               });
-            }
-          });
+            });
+
         });
       });
     });
