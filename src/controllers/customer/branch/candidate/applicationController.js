@@ -1190,13 +1190,6 @@ exports.cefApplicationByID = (req, res) => {
   )
     missingFields.push("Branch ID");
   if (
-    !sub_user_id ||
-    sub_user_id === "" ||
-    sub_user_id === undefined ||
-    sub_user_id === "undefined"
-  )
-    missingFields.push("Admin ID");
-  if (
     !_token ||
     _token === "" ||
     _token === undefined ||
@@ -1382,13 +1375,6 @@ exports.davApplicationByID = (req, res) => {
   )
     missingFields.push("Branch ID");
   if (
-    !sub_user_id ||
-    sub_user_id === "" ||
-    sub_user_id === undefined ||
-    sub_user_id === "undefined"
-  )
-    missingFields.push("Admin ID");
-  if (
     !_token ||
     _token === "" ||
     _token === undefined ||
@@ -1553,13 +1539,6 @@ exports.gapCheck = (req, res) => {
     branch_id === "undefined"
   )
     missingFields.push("Branch ID");
-  if (
-    !sub_user_id ||
-    sub_user_id === "" ||
-    sub_user_id === undefined ||
-    sub_user_id === "undefined"
-  )
-    missingFields.push("Admin ID");
   if (
     !_token ||
     _token === "" ||
