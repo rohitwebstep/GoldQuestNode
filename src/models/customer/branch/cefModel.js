@@ -69,7 +69,7 @@ const cef = {
         return callback(err, null);
       }
 
-      connection.query(sql, [1, candidate_application_id], (queryErr, results) => {
+      connection.query(sql, ['1', candidate_application_id], (queryErr, results) => {
         connectionRelease(connection); // Release the connection
 
         if (queryErr) {
