@@ -721,7 +721,7 @@ exports.submit = (req, res) => {
                           return res.status(200).json({
                             status: true,
                             cef_id: cefResult.insertId,
-                            message: "CEF Application submitted successfully.",
+                            message: "BGV Application submitted successfully.",
                           });
                         }
                       })
@@ -749,7 +749,7 @@ exports.submit = (req, res) => {
                         // No annexures to handle, finalize submission
                         return res.status(200).json({
                           status: true,
-                          message: "CEF Application submitted successfully.",
+                          message: "BGV Application submitted successfully.",
                         });
                       }
                     );
@@ -904,7 +904,7 @@ const sendNotificationEmails = (
                           return res.status(201).json({
                             status: true,
                             message:
-                              "CEF Application submitted successfully and notifications sent.",
+                              "BGV Application submitted successfully and notifications sent.",
                           });
                         }
                       );
@@ -917,7 +917,7 @@ const sendNotificationEmails = (
                       return res.status(201).json({
                         status: true,
                         message:
-                          "CEF Application submitted successfully, but email failed to send.",
+                          "BGV Application submitted successfully, but email failed to send.",
                       });
                     });
                 });
@@ -1066,7 +1066,7 @@ exports.upload = async (req, res) => {
                   savedImagePaths,
                   async (success, result) => {
                     if (!success) {
-                      console.error("CEF upload failed:", result);
+                      console.error("BGV upload failed:", result);
                       return res.status(500).json({
                         status: false,
                         message: result || "An error occurred while saving the image.",

@@ -1219,7 +1219,7 @@ exports.sendLink = (req, res) => {
                                 )
                                   .then(() => {
                                     cefMailSent = true;
-                                    console.log("CEF application mail sent.");
+                                    console.log("BGV application mail sent.");
                                   })
                                   .catch((emailError) => {
                                     cefErrors.push(emailError);
