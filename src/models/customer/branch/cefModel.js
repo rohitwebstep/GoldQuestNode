@@ -58,10 +58,10 @@ const cef = {
 
     // If no duplicates are found, proceed with updating the admin record
     const sql = `
-        UPDATE \`cef_applications\` 
+        UPDATE \`candidate_applications\` 
         SET 
-          \`is_form_opened\` = ?
-        WHERE \`candidate_application_id\` = ?
+          \`is_bgv_form_opened\` = ?
+        WHERE \`id\` = ?
       `;
 
     startConnection((err, connection) => {
