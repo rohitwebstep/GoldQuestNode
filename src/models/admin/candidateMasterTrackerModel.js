@@ -595,7 +595,6 @@ const Customer = {
     });
   },
 
-
   applicationDataByClientApplicationID: (
     client_application_id,
     branch_id,

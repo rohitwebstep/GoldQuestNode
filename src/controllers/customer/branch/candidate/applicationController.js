@@ -1749,7 +1749,6 @@ exports.update = (req, res) => {
     candidate_application_id,
     _token,
     name,
-    employee_id,
     mobile_number,
     email,
     nationality,

@@ -124,85 +124,86 @@ const clientApplication = {
       services,
       packages,
       customer_id,
+      attach_documents
     } = data;
 
     const serviceIds =
       typeof services === "string" && services.trim() !== ""
-        ? services
-            .split(",")
-            .map((id) => id.trim())
-            .join(",")
+        ? services.split(",").map((id) => id.trim()).join(",")
         : Array.isArray(services) && services.length > 0
-        ? services.map((id) => id.trim()).join(",")
-        : "";
+          ? services.map((id) => id.trim()).join(",")
+          : "";
 
     const packageIds =
       typeof packages === "string" && packages.trim() !== ""
-        ? packages
-            .split(",")
-            .map((id) => id.trim())
-            .join(",")
+        ? packages.split(",").map((id) => id.trim()).join(",")
         : Array.isArray(packages) && packages.length > 0
-        ? packages.map((id) => id.trim()).join(",")
-        : "";
+          ? packages.map((id) => id.trim()).join(",")
+          : "";
 
     // Generate a new application ID
-    clientApplication.generateApplicationID(
-      branch_id,
-      (err, new_application_id) => {
+    clientApplication.generateApplicationID(branch_id, (err, new_application_id) => {
+      if (err) {
+        console.error("Error generating new application ID:", err);
+        return callback(err, null);
+      }
+
+      startConnection((err, connection) => {
         if (err) {
-          console.error("Error generating new application ID:", err);
-          return callback(err, null);
+          return callback(
+            { message: "Failed to connect to the database", error: err },
+            null
+          );
         }
 
-        startConnection((err, connection) => {
+        // Base SQL query and values
+        let sql = `
+                INSERT INTO \`client_applications\` (
+                    \`application_id\`,
+                    \`name\`,
+                    \`employee_id\`,
+                    \`single_point_of_contact\`,
+                    \`batch_number\`,
+                    \`sub_client\`,
+                    \`location\`,
+                    \`branch_id\`,
+                    \`services\`,
+                    \`package\`,
+                    \`customer_id\`
+            `;
+
+        let values = [
+          new_application_id,
+          name,
+          employee_id,
+          spoc,
+          batch_number,
+          sub_client,
+          location,
+          branch_id,
+          serviceIds,
+          packageIds,
+          customer_id,
+        ];
+
+        // If attach_documents is not null, include it in the query
+        if (attach_documents) {
+          sql += `, \`attach_documents\``;
+          values.push(attach_documents);
+        }
+
+        sql += `) VALUES (${values.map(() => "?").join(", ")})`;
+
+        connection.query(sql, values, (err, results) => {
+          connectionRelease(connection);
           if (err) {
-            return callback(
-              { message: "Failed to connect to the database", error: err },
-              null
-            );
+            console.error("Database query error: 109", err);
+            return callback(err, null);
           }
-          const sql = `
-          INSERT INTO \`client_applications\` (
-            \`application_id\`,
-            \`name\`,
-            \`employee_id\`,
-            \`single_point_of_contact\`,
-            \`batch_number\`,
-            \`sub_client\`,
-            \`location\`,
-            \`branch_id\`,
-            \`services\`,
-            \`package\`,
-            \`customer_id\`
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `;
-
-          const values = [
-            new_application_id,
-            name,
-            employee_id,
-            spoc,
-            batch_number,
-            sub_client,
-            location,
-            branch_id,
-            serviceIds,
-            packageIds,
-            customer_id,
-          ];
-
-          connection.query(sql, values, (err, results) => {
-            connectionRelease(connection);
-            if (err) {
-              console.error("Database query error: 109", err);
-              return callback(err, null);
-            }
-            callback(null, { results, new_application_id });
-          });
+          callback(null, { results, new_application_id });
         });
-      }
-    );
+      });
+    });
   },
 
   // Other methods remain unchanged, but should include startConnection and connectionRelease
@@ -484,22 +485,22 @@ const clientApplication = {
       const serviceIds =
         typeof services === "string" && services.trim() !== ""
           ? services
-              .split(",")
-              .map((id) => id.trim())
-              .join(",")
+            .split(",")
+            .map((id) => id.trim())
+            .join(",")
           : Array.isArray(services) && services.length > 0
-          ? services.map((id) => id.trim()).join(",")
-          : "";
+            ? services.map((id) => id.trim()).join(",")
+            : "";
 
       const packageIds =
         typeof packages === "string" && packages.trim() !== ""
           ? packages
-              .split(",")
-              .map((id) => id.trim())
-              .join(",")
+            .split(",")
+            .map((id) => id.trim())
+            .join(",")
           : Array.isArray(packages) && packages.length > 0
-          ? packages.map((id) => id.trim()).join(",")
-          : "";
+            ? packages.map((id) => id.trim()).join(",")
+            : "";
 
       const values = [
         name,
