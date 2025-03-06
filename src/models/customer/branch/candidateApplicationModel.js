@@ -692,7 +692,7 @@ const candidateApplication = {
         return callback(err, null);
       }
 
-      connection.query(sql, [candidateAppId], (queryErr, results) => {
+      connection.query(sql, ["1", candidateAppId], (queryErr, results) => {
         connectionRelease(connection); // Release the connection
 
         if (queryErr) {
