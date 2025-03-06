@@ -677,7 +677,6 @@ const candidateApplication = {
   },
 
   updateConvertClientStatus: (candidateAppId, callback) => {
-    const { candidateAppId, status } = data;
 
     // If no duplicates are found, proceed with updating the admin record
     const sql = `
