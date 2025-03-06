@@ -26,6 +26,7 @@ const {
   saveImage,
   saveImages,
 } = require("../../../../utils/cloudImageSave");
+const candidateApplication = require("../../../../models/customer/branch/candidateApplicationModel");
 
 exports.convertToClient = (req, res) => {
   const {
@@ -389,12 +390,25 @@ exports.convertToClient = (req, res) => {
                                                 ccArr
                                               )
                                                 .then(() => {
-                                                  return res.status(201).json({
-                                                    status: true,
-                                                    message:
-                                                      "Client application created successfully and email sent.",
-                                                    token: newToken,
-                                                  });
+                                                  candidateApplication.updateConvertClientStatus(
+                                                    candidateAppId,
+                                                    (err, result) => {
+                                                      if (err) {
+                                                        console.error("Error updating submit status:", err);
+                                                        return res.status(500).json({
+                                                          status: false,
+                                                          message:
+                                                            "Client application created successfully and email sent but status not updated.",
+                                                        });
+                                                      }
+                                                      return res.status(201).json({
+                                                        status: true,
+                                                        message:
+                                                          "Client application created successfully and email sent.",
+                                                        token: newToken,
+                                                      });
+                                                    }
+                                                  );
                                                 })
                                                 .catch((emailError) => {
                                                   console.error(
