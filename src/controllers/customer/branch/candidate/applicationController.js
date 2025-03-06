@@ -50,7 +50,6 @@ exports.create = (req, res) => {
     _token,
     customer_id,
     name,
-    employee_id,
     mobile_number,
     email,
     nationality,
