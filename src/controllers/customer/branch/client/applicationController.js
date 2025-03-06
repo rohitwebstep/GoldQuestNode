@@ -205,6 +205,8 @@ exports.convertToClient = (req, res) => {
                         services: currentCandidateApplication.services,
                         packages: currentCandidateApplication.package,
                         customer_id,
+                        purpose_of_application: currentCandidateApplication.purpose_of_application,
+                        nationality: currentCandidateApplication.nationality,
                         attach_documents: finalUrls || null,
                       },
                       (err, result) => {
@@ -491,6 +493,8 @@ exports.create = (req, res) => {
     services,
     package,
     send_mail,
+    purpose_of_application,
+    nationality
   } = req.body;
 
   // Define required fields
@@ -503,6 +507,7 @@ exports.create = (req, res) => {
     spoc,
     batch_number,
     location,
+    nationality
   };
 
   // Check for missing fields
@@ -579,6 +584,8 @@ exports.create = (req, res) => {
                 services,
                 packages: package,
                 customer_id,
+                purpose_of_application,
+                nationality,
               },
               (err, result) => {
                 if (err) {
@@ -1406,6 +1413,8 @@ exports.update = (req, res) => {
     location,
     services,
     package,
+    purpose_of_application,
+    nationality,
   } = req.body;
 
   // Define required fields
@@ -1418,6 +1427,7 @@ exports.update = (req, res) => {
     spoc,
     batch_number,
     location,
+    nationality,
   };
 
   // Check for missing fields
@@ -1578,6 +1588,8 @@ exports.update = (req, res) => {
                     location,
                     services,
                     packages: package,
+                    purpose_of_application,
+                    nationality,
                   },
                   client_application_id,
                   (err, result) => {

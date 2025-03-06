@@ -124,7 +124,9 @@ const clientApplication = {
       services,
       packages,
       customer_id,
-      attach_documents
+      attach_documents,
+      purpose_of_application,
+      nationality,
     } = data;
 
     const serviceIds =
@@ -169,7 +171,9 @@ const clientApplication = {
                     \`branch_id\`,
                     \`services\`,
                     \`package\`,
-                    \`customer_id\`
+                    \`customer_id\`,
+                    \`purpose_of_application\`,
+                    \`nationality\`
             `;
 
         let values = [
@@ -184,6 +188,8 @@ const clientApplication = {
           serviceIds,
           packageIds,
           customer_id,
+          purpose_of_application,
+          nationality,
         ];
 
         // If attach_documents is not null, include it in the query
@@ -465,6 +471,8 @@ const clientApplication = {
         location,
         services,
         packages,
+        purpose_of_application,
+        nationality,
       } = data;
 
       const sql = `
@@ -477,7 +485,9 @@ const clientApplication = {
         \`sub_client\` = ?,
         \`location\` = ?,
         \`services\` = ?,
-        \`package\` = ?
+        \`package\` = ?,
+        \`purpose_of_application\` = ?,
+        \`nationality\` = ?
       WHERE
         \`id\` = ?
     `;
@@ -511,6 +521,8 @@ const clientApplication = {
         location,
         serviceIds,
         packageIds,
+        purpose_of_application,
+        nationality,
         client_application_id,
       ];
 
