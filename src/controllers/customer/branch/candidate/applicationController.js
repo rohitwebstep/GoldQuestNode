@@ -1861,7 +1861,7 @@ exports.update = (req, res) => {
 
             Candidate.checkUniqueEmpIdByCandidateApplicationID(
               branch_id,
-              employee_id,
+              employee_id ? employee_id : null,
               candidate_application_id,
               (err, exists) => {
                 if (err) {
@@ -1887,7 +1887,7 @@ exports.update = (req, res) => {
                 Candidate.update(
                   {
                     name,
-                    employee_id,
+                    employee_id: employee_id ? employee_id : null,
                     mobile_number,
                     email,
                     services: services || null,

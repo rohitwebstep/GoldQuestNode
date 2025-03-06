@@ -186,6 +186,9 @@ const candidateApplication = {
   },
 
   checkUniqueEmpId: (branch_id, candidateUniqueEmpId, callback) => {
+    if (!candidateUniqueEmpId) {
+      return callback(null, false);
+    }
     const sql = `
       SELECT COUNT(*) AS count
       FROM \`candidate_applications\`
@@ -219,10 +222,14 @@ const candidateApplication = {
 
   checkUniqueEmpIdByCandidateApplicationID: (
     branch_id,
-    application_id,
     candidateUniqueEmpId,
+    application_id,
     callback
   ) => {
+    if (!candidateUniqueEmpId) {
+      return callback(null, false);
+    }
+
     const sql = `
       SELECT COUNT(*) AS count
       FROM \`candidate_applications\`
