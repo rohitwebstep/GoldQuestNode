@@ -393,7 +393,7 @@ exports.convertToClient = (req, res) => {
                                               )
                                                 .then(() => {
                                                   candidateApplication.updateConvertClientStatus(
-                                                    candidateAppId,
+                                                    candidate_application_id,
                                                     (err, result) => {
                                                       if (err) {
                                                         console.error("Error updating submit status:", err);
