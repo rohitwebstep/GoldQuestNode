@@ -39,57 +39,33 @@ const pool = mysql.createPool({
   connectTimeout: 120000, // 2 minutes for individual connection attempts
 });
 
-// Function to start a connection with retry mechanism
-const startConnection = (callback, retries = 20) => {
+const connection = mysql.createConnection({
+  host: dbHost,
+  user: dbUser,
+  password: dbPassword,
+  database: dbName,
+  connectTimeout: 120000, // 2 minutes timeout
+});
+
+// Connect to the database
+connection.connect((err) => {
+  if (err) {
+    console.error("Error connecting to MySQL:", err.message);
+    process.exit(1);
+  }
+  console.log("Connected to MySQL database");
+});
+
+// Function to get the existing connection
+const startConnection = (callback) => {
   if (typeof callback !== "function") {
     throw new Error("Callback must be a function");
   }
-
-  const attemptConnection = (retriesLeft) => {
-    pool.getConnection((err, connection) => {
-      if (err) {
-        console.error(`Error getting connection from pool: ${err.message}`);
-        if (retriesLeft > 0) {
-          console.log(
-            `Connection attempt failed. Retrying... (${retriesLeft} attempts left)`
-          );
-          setTimeout(() => attemptConnection(retriesLeft - 1), 500);
-        } else {
-          callback(err, null);
-        }
-      } else if (connection.state === "disconnected") {
-        console.warn("Connection is disconnected. Retrying...");
-        connection.release();
-        attemptConnection(retriesLeft - 1);
-      } else {
-        console.log("Connection established");
-        callback(null, connection);
-      }
-    });
-  };
-
-  attemptConnection(retries);
+  callback(null, connection);
 };
 
 // Function to release a connection
 const connectionRelease = (connection) => {
-  // console.log("connectionRelease called"); // Log function entry
-
-  if (connection) {
-    // console.log("Valid connection found, attempting to release...");
-
-    try {
-      connection.release(); // Release the connection back to the pool
-      console.log("Connection successfully released back to the pool");
-    } catch (err) {
-      console.error("Error releasing connection:", err.message);
-      console.debug("Error details:", err); // Log full error details for debugging
-    }
-  } else {
-    console.warn("No valid connection to release");
-  }
-
-  // console.log("connectionRelease function execution completed");
 };
 
-module.exports = { pool, startConnection, connectionRelease };
+module.exports = { connection, pool, startConnection, connectionRelease };
