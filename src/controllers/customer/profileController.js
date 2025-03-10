@@ -1973,8 +1973,6 @@ exports.delete = (req, res) => {
   const missingFields = [];
   if (!id || id === "") missingFields.push("Customer ID");
   if (!admin_id || admin_id === "") missingFields.push("Admin ID");
-  if (!from || from === "") missingFields.push("From date");
-  if (!to || to === "") missingFields.push("To Date");
   if (!_token || _token === "") missingFields.push("Token");
 
   if (missingFields.length > 0) {
