@@ -55,7 +55,7 @@ exports.create = (req, res) => {
         });
     }
 
-    const action = "client_management";
+    const action = "deletion_certification";
     // Check admin authorization
     AdminCommon.isAdminAuthorizedForAction(admin_id, action, (result) => {
         if (!result.status) {
@@ -197,7 +197,7 @@ exports.list = (req, res) => {
             message: `Missing required fields: ${missingFields.join(", ")}`,
         });
     }
-    const action = "client_management";
+    const action = "deletion_certification";
     // Check admin authorization
     AdminCommon.isAdminAuthorizedForAction(admin_id, action, (result) => {
         if (!result.status) {

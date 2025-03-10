@@ -1703,7 +1703,7 @@ exports.fetchBranchPassword = (req, res) => {
     });
   }
 
-  const action = "client_management";
+  const action = "external_login_credentials";
   AdminCommon.isAdminAuthorizedForAction(admin_id, action, (result) => {
     if (!result.status) {
       return res.status(403).json({

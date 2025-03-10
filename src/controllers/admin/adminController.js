@@ -79,7 +79,7 @@ exports.addClientListings = (req, res) => {
     });
   }
 
-  const action = "internal_login_credentials";
+  const action = "client_management";
   Common.isAdminAuthorizedForAction(admin_id, action, (authResult) => {
     if (!authResult || !authResult.status) {
       return res.status(403).json({
