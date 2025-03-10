@@ -3,8 +3,18 @@ const moment = require("moment"); // Ensure you have moment.js installed
 
 const tatDelay = {
   index: (callback) => {
-    // SQL query to retrieve applications, customers, branches, and tat_days
-    const SQL = `SELECT * FROM \`admin_login_logs\` ORDER BY \`created_at\` DESC`;
+    // SQL query to retrieve applications, customers, branches, tat_days, and admin details
+    const SQL = `
+      SELECT 
+        admin_login_logs.*, 
+        admins.name AS admin_name, 
+        admins.profile_picture AS profile_picture, 
+        admins.email AS admin_email, 
+        admins.mobile AS admin_mobile 
+      FROM \`admin_login_logs\`
+      INNER JOIN \`admins\` ON \`admin_login_logs\`.admin_id = \`admins\`.id
+      ORDER BY \`admin_login_logs\`.\`created_at\` DESC
+    `;
 
     startConnection((connectionError, connection) => {
       if (connectionError) {
@@ -17,8 +27,6 @@ const tatDelay = {
           return handleQueryError(appQueryError, connection, callback);
         }
 
-        connectionRelease(connection);
-
         // Check if there are any results
         if (applicationResults.length === 0) {
           return callback(null, { message: "No records found" });
@@ -30,6 +38,13 @@ const tatDelay = {
   },
 
   activityList: (logId, adminId, callback) => {
+    // Log the function entry with parameters
+    console.log(
+      "Entering activityList function with logId:",
+      logId,
+      "adminId:",
+      adminId
+    );
 
     // SQL query to retrieve the first login log
     const initialLoginQuery = `SELECT * FROM \`admin_login_logs\` WHERE \`id\` = ? AND \`action\` = ? AND \`result\` = ? AND \`admin_id\` = ? LIMIT 1`;
@@ -39,6 +54,8 @@ const tatDelay = {
         console.error("Database connection error:", connectionError);
         return callback(connectionError, null);
       }
+
+      console.log("Database connection established successfully.");
 
       // Execute the query to fetch the current login log
       connection.query(
@@ -55,13 +72,24 @@ const tatDelay = {
 
           // Check if no login records found
           if (currentLoginResults.length === 0) {
+            console.log(
+              "No current login records found for logId:",
+              logId,
+              "and adminId:",
+              adminId
+            );
             return callback(null, { message: "No records found" });
           }
 
           const currentLogData = currentLoginResults[0];
+          console.log("Current login log data found:", currentLogData);
 
           // SQL query to retrieve the next login log
           const nextLoginQuery = `SELECT * FROM \`admin_login_logs\` WHERE \`id\` > ? AND \`action\` = ? AND \`result\` = ? AND \`admin_id\` = ? LIMIT 1`;
+
+          console.log(
+            "Database connection established successfully for next login log."
+          );
 
           // Execute the query to fetch the next login log
           connection.query(
@@ -80,6 +108,12 @@ const tatDelay = {
                 );
               }
 
+              // Log the query results
+              console.log(
+                "Next login log query executed. Number of results:",
+                nextLoginResults.length
+              );
+
               let nextLogDatacreated_at = "9999-12-31";
               // Check if no next login records found
               if (nextLoginResults.length === 0) {
@@ -87,10 +121,15 @@ const tatDelay = {
               } else {
                 const nextLogData = nextLoginResults[0];
                 nextLogDatacreated_at = nextLogData.created_at;
+                console.log("Next login log data found:", nextLogData);
               }
 
               // SQL query to retrieve admin activity logs within the time range
               const activityQuery = `SELECT * FROM \`admin_activity_logs\` WHERE \`admin_id\` = ? AND \`created_at\` <= ? AND \`created_at\` >=  ? ORDER BY \`created_at\` DESC`;
+
+              console.log(
+                "Database connection established successfully for activity logs."
+              );
 
               // Execute the query to fetch activity logs
               connection.query(
@@ -113,12 +152,18 @@ const tatDelay = {
                     );
                   }
 
-                  connectionRelease(connection);
-
                   // Check if no activity records found
                   if (activityResults.length === 0) {
+                    console.log(
+                      "No activity records found for adminId:",
+                      adminId
+                    );
                     return callback(null, []);
                   }
+
+                  connectionRelease(connection);
+                  // Log activity results for debugging
+                  console.log("Activity logs found:", activityResults);
 
                   // Return the processed activity data
                   return callback(null, activityResults);
