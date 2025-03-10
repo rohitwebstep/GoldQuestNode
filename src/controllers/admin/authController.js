@@ -24,7 +24,10 @@ const getOTPExpiry = () => {
 
 // Admin login handler
 exports.login = (req, res) => {
+  console.log("Login function triggered");
   const { username, password } = req.body;
+  console.log("Received login request:", { username, password: password ? "****" : "EMPTY" });
+
   const missingFields = [];
 
   // Validate required fields
@@ -37,12 +40,13 @@ exports.login = (req, res) => {
       message: `Missing required fields: ${missingFields.join(", ")}`,
     });
   }
+  console.log(`Step - 2`);
 
   Admin.findByEmailOrMobile(username, (err, result) => {
     if (err) {
       return res.status(500).json({ status: false, message: err.message });
     }
-
+console.log(`Step - 1`);
     if (result.length === 0) {
       return res.status(404).json({
         status: false,
@@ -51,6 +55,7 @@ exports.login = (req, res) => {
     }
 
     const admin = result[0];
+    console.log("Admin record found:", admin.id);
 
     // Validate password
     Admin.validatePassword(username, password, (err, isValid) => {
@@ -178,6 +183,7 @@ exports.login = (req, res) => {
           });
         }
       } else {
+        console.log("Generating login token for:", admin.id);
         // Generate new token and expiry time
         const token = generateToken();
         const newTokenExpiry = getTokenExpiry();
