@@ -505,8 +505,6 @@ exports.create = (req, res) => {
     name,
     employee_id,
     spoc,
-    batch_number,
-    location,
     nationality
   };
 
@@ -1425,8 +1423,6 @@ exports.update = (req, res) => {
     name,
     employee_id,
     spoc,
-    batch_number,
-    location,
     nationality,
   };
 
