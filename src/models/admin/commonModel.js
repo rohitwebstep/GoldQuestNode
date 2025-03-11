@@ -194,7 +194,7 @@ const common = {
    * @param {function} callback - Callback function
    */
   isAdminAuthorizedForAction: (admin_id, action, callback) => {
-    console.log("Step 1: Function called with admin_id:", admin_id, "and action:", action);
+    // console.log("Step 1: Function called with admin_id:", admin_id, "and action:", action);
 
     const adminSQL = `SELECT \`role\` FROM \`admins\` WHERE \`id\` = ?`;
     const permissionsJsonByRoleSQL = `SELECT \`json\` FROM \`permissions\` WHERE \`role\` = ?`;
@@ -210,7 +210,7 @@ const common = {
         return callback({ message: "Connection is not available" }, null);
       }
 
-      console.log("Step 4: Database connection established successfully");
+      // console.log("Step 4: Database connection established successfully");
 
       // First query: Get the admin's role
       connection.query(adminSQL, [admin_id], (err, results) => {
@@ -223,10 +223,10 @@ const common = {
           );
         }
 
-        console.log("Step 6: Query 1 executed successfully. Results:", results);
+        // console.log("Step 6: Query 1 executed successfully. Results:", results);
 
         if (results.length === 0) {
-          console.log("Step 7: No admin found with the provided ID");
+          // console.log("Step 7: No admin found with the provided ID");
           connectionRelease(connection);
           return callback(
             { message: "No admin found with the provided ID" },
@@ -235,7 +235,7 @@ const common = {
         }
 
         const role = results[0].role;
-        console.log("Step 8: Admin role found:", role);
+        // console.log("Step 8: Admin role found:", role);
 
         // Second query: Get permissions for the admin's role
         connection.query(permissionsJsonByRoleSQL, [role], (err, results) => {
@@ -248,41 +248,41 @@ const common = {
             );
           }
 
-          console.log("Step 10: Query 2 executed successfully. Results:", results);
+          // console.log("Step 10: Query 2 executed successfully. Results:", results);
 
           if (results.length === 0) {
-            console.log("Step 11: No permissions found for the admin role");
+            // console.log("Step 11: No permissions found for the admin role");
             connectionRelease(connection);
             return callback({ message: "Access Denied" }, null);
           }
 
           const permissionsRaw = results[0].json;
-          console.log("Step 12: Raw permissions JSON:", permissionsRaw);
+          // console.log("Step 12: Raw permissions JSON:", permissionsRaw);
 
           if (!permissionsRaw) {
-            console.log("Step 13: Permissions field is empty");
+            // console.log("Step 13: Permissions field is empty");
             connectionRelease(connection);
             return callback({ status: false, message: "Access Denied" });
           }
 
           try {
             const permissionsJson = JSON.parse(permissionsRaw);
-            console.log("Step 14: Parsed permissions JSON:", permissionsJson);
+            // console.log("Step 14: Parsed permissions JSON:", permissionsJson);
 
             const permissions =
               typeof permissionsJson === "string"
                 ? JSON.parse(permissionsJson)
                 : permissionsJson;
 
-            console.log("Step 15: Checking if action exists in permissions");
+            // console.log("Step 15: Checking if action exists in permissions");
 
             if (!permissions[action]) {
-              console.log("Step 16: Action type not found in permissions");
+              // console.log("Step 16: Action type not found in permissions");
               connectionRelease(connection);
               return callback({ status: false, message: "Access Denied" });
             }
 
-            console.log("Step 17: Authorization successful");
+            // console.log("Step 17: Authorization successful");
 
             connectionRelease(connection);
             return callback({
