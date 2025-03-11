@@ -19,34 +19,38 @@ console.log(`dbConfig - `, dbConfig);
 // ✅ Create a persistent MySQL connection (Promise-based)
 let connection;
 
-/**
- * ✅ Establish a new database connection.
- */
+let retryCount = 0;
+const maxRetries = 10; // Set a limit for retries
+
 const connectToDatabase = async () => {
   try {
-    if (connection) return connection; // Return existing connection if available
+    if (connection) return connection;
 
     console.log("🔄 Connecting to MySQL database...");
     connection = await mysql.createConnection(dbConfig);
-
     console.log("✅ Successfully connected to MySQL database");
 
-    // Handle connection errors
     connection.on("error", async (err) => {
       console.error("❌ MySQL connection error:", err);
       if (err.code === "PROTOCOL_CONNECTION_LOST") {
         console.log("🔄 Attempting to reconnect...");
         connection = null;
+        retryCount = 0; // Reset retry counter after successful reconnection
         await connectToDatabase();
       } else {
-        throw err; // Other errors need manual intervention
+        throw err;
       }
     });
 
     return connection;
   } catch (error) {
     console.error("❌ Database connection failed:", error.message);
-    setTimeout(connectToDatabase, 5000); // 🔄 Retry connection after 5 seconds
+    retryCount++;
+    if (retryCount >= maxRetries) {
+      console.error("🚫 Max retries reached. Stopping connection attempts.");
+      return;
+    }
+    setTimeout(connectToDatabase, 5000);
   }
 };
 
