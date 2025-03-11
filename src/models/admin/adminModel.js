@@ -1,6 +1,40 @@
-const { pool, startConnection, connectionRelease } = require("../../config/simpleAwaitConnection");
+const { pool, startConnection, connectionRelease } = require("../../config/db");
 
 const Admin = {
+
+  findByEmailOrMobile: (username, callback) => {
+    const sql = `
+      SELECT \`id\`, \`emp_id\`, \`name\`, \`profile_picture\`, \`email\`, \`mobile\`, \`status\`, \`login_token\`, \`token_expiry\`, \`otp\`, \`two_factor_enabled\`, \`otp_expiry\`, \`role\`
+      FROM \`admins\`
+      WHERE \`email\` = ? OR \`mobile\` = ?
+    `;
+
+    startConnection((err, connection) => {
+      if (err) {
+        return callback(err, null);
+      }
+
+      connection.query(sql, [username, username], (queryErr, results) => {
+        if (queryErr) {
+          console.error("Database query error: 5", queryErr);
+          return callback(
+            { message: "Database query error", error: queryErr },
+            null
+          );
+        }
+
+        if (results.length === 0) {
+          return callback(
+            { message: "No admin found with the provided email or mobile" },
+            null
+          );
+        }
+        connectionRelease(connection);
+        callback(null, results);
+      });
+    });
+  },
+
   list: (callback) => {
     const sql = `SELECT \`id\`, \`emp_id\`, \`name\`, \`role\`, \`profile_picture\`, \`email\`, \`service_ids\`, \`status\`, \`mobile\` FROM \`admins\``;
 
