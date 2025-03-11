@@ -194,25 +194,28 @@ const common = {
    * @param {function} callback - Callback function
    */
   isAdminAuthorizedForAction: (admin_id, action, callback) => {
+    console.log("Step 1: Function called with admin_id:", admin_id, "and action:", action);
+
     const adminSQL = `SELECT \`role\` FROM \`admins\` WHERE \`id\` = ?`;
     const permissionsJsonByRoleSQL = `SELECT \`json\` FROM \`permissions\` WHERE \`role\` = ?`;
 
-    // Start the database connection
     startConnection((err, connection) => {
       if (err) {
-        console.error("Connection error:", err);
+        console.error("Step 2: Connection error:", err);
         return callback({ message: "Connection error", error: err }, null);
       }
 
       if (!connection) {
-        console.error("Connection is not available");
+        console.error("Step 3: Connection is not available");
         return callback({ message: "Connection is not available" }, null);
       }
+
+      console.log("Step 4: Database connection established successfully");
 
       // First query: Get the admin's role
       connection.query(adminSQL, [admin_id], (err, results) => {
         if (err) {
-          console.error("Database query error: 5-8", err);
+          console.error("Step 5: Database query error (5-8)", err);
           connectionRelease(connection);
           return callback(
             { message: "Database query error (5-8)", error: err },
@@ -220,7 +223,10 @@ const common = {
           );
         }
 
+        console.log("Step 6: Query 1 executed successfully. Results:", results);
+
         if (results.length === 0) {
+          console.log("Step 7: No admin found with the provided ID");
           connectionRelease(connection);
           return callback(
             { message: "No admin found with the provided ID" },
@@ -229,11 +235,12 @@ const common = {
         }
 
         const role = results[0].role;
+        console.log("Step 8: Admin role found:", role);
 
         // Second query: Get permissions for the admin's role
         connection.query(permissionsJsonByRoleSQL, [role], (err, results) => {
           if (err) {
-            console.error("Database query error: 60", err);
+            console.error("Step 9: Database query error (5-9)", err);
             connectionRelease(connection);
             return callback(
               { message: "Database query error (5-9)", error: err },
@@ -241,41 +248,49 @@ const common = {
             );
           }
 
+          console.log("Step 10: Query 2 executed successfully. Results:", results);
+
           if (results.length === 0) {
-            console.error("No permissions found for the admin role");
+            console.log("Step 11: No permissions found for the admin role");
             connectionRelease(connection);
             return callback({ message: "Access Denied" }, null);
           }
 
           const permissionsRaw = results[0].json;
+          console.log("Step 12: Raw permissions JSON:", permissionsRaw);
 
           if (!permissionsRaw) {
-            console.error("Permissions field is empty");
+            console.log("Step 13: Permissions field is empty");
             connectionRelease(connection);
             return callback({ status: false, message: "Access Denied" });
           }
 
           try {
-            // Parse permissions and check for the specific action
             const permissionsJson = JSON.parse(permissionsRaw);
+            console.log("Step 14: Parsed permissions JSON:", permissionsJson);
+
             const permissions =
               typeof permissionsJson === "string"
                 ? JSON.parse(permissionsJson)
                 : permissionsJson;
 
+            console.log("Step 15: Checking if action exists in permissions");
+
             if (!permissions[action]) {
-              console.error("Action type not found in permissions");
+              console.log("Step 16: Action type not found in permissions");
+              connectionRelease(connection);
               return callback({ status: false, message: "Access Denied" });
             }
 
-            // Final step: Release the connection and send success response
+            console.log("Step 17: Authorization successful");
+
             connectionRelease(connection);
             return callback({
               status: true,
               message: "Authorization Successful",
             });
           } catch (parseErr) {
-            console.error("Error parsing permissions JSON:", parseErr);
+            console.error("Step 18: Error parsing permissions JSON:", parseErr);
             connectionRelease(connection);
             return callback({ status: false, message: "Access Denied" });
           }
@@ -283,6 +298,7 @@ const common = {
       });
     });
   },
+
 };
 
 module.exports = common;
