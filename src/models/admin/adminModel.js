@@ -1,4 +1,4 @@
-const { pool, startConnection, connectionRelease } = require("../../config/db");
+const { pool, startConnection, connectionRelease } = require("../../config/simpleAwaitConnection");
 
 const Admin = {
   list: (callback) => {

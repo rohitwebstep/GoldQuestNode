@@ -1,5 +1,5 @@
 const crypto = require("crypto");
-const { pool, startConnection, connectionRelease } = require("../../config/db");
+const { pool, startConnection, connectionRelease } = require("../../config/simpleAwaitConnection");
 
 // Generates a new random token
 const generateToken = () => crypto.randomBytes(32).toString("hex");
