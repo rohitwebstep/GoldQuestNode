@@ -132,7 +132,7 @@ exports.create = (req, res) => {
 
                         return res.status(200).json({
                             status: true,
-                            message: "Customer deleted successfully, but there was an issue deleting the folder.",
+                            message: "Application delete request has been applied successfully.",
                             result,
                             token: newToken,
                         });
