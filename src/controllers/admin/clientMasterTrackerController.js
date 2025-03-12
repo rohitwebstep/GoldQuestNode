@@ -21,7 +21,7 @@ const fs = require("fs");
 const path = require("path");
 const { generatePDF } = require("../../utils/finalReportPdf");
 const { cdfDataPDF } = require("../../utils/cdfDataPDF");
-const { upload, saveImage, saveImages } = require("../../utils/cloudImageSave");
+const { upload, saveImage, saveImages, deleteFolder } = require("../../utils/cloudImageSave");
 
 // Controller to list all customers
 exports.list = (req, res) => {
@@ -100,7 +100,7 @@ exports.list = (req, res) => {
 };
 
 exports.delete = (req, res) => {
-  const { client_application_id, admin_id, _token } = req.query;
+  const { client_application_id, customer_id, admin_id, _token } = req.query;
 
   // Check for missing fields
   const missingFields = [];
@@ -140,55 +140,98 @@ exports.delete = (req, res) => {
 
       const newToken = tokenResult.newToken;
 
-      // Fetch the current clientApplication
-      ClientApplication.getClientApplicationById(
-        client_application_id,
-        (err, currentClientApplication) => {
+      Customer.getCustomerById(
+        customer_id,
+        (err, currentCustomer) => {
           if (err) {
             console.error(
-              "Database error during clientApplication retrieval:",
+              "Database error during customer retrieval:",
               err
             );
-            return res.status(500).json({
-              status: false,
-              message:
-                "Failed to retrieve ClientApplication. Please try again.",
-              token: newToken,
-            });
+            return reject(
+              new Error(
+                "Failed to retrieve Customer. Please try again."
+              )
+            );
           }
 
-          if (!currentClientApplication) {
-            return res.status(404).json({
-              status: false,
-              message: "Client Aplication not found.",
-              token: newToken,
-            });
+          if (!currentCustomer) {
+            return reject(
+              new Error(
+                "Customer not found."
+              )
+            );
           }
 
-          // Delete the clientApplication
-          ClientApplication.delete(client_application_id, (err, result) => {
-            if (err) {
-              console.error(
-                "Database error during clientApplication deletion:",
-                err
-              );
-              return res.status(500).json({
-                status: false,
-                message:
-                  "Failed to delete ClientApplication. Please try again.",
-                token: newToken,
+          // Fetch the current clientApplication
+          ClientApplication.getClientApplicationById(
+            client_application_id,
+            (err, currentClientApplication) => {
+              if (err) {
+                console.error(
+                  "Database error during clientApplication retrieval:",
+                  err
+                );
+                return res.status(500).json({
+                  status: false,
+                  message:
+                    "Failed to retrieve ClientApplication. Please try again.",
+                  token: newToken,
+                });
+              }
+
+              if (!currentClientApplication) {
+                return res.status(404).json({
+                  status: false,
+                  message: "Client Aplication not found.",
+                  token: newToken,
+                });
+              }
+
+              // Delete the clientApplication
+              ClientApplication.delete(client_application_id, async (err, result) => {
+                if (err) {
+                  console.error(
+                    "Database error during clientApplication deletion:",
+                    err
+                  );
+                  return res.status(500).json({
+                    status: false,
+                    message:
+                      "Failed to delete ClientApplication. Please try again.",
+                    token: newToken,
+                  });
+                }
+
+                const clientUniqueId = currentCustomer.client_unique_id;
+                try {
+                  // Attempt to delete the folder associated with the customer
+                  const folderDeletionResponse = await deleteFolder(`/uploads/customers/${clientUniqueId}/client-applications/${currentClientApplication.application_id}`);
+
+                  // Respond with success if customer and folder are deleted successfully
+                  return res.status(200).json({
+                    status: true,
+                    message: "Client Application deleted successfully.",
+                    token: newToken,
+                  });
+                } catch (error) {
+                  // Handle error during folder deletion and log it
+                  console.error("Error during folder deletion:", error.message);
+
+                  // Respond with success for customer deletion, but include folder deletion error
+                  return res.status(200).json({
+                    status: true,
+                    message: "Client Application deleted successfully.",
+                    error: error.message,
+                    token: newToken,
+                  });
+                }
               });
             }
-
-            res.status(200).json({
-              status: true,
-              message: "Client Application deleted successfully.",
-              token: newToken,
-            });
-          });
-        }
-      );
+          );
+        });
     });
+
   });
 };
 
