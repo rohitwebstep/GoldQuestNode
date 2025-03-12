@@ -189,13 +189,13 @@ exports.delete = (req, res) => {
                 });
               }
 
-              if (parseInt(currentClientApplication.customer_id, 10) == parseInt(customer_id, 10)) {
-                return res.status(404).json({
-                  status: false,
-                  message: "Client application related to different customer.",
-                  token: newToken,
-                });
-              }
+              // if (parseInt(currentClientApplication.customer_id, 10) == parseInt(customer_id, 10)) {
+              //   return res.status(404).json({
+              //     status: false,
+              //     message: "Client application related to different customer.",
+              //     token: newToken,
+              //   });
+              // }
 
               // Delete the clientApplication
               ClientApplication.delete(client_application_id, async (err, result) => {
