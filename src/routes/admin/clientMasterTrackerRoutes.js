@@ -5,6 +5,7 @@ const clientMasterTrackerController = require("../../controllers/admin/clientMas
 // Authentication routes
 router.get("/list", clientMasterTrackerController.list);
 router.get("/test", clientMasterTrackerController.test);
+router.delete("/delete", clientMasterTrackerController.delete);
 router.get(
   "/branch-list-by-customer",
   clientMasterTrackerController.listByCustomerId

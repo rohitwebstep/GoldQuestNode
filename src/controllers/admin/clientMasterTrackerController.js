@@ -99,6 +99,99 @@ exports.list = (req, res) => {
   });
 };
 
+exports.delete = (req, res) => {
+  const { client_application_id, branch_id, admin_id, _token } = req.query;
+
+  // Check for missing fields
+  const missingFields = [];
+  if (!client_application_id) missingFields.push("Client Application ID");
+  if (!admin_id) missingFields.push("Admin ID");
+  if (!_token) missingFields.push("Token");
+
+  // Return error if there are missing fields
+  if (missingFields.length > 0) {
+    return res.status(400).json({
+      status: false,
+      message: `Missing required fields: ${missingFields.join(", ")}`,
+    });
+  }
+
+  const action = "client_master_tracker";
+  AdminCommon.isAdminAuthorizedForAction(admin_id, action, (authResult) => {
+    if (!authResult.status) {
+      return res.status(403).json({
+        status: false,
+        message: authResult.message, // Return the message from the authorization function
+      });
+    }
+
+    // Verify admin token
+    AdminCommon.isAdminTokenValid(_token, admin_id, (err, tokenResult) => {
+      if (err) {
+        console.error("Error checking token validity:", err);
+        return res.status(500).json({ status: false, message: err.message });
+      }
+
+      if (!tokenResult.status) {
+        return res
+          .status(401)
+          .json({ status: false, message: tokenResult.message });
+      }
+
+      const newToken = tokenResult.newToken;
+
+      // Fetch the current clientApplication
+      ClientApplication.getClientApplicationById(
+        client_application_id,
+        (err, currentClientApplication) => {
+          if (err) {
+            console.error(
+              "Database error during clientApplication retrieval:",
+              err
+            );
+            return res.status(500).json({
+              status: false,
+              message:
+                "Failed to retrieve ClientApplication. Please try again.",
+              token: newToken,
+            });
+          }
+
+          if (!currentClientApplication) {
+            return res.status(404).json({
+              status: false,
+              message: "Client Aplication not found.",
+              token: newToken,
+            });
+          }
+
+          // Delete the clientApplication
+          ClientApplication.delete(client_application_id, (err, result) => {
+            if (err) {
+              console.error(
+                "Database error during clientApplication deletion:",
+                err
+              );
+              return res.status(500).json({
+                status: false,
+                message:
+                  "Failed to delete ClientApplication. Please try again.",
+                token: newToken,
+              });
+            }
+
+            res.status(200).json({
+              status: true,
+              message: "Client Application deleted successfully.",
+              token: newToken,
+            });
+          });
+        }
+      );
+    });
+  });
+};
+
 exports.test = async (req, res) => {
   try {
     const client_application_id = 3;
