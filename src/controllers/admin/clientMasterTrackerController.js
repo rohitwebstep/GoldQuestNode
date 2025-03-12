@@ -105,6 +105,7 @@ exports.delete = (req, res) => {
   // Check for missing fields
   const missingFields = [];
   if (!client_application_id) missingFields.push("Client Application ID");
+  if (!customer_id) missingFields.push("Customer ID");
   if (!admin_id) missingFields.push("Admin ID");
   if (!_token) missingFields.push("Token");
 
@@ -188,6 +189,14 @@ exports.delete = (req, res) => {
                 });
               }
 
+              if (parseInt(currentClientApplication.customer_id, 10) === parseInt(currentCustomer.id, 10)) {
+                return res.status(404).json({
+                  status: false,
+                  message: "Client application related to different customer.",
+                  token: newToken,
+                });
+              }
+              
               // Delete the clientApplication
               ClientApplication.delete(client_application_id, async (err, result) => {
                 if (err) {
