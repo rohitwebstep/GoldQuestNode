@@ -100,7 +100,7 @@ exports.list = (req, res) => {
 };
 
 exports.delete = (req, res) => {
-  const { client_application_id, branch_id, admin_id, _token } = req.query;
+  const { client_application_id, admin_id, _token } = req.query;
 
   // Check for missing fields
   const missingFields = [];
