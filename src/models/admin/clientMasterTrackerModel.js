@@ -1,9 +1,53 @@
 const crypto = require("crypto");
 const { pool, startConnection, connectionRelease } = require("../../config/db");
-
+const moment = require("moment"); // Ensure you have moment.js installed
 // Function to hash the password using MD5
 const hashPassword = (password) =>
   crypto.createHash("md5").update(password).digest("hex");
+
+function calculateDueDate(startDate, tatDays, holidayDates, weekendsSet) {
+  // console.log("Starting calculation...");
+  // console.log("Start Date:", startDate.format("YYYY-MM-DD"));
+  // console.log("TAT Days:", tatDays);
+  // console.log("Holiday Dates:", holidayDates.map(date => date.format("YYYY-MM-DD")));
+  // console.log("Weekends Set:", weekendsSet);
+
+  // Track remaining TAT days to process
+  let remainingDays = tatDays;
+
+  // Generate potential dates to check
+  const potentialDates = Array.from({ length: tatDays * 2 }, (_, i) =>
+    startDate.clone().add(i + 1, "days")
+  );
+
+  // console.log("Generated Potential Dates:", potentialDates.map(date => date.format("YYYY-MM-DD")));
+
+  // Calculate the final due date
+  let finalDueDate = potentialDates.find((date) => {
+    const dayName = date.format("dddd").toLowerCase();
+    // console.log(`Checking date: ${date.format("YYYY-MM-DD")} (Day: ${dayName})`);
+
+    // Skip weekends
+    if (weekendsSet.has(dayName)) {
+      // console.log(`Skipping ${date.format("YYYY-MM-DD")} - It's a weekend.`);
+      return false;
+    }
+
+    // Skip holidays
+    if (holidayDates.some((holiday) => holiday.isSame(date, "day"))) {
+      // console.log(`Skipping ${date.format("YYYY-MM-DD")} - It's a holiday.`);
+      return false;
+    }
+
+    remainingDays--;
+    // console.log(`Remaining Days: ${remainingDays}`);
+
+    return remainingDays <= 0;
+  });
+
+  // console.log("Final Due Date:", finalDueDate ? finalDueDate.format("YYYY-MM-DD") : "Not Found");
+  return finalDueDate;
+}
 
 const Customer = {
   list: (filter_status, callback) => {
@@ -218,9 +262,46 @@ const Customer = {
       if (err) {
         return callback(err, null);
       }
+      const holidaysQuery = `SELECT id AS holiday_id, title AS holiday_title, date AS holiday_date FROM holidays;`;
 
-      // Base SQL query with JOINs to fetch client_spoc_name and cmt_applications data if it exists
-      let sql = `
+      // Execute the holidays query
+      connection.query(holidaysQuery, (holQueryError, holidayResults) => {
+        if (holQueryError) {
+          connectionRelease(connection); // Ensure the connection is released
+          console.error("Database query error:", holQueryError);
+          callback(holQueryError, null);
+        }
+
+        // Prepare holiday dates for calculations
+        const holidayDates = holidayResults.map((holiday) =>
+          moment(holiday.holiday_date).startOf("day")
+        );
+
+        const weekendsQuery = `SELECT weekends FROM company_info WHERE status = 1;`;
+
+        // Execute the weekends query
+        connection.query(
+          weekendsQuery,
+          (weekendQueryError, weekendResults) => {
+            connectionRelease(connection); // Always release the connection
+
+            if (weekendQueryError) {
+              console.error(
+                "Database query error: Weekends",
+                weekendQueryError
+              );
+              return callback(weekendQueryError, null);
+            }
+
+            const weekends = weekendResults[0]?.weekends
+              ? JSON.parse(weekendResults[0].weekends)
+              : [];
+            const weekendsSet = new Set(
+              weekends.map((day) => day.toLowerCase())
+            );
+
+            // Base SQL query with JOINs to fetch client_spoc_name and cmt_applications data if it exists
+            let sql = `
         SELECT 
           ca.*, 
           ca.id AS main_id, 
@@ -266,30 +347,44 @@ const Customer = {
         WHERE 
           ca.\`branch_id\` = ?`;
 
-      const params = [branch_id]; // Start with branch_id
+            const params = [branch_id]; // Start with branch_id
 
-      // Check if filter_status is provided
-      if (filter_status && filter_status.trim() !== "") {
-        sql += ` AND ca.\`status\` = ?`; // Add filter for filter_status
-        params.push(filter_status);
-      }
+            // Check if filter_status is provided
+            if (filter_status && filter_status.trim() !== "") {
+              sql += ` AND ca.\`status\` = ?`; // Add filter for filter_status
+              params.push(filter_status);
+            }
 
-      // Check if status is provided and add the corresponding condition
-      if (typeof status === "string" && status.trim() !== "") {
-        sql += ` AND ca.\`status\` = ?`; // Add filter for status
-        params.push(status);
-      }
+            // Check if status is provided and add the corresponding condition
+            if (typeof status === "string" && status.trim() !== "") {
+              sql += ` AND ca.\`status\` = ?`; // Add filter for status
+              params.push(status);
+            }
 
-      sql += ` ORDER BY ca.\`created_at\` DESC;`;
+            sql += ` ORDER BY ca.\`created_at\` DESC;`;
 
-      // Execute the query using the connection
-      connection.query(sql, params, (err, results) => {
-        connectionRelease(connection); // Release the connection
-        if (err) {
-          console.error("Database query error: 18", err);
-          return callback(err, null);
-        }
-        callback(null, results);
+            // Execute the query using the connection
+            connection.query(sql, params, (err, results) => {
+              connectionRelease(connection); // Release the connection
+              if (err) {
+                console.error("Database query error: 18", err);
+                return callback(err, null);
+              }
+              const formattedResults = results.map((result, index) => {
+                return {
+                  ...result,
+                  created_at: new Date(result.created_at).toISOString(), // Format created_at
+                  deadline_date: calculateDueDate(
+                    moment(result.created_at),
+                    result.tat_days,
+                    holidayDates,
+                    weekendsSet
+                  )
+                };
+              });
+              callback(null, formattedResults);
+            });
+          });
       });
     });
   },
@@ -1198,8 +1293,8 @@ const Customer = {
                     dbTableFileInputs
                   )) {
                     const selectQuery = `SELECT ${fileInputNames && fileInputNames.length > 0
-                        ? fileInputNames.join(", ")
-                        : "*"
+                      ? fileInputNames.join(", ")
+                      : "*"
                       } FROM ${dbTable} WHERE client_application_id = ?`;
 
                     connection.query(
