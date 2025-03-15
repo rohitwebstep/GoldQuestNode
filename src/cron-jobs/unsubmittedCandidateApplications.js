@@ -24,3 +24,7 @@ cron.schedule("0 8,12,16,20,23 * * *", () => {
 // Uncomment the following line to run the cron job every 5 seconds for testing/debugging
 // cron.schedule("*/5 * * * * *", () => { console.log("Running every 5 seconds..."); });
 
+/*
+PM2
+pm2 start src/cron-jobs/unsubmittedCandidateApplications.js --name unsubmittedBGVCronJob
+*/
