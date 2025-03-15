@@ -128,58 +128,41 @@ const cef = {
   },
 
   unsubmittedApplications: (callback) => {
+    const dayInterval = 1;
     const sql = `
-    SELECT 
-      ca.id AS candidate_application_id, 
-      ca.name AS application_name, 
-      ca.email, 
-      ca.branch_id, 
-      ca.customer_id,
-      ca.services, 
-      c.name AS customer_name, 
-      b.name AS branch_name,
-      cef.\`is_submitted\` AS cef_submitted,
-      da.\`is_submitted\` AS dav_submitted
-    FROM \`cef_applications\` cef
-    INNER JOIN \`candidate_applications\` ca ON ca.id = cef.candidate_application_id
-    INNER JOIN \`customers\` c ON c.id = ca.customer_id
-    INNER JOIN \`branches\` b ON b.id = ca.branch_id
-    LEFT JOIN \`dav_applications\` da ON da.candidate_application_id = ca.id
-    WHERE 
-      cef.\`is_submitted\` = 0
-      AND (da.\`is_submitted\` = 1 OR da.\`is_submitted\` IS NULL)
-      AND (cef.\`last_reminder_sent_at\` < CURDATE() OR cef.\`last_reminder_sent_at\` IS NULL)
-    
-    UNION
-  
-    SELECT 
-      ca.id AS candidate_application_id, 
-      ca.name AS application_name, 
-      ca.email, 
-      ca.branch_id, 
-      ca.customer_id,
-      ca.services, 
-      c.name AS customer_name, 
-      b.name AS branch_name,
-      cef.\`is_submitted\` AS cef_submitted,
-      da.\`is_submitted\` AS dav_submitted
-    FROM \`dav_applications\` da
-    INNER JOIN \`candidate_applications\` ca ON ca.id = da.candidate_application_id
-    INNER JOIN \`customers\` c ON c.id = ca.customer_id
-    INNER JOIN \`branches\` b ON b.id = ca.branch_id
-    LEFT JOIN \`cef_applications\` cef ON cef.candidate_application_id = ca.id
-    WHERE 
-      da.\`is_submitted\` = 0
-      AND (cef.\`is_submitted\` = 1 OR cef.\`is_submitted\` IS NULL)
-      AND (da.\`last_reminder_sent_at\` < CURDATE() OR da.\`last_reminder_sent_at\` IS NULL)
-  `;
+                  SELECT 
+                      ca.id AS candidate_application_id, 
+                      ca.name AS application_name, 
+                      ca.email, 
+                      ca.branch_id, 
+                      ca.customer_id,
+                      ca.services, 
+                      c.name AS customer_name, 
+                      b.name AS branch_name,
+                      COALESCE(cef.is_submitted, NULL) AS cef_submitted,
+                      COALESCE(da.is_submitted, NULL) AS dav_submitted
+                  FROM candidate_applications ca
+                  INNER JOIN customers c ON c.id = ca.customer_id
+                  INNER JOIN branches b ON b.id = ca.branch_id
+                  LEFT JOIN cef_applications cef ON cef.candidate_application_id = ca.id
+                  LEFT JOIN dav_applications da ON da.candidate_application_id = ca.id
+                  WHERE 
+                      -- Condition 1: Candidate applications not present in cef_applications OR present but submitted
+                      (cef.candidate_application_id IS NULL OR cef.is_submitted = 1)
+                      -- Condition 2: Candidate applications not present in dav_applications OR present but submitted
+                      AND (da.candidate_application_id IS NULL OR da.is_submitted = 1)
+                      -- Condition 3: Last reminder sent exactly 'dayInterval' days ago OR is NULL
+                      AND (
+                          (cef.last_reminder_sent_at = DATE_SUB(CURDATE(), INTERVAL ? DAY) OR cef.last_reminder_sent_at IS NULL)
+                          OR
+                          (da.last_reminder_sent_at = DATE_SUB(CURDATE(), INTERVAL ? DAY) OR da.last_reminder_sent_at IS NULL)
+                      );
+    `;
 
     startConnection((err, connection) => {
-      if (err) {
-        return callback(err, null);
-      }
+      if (err) return callback(err, null);
 
-      connection.query(sql, (queryErr, results) => {
+      connection.query(sql, [dayInterval, dayInterval], (queryErr, results) => {
         connectionRelease(connection); // Release the connection
 
         if (queryErr) {
