@@ -136,7 +136,7 @@ const cef = {
                     AND (
                         (ca.cef_last_reminder_sent_at = DATE_SUB(CURDATE(), INTERVAL ? DAY) OR ca.cef_last_reminder_sent_at IS NULL)
                         OR
-                        (ca.da_last_reminder_sent_at = DATE_SUB(CURDATE(), INTERVAL ? DAY) OR ca.da_last_reminder_sent_at IS NULL)
+                        (ca.dav_last_reminder_sent_at = DATE_SUB(CURDATE(), INTERVAL ? DAY) OR ca.dav_last_reminder_sent_at IS NULL)
                     );
   `;
 
