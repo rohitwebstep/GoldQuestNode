@@ -84,45 +84,26 @@ const cef = {
   updateReminderDetails: (data, callback) => {
     const { candidateAppId } = data;
 
-    // SQL query to update the last reminder sent date to the current date
-    const cefSQL = `
-      UPDATE \`cef_applications\` 
+    const updateSQL = `
+      UPDATE \`candidate_applications\` 
       SET 
-        \`last_reminder_sent_at\` = CURDATE() 
-      WHERE \`candidate_application_id\` = ?
-    `;
-
-
-    // SQL query to update the last reminder sent date to the current date
-    const davSQL = `
-      UPDATE \`dav_applications\` 
-      SET 
-        \`last_reminder_sent_at\` = CURDATE() 
-      WHERE \`candidate_application_id\` = ?
+        \`cef_last_reminder_sent_at\` = CURDATE(),
+        \`dav_last_reminder_sent_at\` = CURDATE()
+      WHERE \`id\` = ?
     `;
 
     startConnection((err, connection) => {
-      if (err) {
-        return callback(err, null);
-      }
+      if (err) return callback(err, null);
 
-      connection.query(cefSQL, [candidateAppId], (queryErr, results) => {
-        connectionRelease(connection); // Release the connection
+      connection.query(updateSQL, [candidateAppId], (queryErr, results) => {
+        connectionRelease(connection); // Ensure connection is released
 
         if (queryErr) {
-          console.error("Database query error: 51", queryErr);
+          console.error("Database query error:", queryErr);
           return callback(queryErr, null);
         }
 
-        connection.query(davSQL, [candidateAppId], (queryErr, results) => {
-          connectionRelease(connection); // Release the connection
-
-          if (queryErr) {
-            console.error("Database query error: 51", queryErr);
-            return callback(queryErr, null);
-          }
-          callback(null, results);
-        });
+        callback(null, results);
       });
     });
   },
@@ -130,34 +111,34 @@ const cef = {
   unsubmittedApplications: (callback) => {
     const dayInterval = 1;
     const sql = `
-                  SELECT 
-                      ca.id AS candidate_application_id, 
-                      ca.name AS application_name, 
-                      ca.email, 
-                      ca.branch_id, 
-                      ca.customer_id,
-                      ca.services, 
-                      c.name AS customer_name, 
-                      b.name AS branch_name,
-                      COALESCE(cef.is_submitted, NULL) AS cef_submitted,
-                      COALESCE(da.is_submitted, NULL) AS dav_submitted
-                  FROM candidate_applications ca
-                  INNER JOIN customers c ON c.id = ca.customer_id
-                  INNER JOIN branches b ON b.id = ca.branch_id
-                  LEFT JOIN cef_applications cef ON cef.candidate_application_id = ca.id
-                  LEFT JOIN dav_applications da ON da.candidate_application_id = ca.id
-                  WHERE 
-                      -- Condition 1: Candidate applications not present in cef_applications OR present but submitted
-                      (cef.candidate_application_id IS NULL OR cef.is_submitted = 1)
-                      -- Condition 2: Candidate applications not present in dav_applications OR present but submitted
-                      AND (da.candidate_application_id IS NULL OR da.is_submitted = 1)
-                      -- Condition 3: Last reminder sent exactly 'dayInterval' days ago OR is NULL
-                      AND (
-                          (cef.last_reminder_sent_at = DATE_SUB(CURDATE(), INTERVAL ? DAY) OR cef.last_reminder_sent_at IS NULL)
-                          OR
-                          (da.last_reminder_sent_at = DATE_SUB(CURDATE(), INTERVAL ? DAY) OR da.last_reminder_sent_at IS NULL)
-                      );
-    `;
+                SELECT 
+                    ca.id AS candidate_application_id, 
+                    ca.name AS application_name, 
+                    ca.email, 
+                    ca.branch_id, 
+                    ca.customer_id,
+                    ca.services, 
+                    c.name AS customer_name, 
+                    b.name AS branch_name,
+                    COALESCE(cef.is_submitted, NULL) AS cef_submitted,
+                    COALESCE(da.is_submitted, NULL) AS dav_submitted
+                FROM candidate_applications ca
+                INNER JOIN customers c ON c.id = ca.customer_id
+                INNER JOIN branches b ON b.id = ca.branch_id
+                LEFT JOIN cef_applications cef ON cef.candidate_application_id = ca.id
+                LEFT JOIN dav_applications da ON da.candidate_application_id = ca.id
+                WHERE 
+                    -- Condition 1: Candidate applications not present in cef_applications OR present but not submitted
+                    (cef.candidate_application_id IS NULL OR cef.is_submitted = 0)
+                    -- Condition 2: Candidate applications not present in dav_applications OR present but not submitted
+                    AND (da.candidate_application_id IS NULL OR da.is_submitted = 0)
+                    -- Condition 3: Last reminder sent exactly 'dayInterval' days ago OR is NULL
+                    AND (
+                        (ca.cef_last_reminder_sent_at = DATE_SUB(CURDATE(), INTERVAL ? DAY) OR ca.cef_last_reminder_sent_at IS NULL)
+                        OR
+                        (ca.da_last_reminder_sent_at = DATE_SUB(CURDATE(), INTERVAL ? DAY) OR ca.da_last_reminder_sent_at IS NULL)
+                    );
+  `;
 
     startConnection((err, connection) => {
       if (err) return callback(err, null);
