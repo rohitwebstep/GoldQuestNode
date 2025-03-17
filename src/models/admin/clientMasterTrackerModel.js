@@ -483,18 +483,24 @@ const Customer = {
   },
 
   annexureData: (client_application_id, db_table, callback) => {
+    console.log("Starting annexureData function with:", { client_application_id, db_table });
+
     // Start a connection
     startConnection((err, connection) => {
       if (err) {
+        console.error("Error establishing database connection:", err);
         return callback(err, null);
       }
+      console.log("Database connection established.");
 
       // Check if the table exists in the information schema
       const checkTableSql = `
-        SELECT COUNT(*) AS count 
-        FROM information_schema.tables 
-        WHERE table_schema = DATABASE() 
-        AND table_name = ?`;
+            SELECT COUNT(*) AS count 
+            FROM information_schema.tables 
+            WHERE table_schema = DATABASE() 
+            AND table_name = ?`;
+
+      console.log(`Checking if table "${db_table}" exists.`);
 
       connection.query(checkTableSql, [db_table], (err, results) => {
         if (err) {
@@ -502,33 +508,38 @@ const Customer = {
           connectionRelease(connection); // Release connection
           return callback(err, null);
         }
-        // If the table does not exist, return an error
+
+        console.log(`Table existence check result:`, results);
+
+        // If the table does not exist, create it
         if (results[0].count === 0) {
+          console.log(`Table "${db_table}" does not exist. Creating now.`);
+
           const createTableSql = `
-            CREATE TABLE \`${db_table}\` (
-              \`id\` bigint(20) NOT NULL AUTO_INCREMENT,
-              \`cmt_id\` bigint(20) NOT NULL,
-              \`client_application_id\` bigint(20) NOT NULL,
-              \`branch_id\` int(11) NOT NULL,
-              \`customer_id\` int(11) NOT NULL,
-              \`status\` ENUM(
-                          'nil', 'initiated', 'hold', 'closure_advice', 'wip', 'insuff', 'completed', 
-                          'stopcheck', 'active_employment', 'not_doable', 'candidate_denied', 
-                          'completed_green', 'completed_orange', 'completed_red', 'completed_yellow', 'completed_pink'
+                    CREATE TABLE \`${db_table}\` (
+                        \`id\` bigint(20) NOT NULL AUTO_INCREMENT,
+                        \`cmt_id\` bigint(20) NOT NULL,
+                        \`client_application_id\` bigint(20) NOT NULL,
+                        \`branch_id\` int(11) NOT NULL,
+                        \`customer_id\` int(11) NOT NULL,
+                        \`status\` ENUM(
+                            'nil', 'initiated', 'hold', 'closure_advice', 'wip', 'insuff', 'completed', 
+                            'stopcheck', 'active_employment', 'not_doable', 'candidate_denied', 
+                            'completed_green', 'completed_orange', 'completed_red', 'completed_yellow', 'completed_pink'
                         ) DEFAULT NULL,
-              \`is_submitted\` TINYINT(1) DEFAULT 0,
-              \`is_billed\` TINYINT(1) DEFAULT 0,
-              \`billed_date\` TIMESTAMP NULL DEFAULT NULL,
-              \`created_at\` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-              \`updated_at\` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-              PRIMARY KEY (\`id\`),
-              KEY \`client_application_id\` (\`client_application_id\`),
-              KEY \`cmt_application_customer_id\` (\`customer_id\`),
-              KEY \`cmt_application_cmt_id\` (\`cmt_id\`),
-              CONSTRAINT \`fk_${db_table}_client_application_id\` FOREIGN KEY (\`client_application_id\`) REFERENCES \`client_applications\` (\`id\`) ON DELETE CASCADE,
-              CONSTRAINT \`fk_${db_table}_customer_id\` FOREIGN KEY (\`customer_id\`) REFERENCES \`customers\` (\`id\`) ON DELETE CASCADE,
-              CONSTRAINT \`fk_${db_table}_cmt_id\` FOREIGN KEY (\`cmt_id\`) REFERENCES \`cmt_applications\` (\`id\`) ON DELETE CASCADE
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`;
+                        \`is_submitted\` TINYINT(1) DEFAULT 0,
+                        \`is_billed\` TINYINT(1) DEFAULT 0,
+                        \`billed_date\` TIMESTAMP NULL DEFAULT NULL,
+                        \`created_at\` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+                        \`updated_at\` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                        PRIMARY KEY (\`id\`),
+                        KEY \`client_application_id\` (\`client_application_id\`),
+                        KEY \`cmt_application_customer_id\` (\`customer_id\`),
+                        KEY \`cmt_application_cmt_id\` (\`cmt_id\`),
+                        CONSTRAINT \`fk_${db_table}_client_application_id\` FOREIGN KEY (\`client_application_id\`) REFERENCES \`client_applications\` (\`id\`) ON DELETE CASCADE,
+                        CONSTRAINT \`fk_${db_table}_customer_id\` FOREIGN KEY (\`customer_id\`) REFERENCES \`customers\` (\`id\`) ON DELETE CASCADE,
+                        CONSTRAINT \`fk_${db_table}_cmt_id\` FOREIGN KEY (\`cmt_id\`) REFERENCES \`cmt_applications\` (\`id\`) ON DELETE CASCADE
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`;
 
           connection.query(createTableSql, (createErr) => {
             if (createErr) {
@@ -536,22 +547,27 @@ const Customer = {
               connectionRelease(connection); // Release connection
               return callback(createErr);
             }
+            console.log(`Table "${db_table}" created successfully.`);
             fetchData();
           });
         } else {
+          console.log(`Table "${db_table}" exists. Proceeding to fetch data.`);
           fetchData();
         }
 
         function fetchData() {
-          // Now that we know the table exists, run the original query
+          console.log(`Fetching data from table "${db_table}" for client_application_id: ${client_application_id}`);
+
           const sql = `SELECT * FROM \`${db_table}\` WHERE \`client_application_id\` = ?`;
+
           connection.query(sql, [client_application_id], (err, results) => {
             connectionRelease(connection); // Release connection
             if (err) {
-              console.error("Database query error: 20", err);
+              console.error("Database query error:", err);
               return callback(err, null);
             }
-            // Return the first result or null if not found
+
+            console.log("Query executed successfully. Results:", results);
             callback(null, results[0] || null);
           });
         }
