@@ -41,6 +41,7 @@ async function reminderMail(
   bgv_href,
   dav_href,
   serviceData,
+  reminder_sent,
   toArr,
   ccArr
 ) {
@@ -167,13 +168,17 @@ async function reminderMail(
       .filter((cc) => cc !== "") // Remove any empty CCs from failed parses
       .join(", ");
 
+    let emailTitle = parseInt(reminder_sent, 10) === 2
+      ? 'Final Notice: Hey, Don’t Forget to Complete Your Background Verification!'
+      : email.title;
+
     // Send email
     const info = await transporter.sendMail({
       from: `"${smtp.title}" <${smtp.username}>`,
       to: toList, // Main recipient list
       cc: ccList, // CC recipient list
       bcc: '"GoldQuest IT Team" <gqitteam@goldquestglobal.in>, "GoldQuest Backup" <gqvtsbackup@goldquestglobal.in>',
-      subject: email.title,
+      subject: emailTitle,
       html: template,
     });
 

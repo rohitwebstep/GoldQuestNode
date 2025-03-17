@@ -88,7 +88,8 @@ const cef = {
       UPDATE \`candidate_applications\` 
       SET 
         \`cef_last_reminder_sent_at\` = CURDATE(),
-        \`dav_last_reminder_sent_at\` = CURDATE()
+        \`dav_last_reminder_sent_at\` = CURDATE(),
+        \`reminder_sent\` = reminder_sent + 1
       WHERE \`id\` = ?
     `;
 
@@ -118,6 +119,7 @@ const cef = {
                     ca.branch_id, 
                     ca.customer_id,
                     ca.services, 
+                    ca.reminder_sent, 
                     c.name AS customer_name, 
                     b.name AS branch_name,
                     COALESCE(cef.is_submitted, NULL) AS cef_submitted,

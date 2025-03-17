@@ -401,6 +401,7 @@ exports.unsubmittedApplications = (req, res) => {
                         bgv_href,
                         dav_href,
                         serviceData,
+                        application.reminder_sent,
                         toArr || [],
                         ccArr || []
                       )
