@@ -666,6 +666,91 @@ const Customer = {
     }
   },
 
+  infoByID: async (customer_id, callback) => {
+    const sql = `
+      SELECT 
+        customers.*, 
+        customers.id AS main_id, 
+        customer_metas.*, 
+        customer_metas.id AS meta_id
+      FROM 
+        customers
+      LEFT JOIN 
+        customer_metas 
+      ON 
+        customers.id = customer_metas.customer_id
+      WHERE 
+        customers.id = ?
+    `;
+
+    try {
+      const connection = await new Promise((resolve, reject) => {
+        startConnection((err, conn) => {
+          if (err) reject(err);
+          resolve(conn);
+        });
+      });
+
+      const results = await new Promise((resolve, reject) => {
+        connection.query(sql, [customer_id], (err, results) => {
+          if (err) reject(err);
+          resolve(results);
+        });
+      });
+
+      if (results.length === 0) {
+        connectionRelease(connection);
+        return callback(null, { message: "No customer data found" });
+      }
+
+      const customerData = results[0];
+      customerData.client_spoc_details = null;
+
+      let servicesData;
+      try {
+        servicesData = JSON.parse(customerData.services);
+      } catch (parseError) {
+        connectionRelease(connection);
+        return callback(parseError, null);
+      }
+
+      const updateServiceTitles = async () => {
+        try {
+          for (const group of servicesData) {
+            for (const service of group.services) {
+              const serviceSql = `SELECT title FROM services WHERE id = ?`;
+              const [rows] = await new Promise((resolve, reject) => {
+                connection.query(
+                  serviceSql,
+                  [service.serviceId],
+                  (err, results) => {
+                    if (err) return reject(err);
+                    resolve(results);
+                  }
+                );
+              });
+
+              if (rows && rows.title) {
+                service.serviceTitle = rows.title;
+              }
+            }
+          }
+        } catch (err) {
+          console.error("Error updating service titles:", err);
+        } finally {
+          connectionRelease(connection);
+          customerData.services = JSON.stringify(servicesData);
+          callback(null, customerData);
+        }
+      };
+
+      await updateServiceTitles();
+    } catch (err) {
+      console.error("Error:", err);
+      callback(err, null);
+    }
+  },
+
   getCustomerById: (id, callback) => {
     const sql = "SELECT * FROM `customers` WHERE `id` = ?";
     startConnection((err, connection) => {
