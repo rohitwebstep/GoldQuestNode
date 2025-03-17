@@ -110,7 +110,7 @@ const cef = {
   },
 
   unsubmittedApplications: (callback) => {
-    const dayInterval = 1;
+    const dayInterval = 0;
     const sql = `
                 SELECT 
                     ca.id AS candidate_application_id, 
@@ -139,7 +139,9 @@ const cef = {
                         (ca.cef_last_reminder_sent_at = DATE_SUB(CURDATE(), INTERVAL ? DAY) OR ca.cef_last_reminder_sent_at IS NULL)
                         OR
                         (ca.dav_last_reminder_sent_at = DATE_SUB(CURDATE(), INTERVAL ? DAY) OR ca.dav_last_reminder_sent_at IS NULL)
-                    );
+                    )
+                    -- Condition 4: Only select candidates who have received less than 3 reminders
+                    AND ca.reminder_sent < 5;
   `;
 
     startConnection((err, connection) => {

@@ -168,7 +168,7 @@ async function reminderMail(
       .filter((cc) => cc !== "") // Remove any empty CCs from failed parses
       .join(", ");
 
-    let emailTitle = parseInt(reminder_sent, 10) === 2
+    let emailTitle = parseInt(reminder_sent, 10) === 4
       ? 'Final Notice: Hey, Don’t Forget to Complete Your Background Verification!'
       : email.title;
 
