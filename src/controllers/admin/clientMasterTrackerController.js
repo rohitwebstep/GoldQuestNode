@@ -2495,6 +2495,7 @@ exports.annexureDataByServiceIds = (req, res) => {
                 return;
               }
 
+              const excel_sorting = reportFormJson.excel_sorting;
               const parsedData = JSON.parse(reportFormJson.json);
               const db_table = parsedData.db_table.replace(/-/g, "_"); // Modify table name
               const heading = parsedData.heading;
@@ -2511,6 +2512,7 @@ exports.annexureDataByServiceIds = (req, res) => {
                     annexureResults.push({
                       service_id: id,
                       annexureStatus: false,
+                      excel_sorting,
                       annexureData: null,
                       serviceStatus: true,
                       reportFormJson,
@@ -2522,6 +2524,7 @@ exports.annexureDataByServiceIds = (req, res) => {
                     annexureResults.push({
                       service_id: id,
                       annexureStatus: false,
+                      excel_sorting,
                       annexureData: null,
                       serviceStatus: true,
                       reportFormJson,
@@ -2531,6 +2534,7 @@ exports.annexureDataByServiceIds = (req, res) => {
                     annexureResults.push({
                       service_id: id,
                       annexureStatus: true,
+                      excel_sorting,
                       serviceStatus: true,
                       reportFormJson,
                       annexureData,

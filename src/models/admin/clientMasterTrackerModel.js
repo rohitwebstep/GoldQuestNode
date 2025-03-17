@@ -752,7 +752,12 @@ const Customer = {
       }
 
       // Use a parameterized query to prevent SQL injection
-      const sql = "SELECT `json` FROM `report_forms` WHERE `service_id` = ?";
+      const sql = `
+                SELECT rf.json, s.excel_sorting 
+                FROM report_forms rf 
+                INNER JOIN services s ON s.id = rf.service_id 
+                WHERE rf.service_id = ?
+              `;
       connection.query(sql, [service_id], (err, results) => {
         connectionRelease(connection); // Release connection
         if (err) {
