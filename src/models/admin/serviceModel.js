@@ -1,7 +1,7 @@
 const { pool, startConnection, connectionRelease } = require("../../config/db");
 
 const Service = {
-  create: (title, description, email_description, short_code, group, sac_code, admin_id, callback) => {
+  create: (title, description, email_description, short_code, group, sac_code, excel_sorting, admin_id, callback) => {
     // Step 1: Check if a service with the same title already exists
     const checkServiceSql = `
     SELECT * FROM \`services\` WHERE \`title\` = ? OR \`short_code\` = ?
@@ -49,13 +49,13 @@ const Service = {
 
           // Step 3: Insert the new service
           const insertServiceSql = `
-          INSERT INTO \`services\` (\`title\`, \`description\`, \`email_description\`, \`short_code\`, \`group\`, \`sac_code\`, \`admin_id\`)
+          INSERT INTO \`services\` (\`title\`, \`description\`, \`email_description\`, \`short_code\`, \`group\`, \`sac_code\`, \`excel_sorting\`,\`admin_id\`)
           VALUES (?, ?, ?, ?, ?, ?, ?)
         `;
 
           connection.query(
             insertServiceSql,
-            [title, description, email_description, short_code, group, sac_code, admin_id],
+            [title, description, email_description, short_code, group, sac_code, excel_sorting, admin_id],
             (insertErr, results) => {
               connectionRelease(connection); // Release the connection
 
@@ -187,7 +187,7 @@ const Service = {
     });
   },
 
-  update: (id, title, description, email_description, short_code, sac_code, callback) => {
+  update: (id, title, description, email_description, short_code, sac_code, excel_sorting, callback) => {
     // Step 1: Check if a service with the same title already exists
     const checkServiceSql = `SELECT * FROM \`services\` WHERE (\`title\` = ? OR \`short_code\` = ?) AND \`id\` != ?`;
 
@@ -232,13 +232,13 @@ const Service = {
           }
           const sql = `
                       UPDATE \`services\`
-                      SET \`title\` = ?, \`description\` = ? , \`email_description\` = ?, \`short_code\` = ?, \`sac_code\` = ?
+                      SET \`title\` = ?, \`description\` = ? , \`email_description\` = ?, \`short_code\` = ?, \`sac_code\` = ?, \`excel_sorting\` = ?
                       WHERE \`id\` = ?
                     `;
 
           connection.query(
             sql,
-            [title, description, email_description, short_code, sac_code, id],
+            [title, description, email_description, short_code, excel_sorting, sac_code, id],
             (queryErr, results) => {
               connectionRelease(connection); // Release the connection
 

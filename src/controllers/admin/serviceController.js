@@ -3,7 +3,7 @@ const Common = require("../../models/admin/commonModel");
 
 // Controller to create a new service
 exports.create = (req, res) => {
-  const { title, description, email_description, short_code, group, sac_code, admin_id, _token } =
+  const { title, description, email_description, short_code, group, sac_code, excel_sorting, admin_id, _token } =
     req.body;
 
   let missingFields = [];
@@ -13,6 +13,7 @@ exports.create = (req, res) => {
   if (!short_code || short_code === "") missingFields.push("Short Code");
   if (!group || group === "") missingFields.push("Service Group");
   if (!sac_code || sac_code === "") missingFields.push("SAC Code");
+  if (!excel_sorting || excel_sorting === "") missingFields.push("Excel Sorting");
   if (!admin_id || description === "") missingFields.push("Admin ID");
   if (!_token || _token === "") missingFields.push("Token");
 
@@ -52,6 +53,7 @@ exports.create = (req, res) => {
         short_code,
         group,
         sac_code,
+        excel_sorting,
         admin_id,
         (err, result) => {
           if (err) {
@@ -220,7 +222,7 @@ exports.getServiceById = (req, res) => {
 
 // Controller to update a service
 exports.update = (req, res) => {
-  const { id, title, description, email_description, short_code, sac_code, admin_id, _token } =
+  const { id, title, description, email_description, short_code, sac_code, excel_sorting, admin_id, _token } =
     req.body;
 
   let missingFields = [];
@@ -230,6 +232,7 @@ exports.update = (req, res) => {
   if (!email_description || email_description === "") missingFields.push("Email Description");
   if (!short_code || short_code === "") missingFields.push("Short Code");
   if (!sac_code || sac_code === "") missingFields.push("SAC Code");
+  if (!excel_sorting || excel_sorting === "") missingFields.push("Excel Sorting");
   if (!admin_id || admin_id === "") missingFields.push("Admin ID");
   if (!_token || _token === "") missingFields.push("Token");
 
@@ -291,6 +294,7 @@ exports.update = (req, res) => {
           email_description,
           short_code,
           sac_code,
+          excel_sorting,
           (err, result) => {
             if (err) {
               console.error("Database error:", err);
