@@ -5,6 +5,7 @@ const BranchCommon = require("../../../models/customer/branch/commonModel");
 const AdminCommon = require("../../../models/admin/commonModel");
 const Service = require("../../../models/admin/serviceModel");
 const reportCaseStatus = require("../../../models/customer/branch/reportCaseStatusModel");
+const Customer = require("../../../models/customer/customerModel");
 
 exports.list = (req, res) => {
   const { filter_status, branch_id, _token, sub_user_id, status } = req.query;
@@ -41,7 +42,7 @@ exports.list = (req, res) => {
         message: authResult.message, // Return the authorization error message
       });
     }
-    
+
     // Step 3: Verify the branch token
     BranchCommon.isBranchTokenValid(
       _token,
@@ -74,27 +75,86 @@ exports.list = (req, res) => {
           let status = null;
         }
 
-        ClientMasterTrackerModel.applicationListByBranch(
-          filter_status,
-          branch_id,
-          status,
-          (err, result) => {
-            if (err) {
-              console.error("Database error:", err);
-              return res
-                .status(500)
-                .json({ status: false, message: err.message, token: newToken });
-            }
-
-            res.json({
-              status: true,
-              message: "Branches tracker fetched successfully",
-              customers: result,
-              totalResults: result.length,
+        Branch.getBranchById(branch_id, (err, currentBranch) => {
+          if (err) {
+            console.error("Database error during branch retrieval:", err);
+            return res.status(500).json({
+              status: false,
+              message: "Failed to retrieve Branch. Please try again.",
               token: newToken,
             });
           }
-        );
+
+          if (!currentBranch) {
+            return res.status(404).json({
+              status: false,
+              message: "Branch not found.",
+            });
+          }
+
+          Customer.infoByID(
+            parseInt(currentBranch.customer_id),
+            (err, currentCustomer) => {
+              if (err) {
+                console.error("Database error during customer retrieval:", err);
+                return res.status(500).json({
+                  status: false,
+                  message: "Failed to retrieve Customer. Please try again.",
+                  token: newToken,
+                });
+              }
+
+              if (!currentCustomer) {
+                return res.status(404).json({
+                  status: false,
+                  message: "Customer not found.",
+                  token: newToken,
+                });
+              }
+              const dataPromises = [
+                new Promise((resolve) =>
+                  ClientMasterTrackerModel.applicationListByBranch(
+                    filter_status,
+                    branch_id,
+                    status,
+                    (err, result) => {
+                      if (err) return resolve([]);
+                      resolve(result);
+                    }
+                  )
+                ),
+                new Promise((resolve) =>
+                  ClientMasterTrackerModel.filterOptionsForBranch(
+                    branch_id,
+                    (err, result) => {
+                      if (err) return resolve([]);
+                      resolve(result);
+                    }
+                  )
+                ),
+              ];
+
+              Promise.all(dataPromises).then(([customers, filterOptions]) => {
+                res.json({
+                  status: true,
+                  message: "Client applications fetched successfully",
+                  data: {
+                    customers,
+                    filterOptions,
+                    branchName: currentBranch.name,
+                    customerName: currentCustomer.name,
+                    customerEmails: currentCustomer.emails,
+                    tatDays: currentCustomer.tat_days,
+                  },
+                  totalResults: {
+                    customers: customers.length,
+                    filterOptions: filterOptions.length,
+                  },
+                  token: newToken,
+                });
+              });
+            });
+        });
       }
     );
   });
@@ -142,7 +202,7 @@ exports.reportFormJsonByServiceID = (req, res) => {
         message: authResult.message, // Return the authorization error message
       });
     }
-    
+
     // Step 3: Verify the branch token
     BranchCommon.isBranchTokenValid(
       _token,
@@ -252,7 +312,7 @@ exports.annexureData = (req, res) => {
         message: authResult.message, // Return the authorization error message
       });
     }
-    
+
     // Step 3: Verify the branch token
     BranchCommon.isBranchTokenValid(
       _token,
