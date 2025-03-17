@@ -557,7 +557,7 @@ const Customer = {
 
         function fetchData() {
           console.log(`Fetching data from table "${db_table}" for client_application_id: ${client_application_id}`);
-
+          console.log(`sql - `, sql);
           const sql = `SELECT * FROM \`${db_table}\` WHERE \`client_application_id\` = ?`;
 
           connection.query(sql, [client_application_id], (err, results) => {
