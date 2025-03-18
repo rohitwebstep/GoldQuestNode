@@ -403,7 +403,7 @@ exports.unsubmittedApplications = (req, res) => {
                         serviceData,
                         application.reminder_sent,
                         toArr || [],
-                        ccArr || []
+                        application.reminder_sent == 4 ? ccArr : []
                       )
                         .then(() => {
                           console.log("Reminder email sent.");
