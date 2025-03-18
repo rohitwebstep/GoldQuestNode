@@ -50,7 +50,7 @@ const Service = {
           // Step 3: Insert the new service
           const insertServiceSql = `
           INSERT INTO \`services\` (\`title\`, \`description\`, \`email_description\`, \`short_code\`, \`group\`, \`sac_code\`, \`excel_sorting\`,\`admin_id\`)
-          VALUES (?, ?, ?, ?, ?, ?, ?)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         `;
 
           connection.query(
