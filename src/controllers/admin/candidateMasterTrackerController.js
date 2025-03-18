@@ -96,11 +96,11 @@ exports.list = (req, res) => {
 
 exports.test = async (req, res) => {
   try {
-    const candidate_application_id = 142;
+    const candidate_application_id = 31;
     const client_unique_id = "GQ-INDV";
     const application_id = "GQ-INDV-1";
-    const branch_id = 39;
-    const customer_id = 25;
+    const branch_id = 1;
+    const customer_id = 1;
     const name = "Rohit Sisodia";
 
     const today = new Date();
@@ -109,7 +109,7 @@ exports.test = async (req, res) => {
     ).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
 
     // Generate the PDF
-    const pdfTargetDirectory = `uploads/customers/${client_unique_id}/client-applications/${application_id}/final-reports/`;
+    const pdfTargetDirectory = `uploads/customers/${client_unique_id}/client-applications/${application_id}/final-reports`;
 
     const pdfFileName = `${name}_${formattedDate}.pdf`
       .replace(/\s+/g, "-")

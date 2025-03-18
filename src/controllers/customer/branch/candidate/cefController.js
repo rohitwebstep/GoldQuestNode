@@ -7,7 +7,7 @@ const CEF = require("../../../../models/customer/branch/cefModel");
 const Service = require("../../../../models/admin/serviceModel");
 const App = require("../../../../models/appModel");
 const Admin = require("../../../../models/admin/adminModel");
-
+const { candidateFormPDF } = require("../../../../utils/candidateFormPDF");
 const { cdfDataPDF } = require("../../../../utils/cdfDataPDF");
 const fs = require("fs");
 const path = require("path");
@@ -836,10 +836,19 @@ const sendNotificationEmails = (
 
                 // Generate the PDF
                 const pdfTargetDirectory = `uploads/customers/${client_unique_id}/candidate-applications/CD-${client_unique_id}-${candidateAppId}/background-reports`;
+                const candidateFormPdfTargetDirectory = `uploads/customers/${client_unique_id}/candidate-applications/CD-${client_unique_id}-${candidateAppId}/background-form-reports`;
 
                 const pdfFileName = `${name}_${formattedDate}.pdf`
                   .replace(/\s+/g, "-")
                   .toLowerCase();
+
+                const candidateFormPDFPath = await candidateFormPDF(
+                  candidateAppId,
+                  branch_id,
+                  customer_id,
+                  pdfFileName,
+                  candidateFormPdfTargetDirectory
+                );
                 const pdfPath = await cdfDataPDF(
                   candidateAppId,
                   branch_id,
@@ -847,8 +856,14 @@ const sendNotificationEmails = (
                   pdfFileName,
                   pdfTargetDirectory
                 );
-                attachments +=
-                  (attachments ? "," : "") + `${imageHost}/${pdfPath}`;
+                let newAttachments = [];
+
+                if (pdfPath) newAttachments.push(`${imageHost}/${pdfPath}`);
+                if (candidateFormPDFPath) newAttachments.push(`${imageHost}/${candidateFormPDFPath}`);
+
+                if (newAttachments.length > 0) {
+                  attachments += (attachments ? "," : "") + newAttachments.join(",");
+                }
 
                 Admin.filterAdmins({ status: "active", role: "admin" }, (err, adminResult) => {
                   if (err) {

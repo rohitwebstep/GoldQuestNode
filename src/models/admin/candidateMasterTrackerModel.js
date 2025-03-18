@@ -1132,8 +1132,6 @@ const Customer = {
           return callback(err, null);
         }
 
-        console.log(`results - `, results);
-
         const candidateApp = results[0];
 
         if (!candidateApp) {

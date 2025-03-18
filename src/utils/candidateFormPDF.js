@@ -29,7 +29,7 @@ async function checkImageExists(url) {
         const response = await axios.head(url);
         return response.status >= 200 && response.status < 300;
     } catch (error) {
-        console.error(`❌ Error checking image existence: ${url}`, error.message);
+        // console.error(`❌ Error checking image existence: ${url}`, error.message);
         return false;
     }
 }
@@ -43,14 +43,14 @@ async function validateImage(url) {
     try {
         const response = await axios.get(url, { responseType: "arraybuffer" });
         if (response.status !== 200 || !response.data) {
-            console.warn(`⚠️ Image fetch failed: ${url} (Status: ${response.status})`);
+            // console.warn(`⚠️ Image fetch failed: ${url} (Status: ${response.status})`);
             return null;
         }
 
         const buffer = Buffer.from(response.data);
         const metadata = await sharp(buffer).metadata();
         if (!metadata) {
-            console.warn(`⚠️ No metadata found for image: ${url}`);
+            // console.warn(`⚠️ No metadata found for image: ${url}`);
             return null;
         }
 
@@ -62,7 +62,7 @@ async function validateImage(url) {
             buffer: buffer,
         };
     } catch (error) {
-        console.error(`❌ Error validating image: ${url}`, error.message);
+        // console.error(`❌ Error validating image: ${url}`, error.message);
         return null;
     }
 }
@@ -74,19 +74,32 @@ async function validateImage(url) {
  */
 async function fetchImageToBase(imageUrls) {
     try {
+        // console.log("🔄 Starting fetchImageToBase function...");
         const urls = Array.isArray(imageUrls) ? imageUrls : [imageUrls];
+        // console.log("✅ Image URLs received:", urls);
+
         const results = [];
 
         for (const imageUrl of urls) {
+            // console.log("🔍 Processing image:", imageUrl);
+
             if (imageUrl.startsWith("http") || imageUrl.startsWith("https")) {
+                // console.log("🌐 Detected as a URL, checking if image exists...");
+
                 if (!(await checkImageExists(imageUrl))) {
-                    console.warn(`⚠️ Image does not exist: ${imageUrl}`);
+                    // console.warn(`⚠️ Image does not exist: ${imageUrl}`);
                     continue;
                 }
 
+                // console.log("✅ Image exists, validating...");
                 const imgData = await validateImage(imageUrl);
-                if (!imgData) continue;
 
+                if (!imgData) {
+                    // console.warn(`⚠️ Validation failed for image: ${imageUrl}`);
+                    continue;
+                }
+
+                // console.log("✅ Image validated successfully, processing Base64 conversion...");
                 results.push({
                     imageUrl: imgData.src,
                     base64: `data:image/${imgData.format};base64,${imgData.buffer.toString("base64")}`,
@@ -94,23 +107,29 @@ async function fetchImageToBase(imageUrls) {
                     width: imgData.width,
                     height: imgData.height,
                 });
+
+                // console.log("🎉 Image processed successfully:", imgData.src);
             } else {
-                // Normalize Windows paths and resolve absolute path
+                // console.log("📂 Detected as a local file, normalizing path...");
                 const normalizedPath = path.resolve(imageUrl.replace(/\\/g, "/"));
+                // console.log("📝 Normalized Path:", normalizedPath);
 
                 if (fs.existsSync(normalizedPath)) {
+                    // console.log("✅ File exists, reading...");
                     const imageBuffer = fs.readFileSync(normalizedPath);
+                    // console.log("✅ Successfully read file, converting to Base64...");
                     return `data:image/png;base64,${imageBuffer.toString("base64")}`;
                 } else {
-                    console.error(`❌ Error: Local file not found -> ${normalizedPath}`);
+                    // console.error(`❌ Error: Local file not found -> ${normalizedPath}`);
                     return null;
                 }
             }
         }
 
-        return results.length > 0 ? (imageUrls.length === 1 ? results[0] : results) : null;
+        // console.log("🏁 Processing complete. Returning results...");
+        return results.length > 0 ? results : null;
     } catch (error) {
-        console.error(`❌ Error fetching images as Base64:`, error.message);
+        // console.error(`❌ Error fetching images as Base64:`, error.message);
         return null;
     }
 }
@@ -242,33 +261,84 @@ function calculateGaps(annexureData) {
     // console.log("Final employment gaps:", employmentGaps);
 }
 
+function createEmploymentFields(noOfEmployments, fieldValue) {
+    let employmentFieldsData = fieldValue.employment_fields;
+
+    // Check if it's a string (i.e., it's been stringified previously) and parse it
+    if (typeof employmentFieldsData === 'string') {
+        employmentFieldsData = JSON.parse(employmentFieldsData);
+    }
+
+    const employmentFields = {}; // Initialize the employmentFields object to store all employment data
+
+    // Dynamically structure the data like: employment_1, employment_2, etc.
+    for (let i = 1; i <= noOfEmployments; i++) {
+        const employmentData = employmentFieldsData[`employment_${i}`] || {};
+
+        employmentFields[`employment_${i}`] = {
+            employment_type_gap: employmentData.employment_type_gap || '',
+            employment_start_date_gap: employmentData.employment_start_date_gap || '',
+            employment_end_date_gap: employmentData.employment_end_date_gap || '',
+        };
+    }
+
+    return employmentFields;
+}
+
+function updateEmploymentFields(annexureData, noOfEmployments, fieldValue) {
+    // Generate new employment fields based on the provided number of employments
+    const allEmploymentFields = createEmploymentFields(noOfEmployments, fieldValue);
+
+    // Create a copy of the current annexureData
+    const updatedAnnexureData = { ...annexureData };
+
+    // Check if gap_validation exists before modifying
+    if (updatedAnnexureData.gap_validation) {
+        // Delete the existing employment_fields key
+        delete updatedAnnexureData.gap_validation.employment_fields;
+    } else {
+        // If gap_validation doesn't exist, initialize it
+        updatedAnnexureData.gap_validation = {};
+    }
+
+    // Add the new employment_fields data
+    updatedAnnexureData.gap_validation.highest_education_gap = fieldValue.highest_education_gap;
+    updatedAnnexureData.gap_validation.no_of_employment = fieldValue.no_of_employment;
+    updatedAnnexureData.gap_validation.years_of_experience_gap = fieldValue.years_of_experience_gap;
+    updatedAnnexureData.gap_validation.education_fields = JSON.parse(fieldValue.education_fields);
+    updatedAnnexureData.gap_validation.employment_fields = allEmploymentFields;
+
+    return updatedAnnexureData; // This can be used for further handling if needed
+}
+
 module.exports = {
     candidateFormPDF: async (
         candidate_applicaton_id,
         branch_id,
+        customer_id,
         pdfFileName,
         targetDirectory
     ) => {
         return new Promise((resolve, reject) => {
-            console.log(`DEBUG: Calling applicationListByBranchByCandidateID for ID: ${candidate_applicaton_id}`);
+            // console.log(`DEBUG: Calling applicationListByBranchByCandidateID for ID: ${candidate_applicaton_id}`);
 
             CandidateMasterTrackerModel.applicationListByBranchByCandidateID(
                 candidate_applicaton_id,
                 branch_id,
                 async (err, application) => {
                     if (err) {
-                        console.error("Database error:", err);
+                        // console.error("Database error:", err);
                         return reject(new Error(`Database error: ${err.message}`));
                     }
 
                     if (!application) {
-                        console.warn("Application not found");
+                        // console.warn("Application not found");
                         return reject(new Error("Application not found"));
                     }
 
-                    console.log(`application - `, application);
+                    // console.log(`application - `, application);
 
-                    console.log(`Step 1: Application data fetched for ID: ${candidate_applicaton_id}`);
+                    // console.log(`Step 1: Application data fetched for ID: ${candidate_applicaton_id}`);
 
                     CandidateMasterTrackerModel.applicationByID(
                         candidate_applicaton_id,
@@ -285,7 +355,7 @@ module.exports = {
                                     new Error("Application not found")
                                 );
                             }
-                            console.log(`application - `, application);
+                            // console.log(`application - `, application);
                             const service_ids = Array.isArray(application.services)
                                 ? application.services
                                 : application.services.split(",").map((item) => item.trim());
@@ -295,7 +365,7 @@ module.exports = {
                                 branch_id,
                                 (err, CEFApplicationData) => {
                                     if (err) {
-                                        console.error("Database error:", err);
+                                        // console.error("Database error:", err);
                                         reject(
                                             new Error(err.message)
                                         );
@@ -303,7 +373,7 @@ module.exports = {
 
                                     Branch.getBranchById(branch_id, (err, currentBranch) => {
                                         if (err) {
-                                            console.error("Database error during branch retrieval:", err);
+                                            // console.error("Database error during branch retrieval:", err);
                                             reject(
                                                 new Error('Failed to retrieve Branch. Please try again.')
                                             );
@@ -317,7 +387,7 @@ module.exports = {
 
                                         Admin.list((err, adminList) => {
                                             if (err) {
-                                                console.error("Database error:", err);
+                                                // console.error("Database error:", err);
                                                 reject(
                                                     new Error(err.message)
                                                 );
@@ -326,10 +396,12 @@ module.exports = {
                                                 parseInt(currentBranch.customer_id),
                                                 (err, currentCustomer) => {
                                                     if (err) {
+                                                        /*
                                                         console.error(
                                                             "Database error during customer retrieval:",
                                                             err
                                                         );
+                                                        */
                                                         reject(
                                                             new Error('Failed to retrieve Customer. Please try again.')
                                                         );
@@ -346,7 +418,7 @@ module.exports = {
                                                         candidate_applicaton_id,
                                                         async (err, serviceData) => {
                                                             if (err) {
-                                                                console.error("Database error:", err);
+                                                                // console.error("Database error:", err);
                                                                 reject(
                                                                     new Error('An error occurred while fetching service form json.')
                                                                 );
@@ -374,6 +446,15 @@ module.exports = {
                                                             let allJsonData = [];
                                                             let allJsonDataValue = [];
                                                             let annexureData = [];
+                                                            let initialAnnexureData = {
+                                                                gap_validation: {
+                                                                    highest_education_gap: '',
+                                                                    years_of_experience_gap: '',
+                                                                    no_of_employment: 0,
+
+                                                                }
+                                                            };
+                                                            annexureData = initialAnnexureData;
 
                                                             // Sorting and restructuring the parsed data
                                                             const sortedData = Object.entries(parsedData)
@@ -432,9 +513,12 @@ module.exports = {
                                                                     let fieldValue = allJsonDataValue.find(data => data && data.hasOwnProperty('no_of_employment')); // Check for null or undefined before accessing `hasOwnProperty`
                                                                     let initialAnnexureDataNew = initialAnnexureData;
                                                                     if (fieldValue && fieldValue.hasOwnProperty('no_of_employment')) {
-                                                                        initialAnnexureDataNew = updateEmploymentFields(fieldValue.no_of_employment, fieldValue); // Call function to handle employment fields
+                                                                        initialAnnexureDataNew = updateEmploymentFields(annexureData, fieldValue.no_of_employment, fieldValue); // Call function to handle employment fields
                                                                     } else {
                                                                     }
+                                                                    console.log(`service.db_table - `, service.db_table);
+                                                                    console.log(`annexureData - `, annexureData);
+                                                                    console.log(`annexureData[service.db_table] - `, annexureData[service.db_table]);
                                                                     annexureData[service.db_table].employment_fields = initialAnnexureDataNew.gap_validation.employment_fields;
                                                                 }
 
@@ -559,8 +643,9 @@ module.exports = {
                                                                             const govtIdUrl = govtIdUrls[i];
 
                                                                             // Fetch the image as base64
+                                                                            // console.log(`govtIdUrl - `, govtIdUrl);
                                                                             const imageBases = await fetchImageToBase([govtIdUrl]);
-
+                                                                            // console.log(`imageBases - `, imageBases);
                                                                             // Check if the image is valid
                                                                             if (imageBases?.[0]?.base64) {
                                                                                 // Set font size and add the label for each image
@@ -685,7 +770,7 @@ module.exports = {
                                                                                             yPosition += passport_photoHeight + margin;  // Move to the next row
                                                                                         }
                                                                                     } else {
-                                                                                        console.error(`Image at index ${i} could not be loaded.`);
+                                                                                        // console.error(`Image at index ${i} could not be loaded.`);
                                                                                         const imageNotFoundText = `Image #${i + 1} not found.`;
                                                                                         const imageNotFoundTextWidth = doc.getTextWidth(imageNotFoundText);
                                                                                         const imageNotFoundCenterX = (doc.internal.pageSize.width - imageNotFoundTextWidth) / 2;
@@ -693,7 +778,7 @@ module.exports = {
                                                                                         yPosition += 10;  // Update yPos for the error message
                                                                                     }
                                                                                 } catch (error) {
-                                                                                    console.error(`Error loading image at index ${i}:`, error);
+                                                                                    // console.error(`Error loading image at index ${i}:`, error);
                                                                                     const errorMessage = `Error loading image #${i + 1}.`;
                                                                                     const errorTextWidth = doc.getTextWidth(errorMessage);
                                                                                     const errorTextCenterX = (doc.internal.pageSize.width - errorTextWidth) / 2;
@@ -1580,7 +1665,7 @@ module.exports = {
                                                                                                         doc.addImage(image.base64, image.type, 5, yPosition + 20, imageWidth, annexureDataImageHeight);
                                                                                                         yPosition += (annexureDataImageHeight + 30);
                                                                                                     } catch (error) {
-                                                                                                        console.error(`Error adding image:`, error);
+                                                                                                        // console.error(`Error adding image:`, error);
                                                                                                     }
                                                                                                 }
                                                                                             }
@@ -1626,12 +1711,22 @@ module.exports = {
                                                                         }
 
                                                                     }
-                                                                    doc.save(`${customerInfo?.client_unique_id}-${customerInfo?.name}`);
+                                                                    // Save PDF
+                                                                    console.log(`pdfFileName - `, pdfFileName);
+                                                                    doc.save(`123.pdf`);
+
+                                                                    // console.log(`targetDirectory - `, targetDirectory);
+                                                                    // const pdfPathCloud = await savePdf(
+                                                                    //     doc,
+                                                                    //     pdfFileName,
+                                                                    //     targetDirectory
+                                                                    // );
+                                                                    // resolve(pdfPathCloud);
                                                                 })();
 
 
                                                             } catch (error) {
-                                                                console.error("PDF generation error:", error);
+                                                                // console.error("PDF generation error:", error);
                                                                 reject(new Error("Error generating PDF"));
                                                             }
                                                         }

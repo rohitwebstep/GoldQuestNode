@@ -5,7 +5,7 @@ const moment = require("moment"); // Ensure you have moment.js installed
 const hashPassword = (password) =>
   crypto.createHash("md5").update(password).digest("hex");
 
-function calculateDueDate(startDate, tatDays, holidayDates, weekendsSet) {
+function calculateDueDate(startDate, tatDays = 0, holidayDates, weekendsSet) {
   // console.log("Starting calculation...");
   // console.log("Start Date:", startDate.format("YYYY-MM-DD"));
   // console.log("TAT Days:", tatDays);
@@ -318,6 +318,7 @@ const Customer = {
           cmt.third_insuff_date,
           cmt.third_insuff_reopened_date,
           cmt.overall_status,
+          cmt.final_verification_status,
           cmt.report_date,
           cmt.report_status,
           cmt.report_type,
