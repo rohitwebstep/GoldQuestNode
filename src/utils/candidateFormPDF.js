@@ -275,20 +275,17 @@ module.exports = {
                         branch_id,
                         (err, application) => {
                             if (err) {
-                                console.error("Database error:", err);
-                                return res
-                                    .status(500)
-                                    .json({ status: false, message: err.message, token: newToken });
+                                reject(
+                                    new Error(err.message)
+                                );
                             }
 
                             if (!application) {
-                                return res.status(404).json({
-                                    status: false,
-                                    message: "Application not found",
-                                    token: newToken,
-                                });
+                                reject(
+                                    new Error("Application not found")
+                                );
                             }
-
+                            console.log(`application - `, application);
                             const service_ids = Array.isArray(application.services)
                                 ? application.services
                                 : application.services.split(",").map((item) => item.trim());
@@ -299,39 +296,31 @@ module.exports = {
                                 (err, CEFApplicationData) => {
                                     if (err) {
                                         console.error("Database error:", err);
-                                        return res.status(500).json({
-                                            status: false,
-                                            message: err.message,
-                                            token: newToken,
-                                        });
+                                        reject(
+                                            new Error(err.message)
+                                        );
                                     }
 
                                     Branch.getBranchById(branch_id, (err, currentBranch) => {
                                         if (err) {
                                             console.error("Database error during branch retrieval:", err);
-                                            return res.status(500).json({
-                                                status: false,
-                                                message: "Failed to retrieve Branch. Please try again.",
-                                                token: newToken,
-                                            });
+                                            reject(
+                                                new Error('Failed to retrieve Branch. Please try again.')
+                                            );
                                         }
 
                                         if (!currentBranch) {
-                                            return res.status(404).json({
-                                                status: false,
-                                                message: "Branch not found.",
-                                                token: newToken,
-                                            });
+                                            reject(
+                                                new Error('Branch not found.')
+                                            );
                                         }
 
                                         Admin.list((err, adminList) => {
                                             if (err) {
                                                 console.error("Database error:", err);
-                                                return res.status(500).json({
-                                                    status: false,
-                                                    message: err.message,
-                                                    token: newToken,
-                                                });
+                                                reject(
+                                                    new Error(err.message)
+                                                );
                                             }
                                             Customer.getCustomerById(
                                                 parseInt(currentBranch.customer_id),
@@ -341,20 +330,15 @@ module.exports = {
                                                             "Database error during customer retrieval:",
                                                             err
                                                         );
-                                                        return res.status(500).json({
-                                                            status: false,
-                                                            message:
-                                                                "Failed to retrieve Customer. Please try again.",
-                                                            token: newToken,
-                                                        });
+                                                        reject(
+                                                            new Error('Failed to retrieve Customer. Please try again.')
+                                                        );
                                                     }
 
                                                     if (!currentCustomer) {
-                                                        return res.status(404).json({
-                                                            status: false,
-                                                            message: "Customer not found.",
-                                                            token: newToken,
-                                                        });
+                                                        reject(
+                                                            new Error('Customer not found.')
+                                                        );
                                                     }
 
                                                     CEF.formJsonWithData(
@@ -363,12 +347,9 @@ module.exports = {
                                                         async (err, serviceData) => {
                                                             if (err) {
                                                                 console.error("Database error:", err);
-                                                                return res.status(500).json({
-                                                                    status: false,
-                                                                    message:
-                                                                        "An error occurred while fetching service form json.",
-                                                                    token: newToken,
-                                                                });
+                                                                reject(
+                                                                    new Error('An error occurred while fetching service form json.')
+                                                                );
                                                             }
                                                             data = {
                                                                 application,
@@ -379,6 +360,8 @@ module.exports = {
                                                                 admins: adminList,
                                                             };
 
+                                                            const customerInfo = data.customerInfo || {};
+
                                                             customBgv = data.customerInfo?.is_custom_bgv || '';
                                                             companyName = data.application?.customer_name || '';
                                                             purpose = data.application?.purpose_of_application || '';
@@ -387,6 +370,77 @@ module.exports = {
                                                             isSameAsPermanent = false
 
                                                             const parsedData = data?.serviceData || [];
+
+                                                            let allJsonData = [];
+                                                            let allJsonDataValue = [];
+                                                            let annexureData = [];
+
+                                                            // Sorting and restructuring the parsed data
+                                                            const sortedData = Object.entries(parsedData)
+                                                                .sort(([, a], [, b]) => {
+                                                                    const groupA = a.group || '';  // Default to empty string if a.group is null or undefined
+                                                                    const groupB = b.group || '';  // Default to empty string if b.group is null or undefined
+                                                                    return groupA.localeCompare(groupB);
+                                                                })
+                                                                .reduce((acc, [key, value]) => {
+                                                                    acc[key] = value;  // Reconstruct the object with sorted entries
+                                                                    return acc;
+                                                                }, {});
+
+                                                            // Collecting jsonData and jsonDataValue
+                                                            for (const key in parsedData) {
+                                                                if (parsedData.hasOwnProperty(key)) {
+                                                                    const jsonData = parsedData[key]?.jsonData;  // Safe navigation in case it's null or undefined
+                                                                    if (jsonData) {
+                                                                        allJsonData.push(jsonData);  // Store jsonData in the array
+                                                                        ;
+                                                                    }
+
+                                                                    const jsonDataValue = parsedData[key]?.data;  // Safe navigation in case it's null or undefined
+                                                                    if (jsonDataValue) {
+                                                                        allJsonDataValue.push(jsonDataValue);  // Store jsonData in the array
+                                                                    }
+                                                                }
+                                                            }
+                                                            // Constructing the annexureData object
+                                                            allJsonData.forEach(service => {
+                                                                if (service.db_table !== 'gap_validation') {
+                                                                    service?.rows?.forEach(row => {  // Check if rows exist before iterating
+                                                                        row?.inputs?.forEach(input => {
+                                                                            // Fetch the static inputs dynamically from annexureData
+
+                                                                            // Fetch the dynamic field value from allJsonDataValue
+                                                                            let fieldValue = allJsonDataValue.find(data => data && data.hasOwnProperty(input.name)); // Check for null or undefined before accessing `hasOwnProperty`
+                                                                            // If fieldValue exists, we set it, otherwise, static value should remain
+                                                                            if (fieldValue && fieldValue.hasOwnProperty(input.name)) {
+
+                                                                                // Set dynamic value in the correct field in annexureData
+                                                                                if (!annexureData[service.db_table]) {
+                                                                                    annexureData[service.db_table] = {}; // Initialize the service table if it doesn't exist
+                                                                                }
+
+                                                                                // Set the dynamic value in the service table under the input's name
+                                                                                annexureData[service.db_table][input.name] = fieldValue[input.name] || "  ";
+
+
+                                                                            } else {
+
+                                                                            }
+                                                                        });
+                                                                    });
+                                                                } else {
+                                                                    let fieldValue = allJsonDataValue.find(data => data && data.hasOwnProperty('no_of_employment')); // Check for null or undefined before accessing `hasOwnProperty`
+                                                                    let initialAnnexureDataNew = initialAnnexureData;
+                                                                    if (fieldValue && fieldValue.hasOwnProperty('no_of_employment')) {
+                                                                        initialAnnexureDataNew = updateEmploymentFields(fieldValue.no_of_employment, fieldValue); // Call function to handle employment fields
+                                                                    } else {
+                                                                    }
+                                                                    annexureData[service.db_table].employment_fields = initialAnnexureDataNew.gap_validation.employment_fields;
+                                                                }
+
+                                                            });
+
+                                                            const serviceDataMain = allJsonData;
                                                             try {
                                                                 // Create a new PDF document
                                                                 calculateGaps();
@@ -396,29 +450,17 @@ module.exports = {
                                                                 // Add the form title
 
                                                                 if (customBgv === 1) {
-                                                                    try {
-                                                                        console.log("📌 Fetching LogoBgv image...");
+                                                                    const imageData = await fetchImageToBase(LogoBgv);
 
-                                                                        const imageData = await fetchImageAsBase64(LogoBgv);
-
-                                                                        if (!imageData) {
-                                                                            console.warn("⚠️ LogoBgv image fetch failed or returned null.");
-                                                                        } else {
-                                                                            console.log("✅ LogoBgv image successfully fetched:", imageData);
-
-                                                                            doc.addImage(
-                                                                                imageData.base64,
-                                                                                imageData.type,
-                                                                                75,
-                                                                                yPosition,
-                                                                                60,
-                                                                                10
-                                                                            );
-
-                                                                            console.log("✅ LogoBgv image added to document.");
-                                                                        }
-                                                                    } catch (error) {
-                                                                        console.error("❌ Error processing LogoBgv image:", error.message);
+                                                                    if (imageData) {
+                                                                        doc.addImage(
+                                                                            imageData,
+                                                                            'png',
+                                                                            75,
+                                                                            yPosition,
+                                                                            60,
+                                                                            10
+                                                                        );
                                                                     }
                                                                 }
 
@@ -1457,10 +1499,6 @@ module.exports = {
                                                                         }
                                                                         else {
                                                                             service.rows.forEach((row, rowIndex) => {
-
-                                                                                if (hiddenRows[`${i}-${rowIndex}`]) {
-                                                                                    return null;
-                                                                                }
                                                                                 row.inputs.forEach((input) => {
                                                                                     const isCheckbox = input.type === 'checkbox';
                                                                                     const isDoneCheckbox = isCheckbox && (input.name.startsWith('done_or_not') || input.name.startsWith('has_not_done'));
@@ -1469,12 +1507,6 @@ module.exports = {
                                                                                     // Handle logic for checkbox checked state
                                                                                     if (isDoneCheckbox && isChecked) {
                                                                                         // Hide all rows except the one with the checked checkbox
-                                                                                        service.rows.forEach((otherRow, otherRowIndex) => {
-                                                                                            if (otherRowIndex !== rowIndex) {
-                                                                                                hiddenRows[`${i}-${otherRowIndex}`] = true; // Hide other rows
-                                                                                            }
-                                                                                        });
-                                                                                        hiddenRows[`${i}-${rowIndex}`] = false; // Ensure current row stays visible
                                                                                     }
                                                                                     if (input.type === 'file') return; // Skip file inputs
 
@@ -1535,19 +1567,21 @@ module.exports = {
                                                                                         // Handle image files
                                                                                         if (imageUrlsToProcess.length > 0) {
                                                                                             const imageBases = await fetchImageToBase(imageUrlsToProcess);
-                                                                                            for (const image of imageBases) {
-                                                                                                if (!image.base64.startsWith('data:image/')) continue;
+                                                                                            if (imageBases) {
+                                                                                                for (const image of imageBases) {
+                                                                                                    if (!image.base64.startsWith('data:image/')) continue;
 
-                                                                                                doc.addPage();
-                                                                                                yPosition = 20;
+                                                                                                    doc.addPage();
+                                                                                                    yPosition = 20;
 
-                                                                                                try {
-                                                                                                    const imageWidth = doc.internal.pageSize.width - 10;
-                                                                                                    // Adjust height if needed based on image dimensions or conditions
-                                                                                                    doc.addImage(image.base64, image.type, 5, yPosition + 20, imageWidth, annexureDataImageHeight);
-                                                                                                    yPosition += (annexureDataImageHeight + 30);
-                                                                                                } catch (error) {
-                                                                                                    console.error(`Error adding image:`, error);
+                                                                                                    try {
+                                                                                                        const imageWidth = doc.internal.pageSize.width - 10;
+                                                                                                        // Adjust height if needed based on image dimensions or conditions
+                                                                                                        doc.addImage(image.base64, image.type, 5, yPosition + 20, imageWidth, annexureDataImageHeight);
+                                                                                                        yPosition += (annexureDataImageHeight + 30);
+                                                                                                    } catch (error) {
+                                                                                                        console.error(`Error adding image:`, error);
+                                                                                                    }
                                                                                                 }
                                                                                             }
                                                                                         }
@@ -1593,16 +1627,6 @@ module.exports = {
 
                                                                     }
                                                                     doc.save(`${customerInfo?.client_unique_id}-${customerInfo?.name}`);
-
-                                                                    swalLoading.close();
-
-                                                                    // Optionally, show a success message
-                                                                    Swal.fire({
-                                                                        title: 'PDF Generated!',
-                                                                        text: 'Your PDF has been successfully generated.',
-                                                                        icon: 'success',
-                                                                        confirmButtonText: 'OK'
-                                                                    });
                                                                 })();
 
 

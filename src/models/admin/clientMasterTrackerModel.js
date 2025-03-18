@@ -307,6 +307,7 @@ const Customer = {
           ca.*, 
           ca.id AS main_id, 
           cmt.is_verify,
+          cmt.dob,
           cmt.first_insufficiency_marks,
           cmt.first_insuff_date,
           cmt.first_insuff_reopened_date,

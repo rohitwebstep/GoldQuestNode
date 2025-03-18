@@ -1123,7 +1123,7 @@ const Customer = {
           ca.\`created_at\` DESC
         LIMIT 1;
       `;
-      const params = [application_id, branch_id];
+      const params = [`${application_id}`, `${branch_id}`];
 
       connection.query(sql, params, (err, results) => {
         if (err) {
@@ -1131,6 +1131,8 @@ const Customer = {
           connectionRelease(connection);
           return callback(err, null);
         }
+
+        console.log(`results - `, results);
 
         const candidateApp = results[0];
 
