@@ -153,6 +153,31 @@ function calculateDateGap(startDate, endDate) {
     return { years: Math.abs(years), months: Math.abs(months) };
 }
 
+function calculateDateDifference(date1, date2) {
+    const d1 = new Date(date1);
+    const d2 = new Date(date2);
+
+    if (isNaN(d1) || isNaN(d2)) return "Invalid Date";
+
+    // Check if date1 is greater than or equal to date2
+    if (d1 >= d2) return "No gap";
+
+    let years = d2.getFullYear() - d1.getFullYear();
+    let months = d2.getMonth() - d1.getMonth();
+    let days = d2.getDate() - d1.getDate();
+
+    if (days < 0) {
+        months--;
+        days += new Date(d2.getFullYear(), d2.getMonth(), 0).getDate();
+    }
+    if (months < 0) {
+        years--;
+        months += 12;
+    }
+
+    return `${years > 0 ? years + " year(s) " : ""}${months > 0 ? months + " month(s) " : ""}${days > 0 ? days + " day(s)" : ""}`.trim();
+}
+
 function calculateGaps(annexureData) {
     // console.log("Received annexureData:", annexureData);
 
@@ -259,6 +284,7 @@ function calculateGaps(annexureData) {
 
     const employmentGaps = getEmploymentDateDifferences(employmentStartDates, employmentEndDates);
     // console.log("Final employment gaps:", employmentGaps);
+    return { employGaps: employmentGaps, gaps: nonNegativeGaps };
 }
 
 function createEmploymentFields(noOfEmployments, fieldValue) {
@@ -397,7 +423,7 @@ module.exports = {
                                                 (err, currentCustomer) => {
                                                     if (err) {
                                                         /*
-                                                        console.error(
+                                                        // console.error(
                                                             "Database error during customer retrieval:",
                                                             err
                                                         );
@@ -516,9 +542,6 @@ module.exports = {
                                                                         initialAnnexureDataNew = updateEmploymentFields(annexureData, fieldValue.no_of_employment, fieldValue); // Call function to handle employment fields
                                                                     } else {
                                                                     }
-                                                                    console.log(`service.db_table - `, service.db_table);
-                                                                    console.log(`annexureData - `, annexureData);
-                                                                    console.log(`annexureData[service.db_table] - `, annexureData[service.db_table]);
                                                                     annexureData[service.db_table].employment_fields = initialAnnexureDataNew.gap_validation.employment_fields;
                                                                 }
 
@@ -526,8 +549,6 @@ module.exports = {
 
                                                             const serviceDataMain = allJsonData;
                                                             try {
-                                                                // Create a new PDF document
-                                                                calculateGaps();
                                                                 const doc = new jsPDF();
                                                                 let yPosition = 10;  // Initial y position
 
@@ -1101,8 +1122,6 @@ module.exports = {
                                                                     newYPosition += lineHeight + 20; // Adjust space for next content
                                                                 }
 
-
-
                                                                 (async () => {
                                                                     if (!serviceDataMain.length) return; // If no services, return early
 
@@ -1126,14 +1145,15 @@ module.exports = {
                                                                             return `${years} years and ${months} months`;
                                                                         }
 
+
                                                                         if (service.db_table === "gap_validation") {
 
 
                                                                             doc.setFontSize(12);
                                                                             doc.setTextColor(0, 0, 0);
                                                                             if (annexureData?.gap_validation?.highest_education_gap === 'phd') {
-
-
+                                                                                const { employGaps, gaps } = calculateGaps(annexureData);
+                                                                                // console.log(`gaps - `, gaps);
                                                                                 // Table for PhD information
                                                                                 yPosition += 10;
                                                                                 doc.autoTable({
@@ -1208,7 +1228,7 @@ module.exports = {
                                                                             if (annexureData?.gap_validation?.highest_education_gap === 'post_graduation' || annexureData?.gap_validation?.highest_education_gap === 'phd') {
                                                                                 doc.addPage();
                                                                                 yPosition = 20;
-
+                                                                                const { employGaps, gaps } = calculateGaps(annexureData);
                                                                                 const postGradData = [
                                                                                     ["University / Institute Name", annexureData?.gap_validation?.education_fields?.post_graduation_1?.post_graduation_university_institute_name_gap || 'N/A'],
                                                                                     ["Course", annexureData?.gap_validation?.education_fields?.post_graduation_1?.post_graduation_course_gap || 'N/A'],
@@ -1282,7 +1302,7 @@ module.exports = {
                                                                             // Graduation
                                                                             yPosition = yPosition += 30;
                                                                             if (annexureData?.gap_validation?.highest_education_gap === 'graduation' || annexureData?.gap_validation?.highest_education_gap === 'post_graduation' || annexureData?.gap_validation?.highest_education_gap === 'phd') {
-
+                                                                                const { employGaps, gaps } = calculateGaps(annexureData);
 
                                                                                 const gradData = [
                                                                                     ["University / Institute Name", annexureData?.gap_validation?.education_fields?.graduation_1?.graduation_university_institute_name_gap || 'N/A'],
@@ -1355,7 +1375,7 @@ module.exports = {
                                                                             }
 
                                                                             if (annexureData?.gap_validation?.highest_education_gap === 'senior_secondary' || annexureData?.gap_validation?.highest_education_gap === 'graduation' || annexureData?.gap_validation?.highest_education_gap === 'phd' || annexureData?.gap_validation?.highest_education_gap === 'post_graduation') {
-
+                                                                                const { employGaps, gaps } = calculateGaps(annexureData);
                                                                                 const seniorSecondaryData = [
                                                                                     ["School Name", annexureData?.gap_validation?.education_fields?.senior_secondary?.senior_secondary_school_name_gap || 'N/A'],
                                                                                     ["Start Date", annexureData?.gap_validation?.education_fields?.senior_secondary?.senior_secondary_start_date_gap || 'N/A'],
@@ -1525,7 +1545,7 @@ module.exports = {
                                                                             // Dynamically render Employment Forms
                                                                             if (annexureData["gap_validation"].no_of_employment > 0) {
                                                                                 let yPosition = doc.autoTable.previous.finalY + 10;
-
+                                                                                const { employGaps, gaps } = calculateGaps(annexureData);
                                                                                 Array.from({ length: annexureData["gap_validation"].no_of_employment || 0 }, (_, index) => {
                                                                                     const employmentFormData = [
                                                                                         ["Employment Type", annexureData["gap_validation"]?.employment_fields?.[`employment_${index + 1}`]?.[`employment_type_gap`] || ''],
@@ -1712,16 +1732,16 @@ module.exports = {
 
                                                                     }
                                                                     // Save PDF
-                                                                    console.log(`pdfFileName - `, pdfFileName);
-                                                                    doc.save(`123.pdf`);
+                                                                    // console.log(`pdfFileName - `, pdfFileName);
+                                                                    // doc.save(`123.pdf`);
 
                                                                     // console.log(`targetDirectory - `, targetDirectory);
-                                                                    // const pdfPathCloud = await savePdf(
-                                                                    //     doc,
-                                                                    //     pdfFileName,
-                                                                    //     targetDirectory
-                                                                    // );
-                                                                    // resolve(pdfPathCloud);
+                                                                    const pdfPathCloud = await savePdf(
+                                                                        doc,
+                                                                        pdfFileName,
+                                                                        targetDirectory
+                                                                    );
+                                                                    resolve(pdfPathCloud);
                                                                 })();
 
 
