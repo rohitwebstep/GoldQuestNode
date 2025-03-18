@@ -4,10 +4,10 @@ const Customer = require("../../models/customer/customerModel");
 const CandidateApplication = require("../../models/customer/branch/candidateApplicationModel");
 const Service = require("../../models/admin/serviceModel");
 const Branch = require("../../models/customer/branch/branchModel");
+const CEF = require("../../models/customer/branch/cefModel");
 const AdminCommon = require("../../models/admin/commonModel");
 const Admin = require("../../models/admin/adminModel");
 const App = require("../../models/appModel");
-const CEF = require("../../models/customer/branch/cefModel");
 const BranchCommon = require("../../models/customer/branch/commonModel");
 const {
   createMailForCandidate,
@@ -22,6 +22,7 @@ const { davMail } = require("../../mailer/customer/branch/candidate/davMail");
 const fs = require("fs");
 const path = require("path");
 const { generatePDF } = require("../../utils/finalReportPdf");
+const { candidateFormPDF } = require("../../utils/candidateFormPDF");
 const { cdfDataPDF } = require("../../utils/cdfDataPDF");
 const { upload, saveImage, saveImages } = require("../../utils/cloudImageSave");
 
@@ -95,11 +96,11 @@ exports.list = (req, res) => {
 
 exports.test = async (req, res) => {
   try {
-    const client_application_id = 3;
+    const candidate_application_id = 3;
     const client_unique_id = "GQ-INDV";
     const application_id = "GQ-INDV-1";
-    const branch_id = 3;
-    const customer_id = 2;
+    const branch_id = 1;
+    const customer_id = 1;
     const name = "Rohit Sisodia";
 
     const today = new Date();
@@ -113,8 +114,8 @@ exports.test = async (req, res) => {
     const pdfFileName = `${name}_${formattedDate}.pdf`
       .replace(/\s+/g, "-")
       .toLowerCase();
-    const pdfPath = await cdfDataPDF(
-      client_application_id,
+    const pdfPath = await candidateFormPDF(
+      candidate_application_id,
       branch_id,
       customer_id,
       pdfFileName,
