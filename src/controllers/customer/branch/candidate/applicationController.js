@@ -496,6 +496,206 @@ exports.create = (req, res) => {
 };
 
 exports.bulkCreate = (req, res) => {
+  console.log("Request received:", req.body);
+
+  const {
+    sub_user_id,
+    branch_id,
+    _token,
+    customer_id,
+    applications,
+    services,
+    package,
+  } = req.body;
+
+  console.log("Extracted fields:", { branch_id, _token, customer_id, applications });
+
+  const requiredFields = { branch_id, _token, customer_id, applications };
+  const missingFields = Object.keys(requiredFields)
+    .filter((field) => !requiredFields[field] || requiredFields[field] === "")
+    .map((field) => field.replace(/_/g, " "));
+
+  if (missingFields.length > 0) {
+    console.log("Missing fields detected:", missingFields);
+    return res.status(400).json({
+      status: false,
+      message: `Missing required fields: ${missingFields.join(", ")}`,
+    });
+  }
+
+  const action = "candidate_application";
+  console.log("Checking branch authorization for action:", action);
+
+  BranchCommon.isBranchAuthorizedForAction(branch_id, action, (result) => {
+    console.log("Branch authorization result:", result);
+
+    if (!result.status) {
+      return res.status(403).json({
+        status: false,
+        message: result.message,
+      });
+    }
+
+    console.log("Validating branch token...");
+    BranchCommon.isBranchTokenValid(_token, sub_user_id || null, branch_id, (err, result) => {
+      if (err) {
+        console.error("Error checking token validity:", err);
+        return res.status(500).json({ status: false, message: err.message });
+      }
+
+      console.log("Token validation result:", result);
+      if (!result.status) {
+        return res.status(401).json({ status: false, message: result.message });
+      }
+
+      const newToken = result.newToken;
+      console.log("New token generated:", newToken);
+
+      const emptyValues = [];
+      const updatedApplications = applications.filter((app) => {
+        console.log("Processing application:", app);
+
+        const allFieldsEmpty =
+          !app.applicant_full_name?.trim() &&
+          !app.mobile_number?.trim() &&
+          !app.email_id?.trim() &&
+          !app.employee_id?.trim();
+
+        if (allFieldsEmpty) {
+          console.log("Skipping empty application:", app);
+          return false;
+        }
+
+        const missingFields = [];
+        if (!("applicant_full_name" in app)) missingFields.push("Applicant Full Name");
+        if (!("mobile_number" in app)) missingFields.push("Mobile Number");
+        if (!("email_id" in app)) missingFields.push("Email ID");
+        if (!("nationality" in app)) missingFields.push("Nationality");
+
+        if (missingFields.length > 0) {
+          emptyValues.push(
+            `${app.applicant_full_name || "Unnamed applicant"} (missing fields: ${missingFields.join(", ")})`
+          );
+          return false;
+        }
+
+        return true;
+      });
+
+      console.log("Filtered applications:", updatedApplications);
+      if (emptyValues.length > 0) {
+        console.log("Applicants with incomplete details:", emptyValues);
+        return res.status(400).json({
+          status: false,
+          message: `Details are not complete for the following applicants: ${emptyValues.join(", ")}`,
+          token: newToken,
+        });
+      }
+
+      const employeeIds = updatedApplications.map((app) => app.employee_id).filter((id) => id);
+      console.log("Checking for duplicate employee IDs:", employeeIds);
+
+      const employeeIdChecks = employeeIds.map((employee_id) => {
+        return new Promise((resolve, reject) => {
+          Candidate.checkUniqueEmpId(branch_id, employee_id, (err, exists) => {
+            if (err) {
+              console.error("Error checking employee ID uniqueness:", err);
+              reject(err);
+            } else if (exists) {
+              console.log("Duplicate Employee ID found:", employee_id);
+              reject({ type: "employee_id", value: employee_id });
+            } else {
+              resolve(employee_id);
+            }
+          });
+        });
+      });
+
+      Promise.allSettled(employeeIdChecks)
+        .then((results) => {
+          console.log("Uniqueness check results:", results);
+
+          const rejectedResults = results.filter((result) => result.status === "rejected");
+          const alreadyUsedEmployeeIds = rejectedResults
+            .filter((result) => result.reason.type === "employee_id")
+            .map((result) => result.reason.value);
+
+          if (alreadyUsedEmployeeIds.length > 0) {
+            console.log("Duplicate Employee IDs:", alreadyUsedEmployeeIds);
+            return res.status(400).json({
+              status: false,
+              message: `Employee IDs - "${alreadyUsedEmployeeIds.join(", ")}" already used.`,
+              token: newToken,
+            });
+          }
+
+          console.log("Proceeding with application creation...");
+          const applicationPromises = updatedApplications.map((app) => {
+            return new Promise((resolve, reject) => {
+              Candidate.create(
+                {
+                  branch_id,
+                  name: app.applicant_full_name,
+                  employee_id: app.employee_id,
+                  mobile_number: app.mobile_number,
+                  email: app.email_id,
+                  services,
+                  packages: package,
+                  purpose_of_application: app.purpose_of_application,
+                  nationality: app.nationality,
+                  customer_id,
+                },
+                (err, result) => {
+                  if (err) {
+                    console.error("Error creating application:", err);
+                    reject(new Error("Failed to create candidate application. Please try again."));
+                  } else {
+                    console.log("Application created successfully:", result.insertId);
+                    BranchCommon.branchActivityLog(
+                      branch_id,
+                      "Candidate Application",
+                      "Create",
+                      "1",
+                      `{id: ${result.insertId}}`,
+                      null,
+                      () => {}
+                    );
+                    app.insertId = result.insertId;
+                    resolve(app);
+                  }
+                }
+              );
+            });
+          });
+
+          Promise.all(applicationPromises)
+            .then(() => {
+              console.log("All applications created successfully. Sending notifications...");
+              sendNotificationEmails(branch_id, customer_id, services, updatedApplications, newToken, res);
+            })
+            .catch((error) => {
+              console.error("Error during candidate application creation:", error);
+              return res.status(400).json({
+                status: false,
+                message: error.message || "Failed to create one or more candidate applications.",
+                token: newToken,
+              });
+            });
+        })
+        .catch((error) => {
+          console.error("Error during uniqueness checks:", error);
+          return res.status(400).json({
+            status: false,
+            message: error.message || "Error occurred during uniqueness checks.",
+            token: newToken,
+          });
+        });
+    });
+  });
+};
+
+/*
+exports.bulkCreate = (req, res) => {
   const {
     sub_user_id,
     branch_id,
@@ -652,16 +852,16 @@ exports.bulkCreate = (req, res) => {
               .filter((result) => result.reason.type === "employee_id")
               .map((result) => result.reason.value);
 
-            /*
-            const alreadyUsedEmailIds = rejectedResults
-              .filter((result) => result.reason.type === "email_id")
-              .map((result) => result.reason.value);
+            
+            // const alreadyUsedEmailIds = rejectedResults
+            //   .filter((result) => result.reason.type === "email_id")
+            //   .map((result) => result.reason.value);
 
-              (
-              alreadyUsedEmployeeIds.length > 0 ||
-              alreadyUsedEmailIds.length > 0
-            )
-*/
+            //   (
+            //   alreadyUsedEmployeeIds.length > 0 ||
+            //   alreadyUsedEmailIds.length > 0
+            // )
+            
             if (alreadyUsedEmployeeIds.length > 0) {
               return res.status(400).json({
                 status: false,
@@ -753,6 +953,8 @@ exports.bulkCreate = (req, res) => {
     );
   });
 };
+*/
+
 // Function to send email notifications
 function sendNotificationEmails(
   branch_id,
