@@ -1292,6 +1292,24 @@ function sendNotificationEmails(
                                     token: newToken,
                                   });
                                 }
+                              } else {
+                                if (failedApplications > 0) {
+                                  console.log(`Step 3`);
+                                  return res.status(201).json({
+                                    status: false,
+                                    message:
+                                      "Some emails failed to send. Candidate applications created successfully.",
+                                    token: newToken,
+                                  });
+                                } else {
+                                  console.log(`Step 4`);
+                                  return res.status(201).json({
+                                    status: true,
+                                    message:
+                                      "Candidate applications created successfully and emails sent.",
+                                    token: newToken,
+                                  });
+                                }
                               }
                             });
                         });
