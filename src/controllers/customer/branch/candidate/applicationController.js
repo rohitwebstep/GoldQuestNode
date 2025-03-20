@@ -609,10 +609,10 @@ exports.bulkCreate = (req, res) => {
         }
 
         // Check for duplicate employee IDs
-        const employeeIds = updatedApplications.map((app) => app.employee_id);
+        const employeeIds = updatedApplications.map((app) => app.employee_id).filter(id => id);;
         const emailIds = updatedApplications.map((app) => app.email_id);
 
-        const employeeIdChecks = employeeIds.map((employee_id) => {
+        const employeeIdChecks = employeeIds.filter(id => id).map((employee_id) => {
           return new Promise((resolve, reject) => {
             Candidate.checkUniqueEmpId(employee_id, (err, exists) => {
               if (err) {
