@@ -168,7 +168,7 @@ exports.isApplicationExist = (req, res) => {
                 ) {
                   return res.status(400).json({
                     status: false,
-                    message: "An application has already been submitted.",
+                    message: `The application has already been submitted. Candidate Application ID: CD-${currentCustomer.client_unique_id}-${candidate_application_id}`,
                   });
                 }
                 */
@@ -178,7 +178,7 @@ exports.isApplicationExist = (req, res) => {
                     ) {
                       return res.status(400).json({
                         status: false,
-                        message: "An application has already been submitted.",
+                        message: `The application has already been submitted. Candidate Application ID: CD-${currentCustomer.client_unique_id}-${candidate_application_id}`,
                       });
                     }
 
@@ -608,7 +608,7 @@ exports.submit = (req, res) => {
               ) {
                 return res.status(400).json({
                   status: false,
-                  message: "An application has already been submitted.",
+                  message: `The application has already been submitted. Candidate Application ID: CD-${currentCustomer.client_unique_id}-${candidate_application_id}`,
                 });
               }
               */
@@ -618,7 +618,7 @@ exports.submit = (req, res) => {
               ) {
                 return res.status(400).json({
                   status: false,
-                  message: "An application has already been submitted.",
+                  message: `The application has already been submitted. Candidate Application ID: CD-${currentCustomer.client_unique_id}-${candidate_application_id}`,
                 });
               }
 
@@ -934,7 +934,7 @@ const sendNotificationEmails = (
                             "candidate application",
                             "submit acknowledgement for candidate",
                             name,
-                            candidateAppId,
+                            'CD-' + client_unique_id + '-' + candidateAppId,
                             candidateArr || [],
                             []
                           )
