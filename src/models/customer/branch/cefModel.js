@@ -122,8 +122,8 @@ const cef = {
                     ca.reminder_sent, 
                     c.name AS customer_name, 
                     b.name AS branch_name,
-                    COALESCE(cef.is_submitted, NULL) AS cef_submitted,
-                    COALESCE(da.is_submitted, NULL) AS dav_submitted
+                    COALESCE(cef.is_submitted, 0) AS cef_submitted,
+                    COALESCE(da.is_submitted, 0) AS dav_submitted
                 FROM candidate_applications ca
                 INNER JOIN customers c ON c.id = ca.customer_id
                 INNER JOIN branches b ON b.id = ca.branch_id

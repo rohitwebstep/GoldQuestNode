@@ -1663,45 +1663,41 @@ exports.generateReport = (req, res) => {
                                                 "completed_orange",
                                               ];
 
-                                              let allMatch = true;
+                                              let allMatch = false; // Initialize as false
 
                                               // Loop through the annexure object
                                               for (let key in annexure) {
+
                                                 const db_table = key ?? null;
-                                                const modifiedDbTable =
-                                                  db_table.replace(/-/g, "_");
-                                                const subJson =
-                                                  annexure[modifiedDbTable] ??
-                                                  null;
+                                                const modifiedDbTable = db_table.replace(/-/g, "_");
+                                                const subJson = annexure[modifiedDbTable] ?? null;
 
                                                 if (subJson) {
+                                                  let subJsonMatches = true; // Assume this subJson meets conditions
+
                                                   for (let prop in subJson) {
+
                                                     if (
-                                                      prop.startsWith(
-                                                        "color_status"
-                                                      )
+                                                      prop.includes("verification_status") ||
+                                                      prop.includes("color_code") ||
+                                                      prop.includes("color_status")
                                                     ) {
+
                                                       const colorStatusValue =
-                                                        typeof subJson[prop] ===
-                                                          "string"
-                                                          ? subJson[
-                                                            prop
-                                                          ].toLowerCase()
+                                                        typeof subJson[prop] === "string"
+                                                          ? subJson[prop].toLowerCase()
                                                           : null;
 
-                                                      if (
-                                                        !completeStatusArr.includes(
-                                                          colorStatusValue
-                                                        )
-                                                      ) {
-                                                        allMatch = false;
+                                                      if (!completeStatusArr.includes(colorStatusValue)) {
+                                                        subJsonMatches = false; // If any fails, mark false
                                                         break;
                                                       }
                                                     }
                                                   }
-                                                } else {
-                                                  allMatch = false;
-                                                  break;
+
+                                                  if (subJsonMatches) {
+                                                    allMatch = true;
+                                                  }
                                                 }
                                               }
 
