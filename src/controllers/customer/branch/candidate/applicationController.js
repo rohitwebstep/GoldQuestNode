@@ -614,7 +614,7 @@ exports.bulkCreate = (req, res) => {
 
         const employeeIdChecks = employeeIds.filter(id => id).map((employee_id) => {
           return new Promise((resolve, reject) => {
-            Candidate.checkUniqueEmpId(employee_id, (err, exists) => {
+            Candidate.checkUniqueEmpId(branch_id, employee_id, (err, exists) => {
               if (err) {
                 reject(err);
               } else if (exists) {
