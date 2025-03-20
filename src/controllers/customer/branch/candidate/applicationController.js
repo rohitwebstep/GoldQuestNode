@@ -658,7 +658,7 @@ exports.bulkCreate = (req, res) => {
                       "1",
                       `{id: ${result.insertId}}`,
                       null,
-                      () => {}
+                      () => { }
                     );
                     app.insertId = result.insertId;
                     resolve(app);
@@ -861,7 +861,7 @@ exports.bulkCreate = (req, res) => {
             //   alreadyUsedEmployeeIds.length > 0 ||
             //   alreadyUsedEmailIds.length > 0
             // )
-            
+
             if (alreadyUsedEmployeeIds.length > 0) {
               return res.status(400).json({
                 status: false,
@@ -964,8 +964,16 @@ function sendNotificationEmails(
   newToken,
   res
 ) {
+  console.log("Function sendNotificationEmails started with parameters:", {
+    branch_id,
+    customer_id,
+    services,
+    updatedApplications,
+    newToken,
+  });
   // Fetch unique client ID based on branch ID
   Branch.getClientUniqueIDByBranchId(branch_id, (err, clientCode) => {
+    console.log("Fetching unique client ID...");
     if (err) {
       console.error("Error checking unique ID:", err);
       return res.status(500).json({
@@ -976,15 +984,18 @@ function sendNotificationEmails(
     }
 
     if (!clientCode) {
+      console.log("Client Unique ID not found.");
       return res.status(400).json({
         status: false,
         message: "Customer Unique ID not Found",
         token: newToken,
       });
     }
+    console.log("Client Unique ID found:", clientCode);
 
     // Fetch client name based on branch ID
     Branch.getClientNameByBranchId(branch_id, (err, clientName) => {
+      console.log("Fetching client name...");
       if (err) {
         console.error("Error checking candidate name:", err);
         return res.status(500).json({
@@ -995,13 +1006,18 @@ function sendNotificationEmails(
       }
 
       if (!clientName) {
+        console.log("Client name not found.");
         return res.status(400).json({
           status: false,
           message: "Customer Unique ID not found",
           token: newToken,
         });
       }
+
+      console.log("Client name found:", clientName);
+
       Admin.filterAdmins({ status: "active", role: "admin" }, (err, adminResult) => {
+        console.log("Fetching active admins...");
         if (err) {
           console.error("Database error:", err);
           return res.status(500).json({
@@ -1010,7 +1026,7 @@ function sendNotificationEmails(
             token: newToken,
           });
         }
-
+        console.log("Admins found:", adminResult.length);
         const adminMailArr = adminResult.map(admin => ({
           name: admin.name,
           email: admin.email
@@ -1020,6 +1036,7 @@ function sendNotificationEmails(
         BranchCommon.getBranchandCustomerEmailsForNotification(
           branch_id,
           (emailError, emailData) => {
+            console.log("Fetching emails for notifications...");
             if (emailError) {
               console.error("Error fetching emails:", emailError);
               return res.status(500).json({
@@ -1028,6 +1045,7 @@ function sendNotificationEmails(
                 token: newToken,
               });
             }
+            console.log("Emails fetched successfully:", emailData);
 
             const { branch, customer } = emailData;
 
@@ -1066,6 +1084,8 @@ function sendNotificationEmails(
               ).values(),
             ];
 
+            console.log("Recipients:", { toArr, ccArr });
+
             const serviceIds =
               typeof services === "string" && services.trim() !== ""
                 ? services.split(",").map((id) => id.trim())
@@ -1073,15 +1093,18 @@ function sendNotificationEmails(
 
             const serviceNames = [];
 
+            console.log("Processing service IDs:", serviceIds);
+
             // Recursively fetch service names
             const fetchServiceNames = (index = 0) => {
               if (index >= serviceIds.length) {
+                console.log("All services processed:", serviceNames);
                 sendBulkCreateMail(); // Proceed to sending bulk email once all services are processed
                 return;
               }
 
               const id = serviceIds[index];
-
+              console.log("Fetching service data for ID:", id);
               Service.getServiceRequiredDocumentsByServiceId(
                 id,
                 (err, currentService) => {
@@ -1103,6 +1126,7 @@ function sendNotificationEmails(
                   serviceNames.push(
                     `${currentService.title}: ${currentService.email_description}`
                   );
+                  console.log("Service added:", currentService.title);
                   fetchServiceNames(index + 1); // Recursively fetch next service
                 }
               );
@@ -1110,6 +1134,7 @@ function sendNotificationEmails(
 
             // Send email after fetching all services
             const sendBulkCreateMail = () => {
+              console.log("Sending bulk email...");
               bulkCreateMail(
                 "candidate application",
                 "bulk-create",
@@ -1122,6 +1147,7 @@ function sendNotificationEmails(
                 []
               )
                 .then(() => {
+                  console.log("Bulk email sent successfully.");
                   AppModel.appInfo("frontend", (err, appInfo) => {
                     if (err) {
                       console.error("Database error:", err);
@@ -1132,6 +1158,7 @@ function sendNotificationEmails(
                       });
                     }
 
+                    console.log("Application info retrieved:", appInfo);
                     if (appInfo) {
                       const appHost = appInfo.host || "www.example.com";
 
@@ -1141,6 +1168,7 @@ function sendNotificationEmails(
                       let responseSent = false; // Flag to track if the response is already sent
 
                       updatedApplications.forEach((app) => {
+                        console.log("Processing application:", app.insertId);
                         const base64_app_id = btoa(app.insertId);
                         const base64_branch_id = btoa(branch_id);
                         const base64_customer_id = btoa(customer_id);
@@ -1225,6 +1253,7 @@ function sendNotificationEmails(
                               );
                             })
                             .then(() => {
+                              console.log("Application emails sent successfully for:", app.applicant_full_name);
                               processedApplications++;
                             })
                             .catch((emailError) => {
@@ -1236,16 +1265,18 @@ function sendNotificationEmails(
                             })
                             .finally(() => {
                               processedApplications++;
-
+                              console.log(`Step 1`);
                               // After processing each application, check if all are processed
                               if (
                                 processedApplications + failedApplications ===
                                 updatedApplications.length &&
                                 !responseSent
                               ) {
+                                console.log(`Step 2`);
                                 responseSent = true; // Ensure the response is only sent once
 
                                 if (failedApplications > 0) {
+                                  console.log(`Step 3`);
                                   return res.status(201).json({
                                     status: false,
                                     message:
@@ -1253,6 +1284,7 @@ function sendNotificationEmails(
                                     token: newToken,
                                   });
                                 } else {
+                                  console.log(`Step 4`);
                                   return res.status(201).json({
                                     status: true,
                                     message:
