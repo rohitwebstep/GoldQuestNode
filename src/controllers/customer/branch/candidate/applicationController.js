@@ -570,7 +570,7 @@ exports.bulkCreate = (req, res) => {
             missingFields.push("Applicant Full Name");
           if (!("mobile_number" in app)) missingFields.push("Mobile Number");
           if (!("email_id" in app)) missingFields.push("Email ID");
-          if (!("employee_id" in app)) missingFields.push("Employee ID");
+          if (!("nationality" in app)) missingFields.push("Nationality");
 
           if (missingFields.length > 0) {
             emptyValues.push(
@@ -582,11 +582,10 @@ exports.bulkCreate = (req, res) => {
 
           // Check if any of the fields are empty and track those applicants
           const emptyFields = [];
-          if (!app.applicant_full_name?.trim())
-            emptyFields.push("Applicant Full Name");
+          if (!app.applicant_full_name?.trim()) emptyFields.push("Applicant Full Name");
           if (!app.mobile_number?.trim()) emptyFields.push("Mobile Number");
           if (!app.email_id?.trim()) emptyFields.push("Email ID");
-          if (!app.employee_id?.trim()) emptyFields.push("Employee ID");
+          if (!app.nationality?.trim()) emptyFields.push("Nationality");
 
           if (emptyFields.length > 0) {
             emptyValues.push(
@@ -678,13 +677,15 @@ exports.bulkCreate = (req, res) => {
               return new Promise((resolve, reject) => {
                 Candidate.create(
                   {
+                    branch_id,
                     name: app.applicant_full_name,
                     employee_id: app.employee_id,
                     mobile_number: app.mobile_number,
                     email: app.email_id,
-                    branch_id,
                     services,
                     packages: package,
+                    purpose_of_application: app.purpose_of_application,
+                    nationality: app.nationality,
                     customer_id,
                   },
                   (err, result) => {
@@ -752,7 +753,6 @@ exports.bulkCreate = (req, res) => {
     );
   });
 };
-
 // Function to send email notifications
 function sendNotificationEmails(
   branch_id,
