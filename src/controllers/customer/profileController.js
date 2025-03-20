@@ -287,8 +287,6 @@ exports.create = (req, res) => {
             });
           }
 
-          const password = generatePassword(company_name);
-
           // Check if client_unique_id already exists
           Customer.checkUniqueId(client_code, (err, exists) => {
             if (err) {
@@ -421,6 +419,8 @@ exports.create = (req, res) => {
                       });
                     }
                     const headBranchEmail = emails[0];
+                    const password = generatePassword(company_name);
+
                     // Create the first branch (head branch)
                     Branch.create(
                       {
