@@ -186,15 +186,16 @@ const candidateApplication = {
   },
 
   checkUniqueEmpId: (branch_id, candidateUniqueEmpId, callback) => {
-    if (!candidateUniqueEmpId) {
+    if (!candidateUniqueEmpId || typeof candidateUniqueEmpId !== "string") {
       return callback(null, false);
     }
+  
     const sql = `
       SELECT COUNT(*) AS count
       FROM \`candidate_applications\`
       WHERE \`employee_id\` = ? AND \`branch_id\` = ?
     `;
-
+  
     startConnection((err, connection) => {
       if (err) {
         return callback(
@@ -202,10 +203,10 @@ const candidateApplication = {
           null
         );
       }
-
-      connection.query(sql, [candidateUniqueEmpId, branch_id], (err, results) => {
-        connectionRelease(connection); // Ensure connection is released
-
+  
+      connection.query(sql, [String(candidateUniqueEmpId), Number(branch_id)], (err, results) => {
+        connectionRelease(connection);
+  
         if (err) {
           console.error("Database query error: 101", err);
           return callback(
@@ -213,12 +214,12 @@ const candidateApplication = {
             null
           );
         }
-
+  
         const count = results[0].count;
         callback(null, count > 0);
       });
     });
-  },
+  },  
 
   checkUniqueEmpIdByCandidateApplicationID: (
     branch_id,
