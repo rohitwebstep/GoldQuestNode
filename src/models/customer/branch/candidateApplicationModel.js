@@ -234,7 +234,7 @@ const candidateApplication = {
     const sql = `
       SELECT COUNT(*) AS count
       FROM \`candidate_applications\`
-      WHERE \`employee_id\` = ? AND id = ? AND \`branch_id\` = ?
+      WHERE \`employee_id\` = ? AND id != ? AND \`branch_id\` = ?
     `;
 
     startConnection((err, connection) => {
