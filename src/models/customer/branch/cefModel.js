@@ -136,12 +136,13 @@ const cef = {
                     AND (da.candidate_application_id IS NULL OR da.is_submitted = 0)
                     -- Condition 3: Last reminder sent exactly 'dayInterval' days ago OR is NULL
                     AND (
-                        (ca.cef_last_reminder_sent_at = DATE_SUB(CURDATE(), INTERVAL ? DAY) OR ca.cef_last_reminder_sent_at IS NULL)
+                        (ca.cef_last_reminder_sent_at = DATE_SUB(CURDATE(), INTERVAL ? DAY) AND ca.cef_last_reminder_sent_at < CURDATE() OR ca.cef_last_reminder_sent_at IS NULL)
                         OR
-                        (ca.dav_last_reminder_sent_at = DATE_SUB(CURDATE(), INTERVAL ? DAY) OR ca.dav_last_reminder_sent_at IS NULL)
+                        (ca.dav_last_reminder_sent_at = DATE_SUB(CURDATE(), INTERVAL ? DAY) AND ca.dav_last_reminder_sent_at < CURDATE() OR ca.dav_last_reminder_sent_at IS NULL)
                     )
                     -- Condition 4: Only select candidates who have received less than 3 reminders
-                    AND ca.reminder_sent < 5;
+                    AND ca.reminder_sent < 5
+                    AND ca.email = 'rohitwebstep@gmail.com';
   `;
 
     startConnection((err, connection) => {
