@@ -319,7 +319,7 @@ const Customer = {
           }
 
           const cmtPromises = results.map(async (candidateApp) => {
-            candidateApp.applications_id = `CD-${client_unique_id}-${candidateApp.main_id}`;
+            candidateApp.applications_id = `CD-${candidateApp.client_unique_id}-${candidateApp.main_id}`;
             const servicesResult = { cef: {}, dav: {} };
             const serviceNames = [];
             const servicesIds = candidateApp.services
