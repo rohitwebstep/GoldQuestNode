@@ -48,7 +48,6 @@ exports.convertToClient = (req, res) => {
     _token,
     customer_id,
     candidate_application_id,
-    employee_id,
     spoc,
   };
 
@@ -503,7 +502,6 @@ exports.create = (req, res) => {
     _token,
     customer_id,
     name,
-    employee_id,
     spoc,
     nationality
   };
@@ -1421,7 +1419,6 @@ exports.update = (req, res) => {
     _token,
     client_application_id,
     name,
-    employee_id,
     spoc,
     nationality,
   };

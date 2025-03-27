@@ -319,6 +319,9 @@ const clientApplication = {
   },
 
   checkUniqueEmpId: (branch_id, clientUniqueEmpId, callback) => {
+    if (!clientUniqueEmpId || typeof clientUniqueEmpId !== "string") {
+      return callback(null, false);
+    }
     startConnection((err, connection) => {
       if (err) {
         return callback(
@@ -354,6 +357,9 @@ const clientApplication = {
     clientUniqueEmpId,
     callback
   ) => {
+    if (!clientUniqueEmpId || typeof clientUniqueEmpId !== "string") {
+      return callback(null, false);
+    }
     startConnection((err, connection) => {
       if (err) {
         return callback(
