@@ -1368,7 +1368,7 @@ const Customer = {
     });
   },
 
-  filterOptionsForBranch: (branch_id, branch_id, callback) => {
+  filterOptionsForBranch: (branch_id, callback) => {
 
     // Start a connection
     startConnection((err, connection) => {
