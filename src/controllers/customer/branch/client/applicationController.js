@@ -170,7 +170,7 @@ exports.convertToClient = (req, res) => {
                 ClientApplication.create(
                   {
                     name: currentCandidateApplication.name,
-                    employee_id: null,
+                    employee_id: currentCandidateApplication.employee_id || null,
                     spoc: null,
                     batch_number: null,
                     sub_client: null,
