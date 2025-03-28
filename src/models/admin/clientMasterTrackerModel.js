@@ -1446,12 +1446,11 @@ const Customer = {
               JOIN customers c ON a.customer_id = c.id
               JOIN cmt_applications b ON a.id = b.client_application_id
               WHERE a.branch_id = ? 
-              AND CAST(a.branch_id AS CHAR) = ? 
               AND (a.created_at LIKE '${yearMonth}-%' OR a.created_at LIKE '%-${monthYear}') 
               ${condition}
               AND c.status = 1
             `;
-
+            console.log(`SQL - `, SQL);
             sqlQueries.push(new Promise((resolve, reject) => {
               connection.query(SQL, [branch_id], (err, result) => {
                 if (err) {
