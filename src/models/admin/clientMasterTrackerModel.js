@@ -59,12 +59,12 @@ const Customer = {
         return callback(err, null);
       }
 
-      if (filter_status && filter_status !== null && filter_status !== "") {
+      // Get the current date
+      const now = new Date();
+      const yearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      const monthYear = `${String(now.getMonth() + 1).padStart(2, '0')}-${now.getFullYear()}`;
 
-        // Get the current date
-        const now = new Date();
-        const yearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-        const monthYear = `${String(now.getMonth() + 1).padStart(2, '0')}-${now.getFullYear()}`;
+      if (filter_status && filter_status !== null && filter_status !== "") {
 
         let sql = `SELECT customer_id FROM customers WHERE status = 1`;
 
@@ -327,55 +327,86 @@ const Customer = {
           } else {
             return callback(null, []);
           }
-          const finalSql = `
-            WITH BranchesCTE AS (
-                SELECT 
-                    b.id AS branch_id,
-                    b.customer_id
-                FROM 
-                    branches b
-            )
-            SELECT 
-                customers.client_unique_id,
-                customers.name,
-                customer_metas.tat_days,
-                customer_metas.single_point_of_contact,
-                customers.id AS main_id,
-                COALESCE(branch_counts.branch_count, 0) AS branch_count,
-                COALESCE(application_counts.application_count, 0) AS application_count
-            FROM 
-                customers
-            LEFT JOIN 
-                customer_metas ON customers.id = customer_metas.customer_id
-            LEFT JOIN (
-                SELECT 
-                    customer_id, 
-                    COUNT(*) AS branch_count
-                FROM 
-                    branches
-                GROUP BY 
-                    customer_id
-            ) AS branch_counts ON customers.id = branch_counts.customer_id
-            LEFT JOIN (
-                SELECT 
-                    b.customer_id, 
-                    COUNT(ca.id) AS application_count,
-                    MAX(ca.created_at) AS latest_application_date
-                FROM 
-                    BranchesCTE b
-                INNER JOIN 
-                    client_applications ca ON b.branch_id = ca.branch_id
-                WHERE
-                  AND ca.id IN (${client_application_ids.join(",")})
-                GROUP BY 
-                    b.customer_id
-            ) AS application_counts ON customers.id = application_counts.customer_id
-            WHERE 
-                customers.status = 1
-                AND COALESCE(application_counts.application_count, 0) > 0
-            ORDER BY 
-                application_counts.latest_application_date DESC;
-          `;
+
+          const finalSql = `WITH BranchesCTE AS (
+                                SELECT
+                                    b.id AS branch_id,
+                                    b.customer_id
+                                FROM
+                                    branches b
+                            )
+                            SELECT
+                                customers.client_unique_id,
+                                customers.name,
+                                customer_metas.tat_days,
+                                customer_metas.single_point_of_contact,
+                                customers.id AS main_id,
+                                COALESCE(branch_counts.branch_count, 0) AS branch_count,
+                                COALESCE(application_counts.application_count, 0) AS application_count,
+                                COALESCE(completed_counts.completed_count, 0) AS completedApplicationsCount,
+                                COALESCE(pending_counts.pending_count, 0) AS pendingApplicationsCount
+                            FROM
+                                customers
+                            LEFT JOIN
+                                customer_metas ON customers.id = customer_metas.customer_id
+                            LEFT JOIN (
+                                SELECT
+                                    customer_id,
+                                    COUNT(*) AS branch_count
+                                FROM
+                                    branches
+                                GROUP BY
+                                    customer_id
+                            ) AS branch_counts ON customers.id = branch_counts.customer_id
+                            LEFT JOIN (
+                                SELECT
+                                    b.customer_id,
+                                    COUNT(ca.id) AS application_count,
+                                    MAX(ca.created_at) AS latest_application_date
+                                FROM
+                                    BranchesCTE b
+                                INNER JOIN
+                                    client_applications ca ON b.branch_id = ca.branch_id
+                                WHERE
+                                    (ca.created_at LIKE '${yearMonth}-%' OR ca.created_at LIKE '%-${monthYear}')
+                                GROUP BY
+                                    b.customer_id
+                            ) AS application_counts ON customers.id = application_counts.customer_id
+                            LEFT JOIN (
+                                SELECT
+                                    b.customer_id,
+                                    COUNT(ca.id) AS completed_count
+                                FROM
+                                    BranchesCTE b
+                                INNER JOIN
+                                    client_applications ca ON b.branch_id = ca.branch_id
+                                WHERE
+                                    ca.status = 'completed'
+                                    AND (ca.created_at LIKE '${yearMonth}-%' OR ca.created_at LIKE '%-${monthYear}')
+                                GROUP BY
+                                    b.customer_id
+                            ) AS completed_counts ON customers.id = completed_counts.customer_id
+                            LEFT JOIN (
+                                SELECT
+                                    b.customer_id,
+                                    COUNT(ca.id) AS pending_count
+                                FROM
+                                    BranchesCTE b
+                                INNER JOIN
+                                    client_applications ca ON b.branch_id = ca.branch_id
+                                WHERE
+                                    ca.id IN (${client_application_ids.join(",")}) 
+                                    AND ca.status <> 'completed'
+                                    AND (ca.created_at LIKE '${yearMonth}-%' OR ca.created_at LIKE '%-${monthYear}')
+                                GROUP BY
+                                    b.customer_id
+                            ) AS pending_counts ON customers.id = pending_counts.customer_id
+                            WHERE
+                                customers.status = 1
+                                AND COALESCE(application_counts.application_count, 0) > 0
+                            ORDER BY
+                                application_counts.latest_application_date DESC;
+                            `;
 
           connection.query(finalSql, async (err, results) => {
             connectionRelease(connection); // Always release the connection
@@ -444,53 +475,86 @@ const Customer = {
         });
       } else {
         // If no filter_status is provided, proceed with the final SQL query without filters
-        const finalSql = `
-          WITH BranchesCTE AS (
-              SELECT 
-                  b.id AS branch_id,
-                  b.customer_id
-              FROM 
-                  branches b
-          )
-          SELECT 
-              customers.client_unique_id,
-              customers.name,
-              customer_metas.tat_days,
-              customer_metas.single_point_of_contact,
-              customers.id AS main_id,
-              COALESCE(branch_counts.branch_count, 0) AS branch_count,
-              COALESCE(application_counts.application_count, 0) AS application_count
-          FROM 
-              customers
-          LEFT JOIN 
-              customer_metas ON customers.id = customer_metas.customer_id
-          LEFT JOIN (
-              SELECT 
-                  customer_id, 
-                  COUNT(*) AS branch_count
-              FROM 
-                  branches
-              GROUP BY 
-                  customer_id
-          ) AS branch_counts ON customers.id = branch_counts.customer_id
-          LEFT JOIN (
-              SELECT 
-                  b.customer_id, 
-                  COUNT(ca.id) AS application_count,
-                  MAX(ca.created_at) AS latest_application_date
-              FROM 
-                  BranchesCTE b
-              INNER JOIN 
-                  client_applications ca ON b.branch_id = ca.branch_id
-              GROUP BY 
-                  b.customer_id
-          ) AS application_counts ON customers.id = application_counts.customer_id
-          WHERE 
-              customers.status = 1
-              AND COALESCE(application_counts.application_count, 0) > 0
-          ORDER BY 
-              application_counts.latest_application_date DESC;
-        `;
+        const finalSql = `WITH BranchesCTE AS (
+                              SELECT
+                                  b.id AS branch_id,
+                                  b.customer_id
+                              FROM
+                                  branches b
+                          )
+                          SELECT
+                              customers.client_unique_id,
+                              customers.name,
+                              customer_metas.tat_days,
+                              customer_metas.single_point_of_contact,
+                              customers.id AS main_id,
+                              COALESCE(branch_counts.branch_count, 0) AS branch_count,
+                              COALESCE(application_counts.application_count, 0) AS application_count,
+                              COALESCE(completed_counts.completed_count, 0) AS completedApplicationsCount,
+                              COALESCE(pending_counts.pending_count, 0) AS pendingApplicationsCount
+                          FROM
+                              customers
+                          LEFT JOIN
+                              customer_metas ON customers.id = customer_metas.customer_id
+                          LEFT JOIN (
+                              SELECT
+                                  customer_id,
+                                  COUNT(*) AS branch_count
+                              FROM
+                                  branches
+                              GROUP BY
+                                  customer_id
+                          ) AS branch_counts ON customers.id = branch_counts.customer_id
+                          LEFT JOIN (
+                              SELECT
+                                  b.customer_id,
+                                  COUNT(ca.id) AS application_count,
+                                  MAX(ca.created_at) AS latest_application_date
+                              FROM
+                                  BranchesCTE b
+                              INNER JOIN
+                                  client_applications ca ON b.branch_id = ca.branch_id
+                              WHERE
+                                  (ca.created_at LIKE '${yearMonth}-%' OR ca.created_at LIKE '%-${monthYear}')
+                              GROUP BY
+                                  b.customer_id
+                          ) AS application_counts ON customers.id = application_counts.customer_id
+                          LEFT JOIN (
+                              SELECT
+                                  b.customer_id,
+                                  COUNT(ca.id) AS completed_count
+                              FROM
+                                  BranchesCTE b
+                              INNER JOIN
+                                  client_applications ca ON b.branch_id = ca.branch_id
+                              WHERE
+                                  ca.status = 'completed'
+                                  AND (ca.created_at LIKE '${yearMonth}-%' OR ca.created_at LIKE '%-${monthYear}')
+                              GROUP BY
+                                  b.customer_id
+                          ) AS completed_counts ON customers.id = completed_counts.customer_id
+                          LEFT JOIN (
+                              SELECT
+                                  b.customer_id,
+                                  COUNT(ca.id) AS pending_count
+                              FROM
+                                  BranchesCTE b
+                              INNER JOIN
+                                  client_applications ca ON b.branch_id = ca.branch_id
+                              WHERE
+                                  ca.status <> 'completed'
+                                  AND (ca.created_at LIKE '${yearMonth}-%' OR ca.created_at LIKE '%-${monthYear}')
+                              GROUP BY
+                                  b.customer_id
+                          ) AS pending_counts ON customers.id = pending_counts.customer_id
+                          WHERE
+                              customers.status = 1
+                              AND COALESCE(application_counts.application_count, 0) > 0
+                          ORDER BY
+                              application_counts.latest_application_date DESC;
+                          `;
+
+        console.log(`finalSql - `, finalSql);
         connection.query(finalSql, async (err, results) => {
           connectionRelease(connection); // Always release the connection
           if (err) {
@@ -648,16 +712,16 @@ const Customer = {
 
             // Define SQL conditions for each filter status
             const conditions = {
-              overallCount: `AND (cmt.overall_status='wip' OR cmt.overall_status='insuff' OR cmt.overall_status='initiated' OR cmt.overall_status='hold' OR cmt.overall_status='closure advice' OR cmt.overall_status='stopcheck' OR cmt.overall_status='active employment' OR cmt.overall_status='nil' OR cmt.overall_status='' OR cmt.overall_status='not doable' OR cmt.overall_status='candidate denied' OR (cmt.overall_status='completed' AND cmt.report_date LIKE '%-${month}-%') OR (cmt.overall_status='completed' AND cmt.report_date NOT LIKE '%-${month}-%')) AND c.status = 1`,
+              overallCount: `AND (cmt.overall_status='wip' OR cmt.overall_status='insuff' OR cmt.overall_status='initiated' OR cmt.overall_status='hold' OR cmt.overall_status='closure advice' OR cmt.overall_status='stopcheck' OR cmt.overall_status='active employment' OR cmt.overall_status='nil' OR cmt.overall_status='' OR cmt.overall_status='not doable' OR cmt.overall_status='candidate denied' OR (cmt.overall_status='completed' AND cmt.report_date LIKE '${yearMonth}-%') OR (cmt.overall_status='completed' AND cmt.report_date NOT LIKE '${yearMonth}-%')) AND c.status = 1`,
               qcStatusPendingCount: `AND ca.is_report_downloaded = '1' AND LOWER(cmt.is_verify) = 'no' AND ca.status = 'completed'`,
               wipCount: `AND cmt.overall_status = 'wip'`,
               insuffCount: `AND cmt.overall_status = 'insuff'`,
-              completedGreenCount: `AND cmt.overall_status = 'completed' AND cmt.report_date LIKE '%-${month}-%' AND cmt.final_verification_status = 'GREEN'`,
-              completedRedCount: `AND cmt.overall_status = 'completed' AND cmt.report_date LIKE '%-${month}-%' AND cmt.final_verification_status = 'RED'`,
-              completedYellowCount: `AND cmt.overall_status = 'completed' AND cmt.report_date LIKE '%-${month}-%' AND cmt.final_verification_status = 'YELLOW'`,
-              completedPinkCount: `AND cmt.overall_status = 'completed' AND cmt.report_date LIKE '%-${month}-%' AND cmt.final_verification_status = 'PINK'`,
-              completedOrangeCount: `AND cmt.overall_status = 'completed' AND cmt.report_date LIKE '%-${month}-%' AND cmt.final_verification_status = 'ORANGE'`,
-              previousCompletedCount: `AND (cmt.overall_status = 'completed' AND cmt.report_date NOT LIKE '%-${month}-%') AND c.status=1`,
+              completedGreenCount: `AND cmt.overall_status = 'completed' AND cmt.report_date LIKE '${yearMonth}-%' AND cmt.final_verification_status = 'GREEN'`,
+              completedRedCount: `AND cmt.overall_status = 'completed' AND cmt.report_date LIKE '${yearMonth}-%' AND cmt.final_verification_status = 'RED'`,
+              completedYellowCount: `AND cmt.overall_status = 'completed' AND cmt.report_date LIKE '${yearMonth}-%' AND cmt.final_verification_status = 'YELLOW'`,
+              completedPinkCount: `AND cmt.overall_status = 'completed' AND cmt.report_date LIKE '${yearMonth}-%' AND cmt.final_verification_status = 'PINK'`,
+              completedOrangeCount: `AND cmt.overall_status = 'completed' AND cmt.report_date LIKE '${yearMonth}-%' AND cmt.final_verification_status = 'ORANGE'`,
+              previousCompletedCount: `AND (cmt.overall_status = 'completed' AND cmt.report_date NOT LIKE '${yearMonth}-%') AND c.status=1`,
               stopcheckCount: `AND cmt.overall_status = 'stopcheck'`,
               activeEmploymentCount: `AND cmt.overall_status = 'active employment'`,
               nilCount: `AND cmt.overall_status IN ('nil', '')`,
