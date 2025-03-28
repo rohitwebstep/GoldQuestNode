@@ -717,7 +717,7 @@ const Customer = {
 
             // Define SQL conditions for each filter status
             const conditions = {
-              overallCount: `AND (cmt.overall_status='wip' OR cmt.overall_status='insuff' OR cmt.overall_status='initiated' OR cmt.overall_status='hold' OR cmt.overall_status='closure advice' OR cmt.overall_status='stopcheck' OR cmt.overall_status='active employment' OR cmt.overall_status='nil' OR cmt.overall_status='' OR cmt.overall_status='not doable' OR cmt.overall_status='candidate denied' OR (cmt.overall_status='completed' AND cmt.report_date LIKE '${yearMonth}-%') OR (cmt.overall_status='completed' AND cmt.report_date NOT LIKE '${yearMonth}-%')) AND c.status = 1`,
+              overallCount: `AND (cmt.overall_status='wip' OR cmt.overall_status='insuff' OR cmt.overall_status='initiated' OR cmt.overall_status='hold' OR cmt.overall_status='closure advice' OR cmt.overall_status='stopcheck' OR cmt.overall_status='active employment' OR cmt.overall_status='nil' OR cmt.overall_status='' OR cmt.overall_status='not doable' OR cmt.overall_status='candidate denied' OR (cmt.overall_status='completed' AND cmt.report_date LIKE '${yearMonth}-%') OR (cmt.overall_status='completed' AND cmt.report_date NOT LIKE '${yearMonth}-%'))`,
               qcStatusPendingCount: `AND ca.is_report_downloaded = '1' AND LOWER(cmt.is_verify) = 'no' AND ca.status = 'completed'`,
               wipCount: `AND cmt.overall_status = 'wip'`,
               insuffCount: `AND cmt.overall_status = 'insuff'`,
@@ -795,7 +795,8 @@ const Customer = {
         ON 
           report_admin.id = cmt.report_generate_by
         WHERE 
-          ca.\`branch_id\` = ?
+            c.status = 1
+          AND ca.\`branch_id\` = ?
           ${sqlCondition}`;
 
             const params = [branch_id]; // Start with branch_id
