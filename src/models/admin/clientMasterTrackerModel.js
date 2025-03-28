@@ -1299,14 +1299,14 @@ const Customer = {
       };
 
       let conditions = {
-        overallCount: `AND (b.overall_status='wip' OR b.overall_status='insuff' OR b.overall_status='initiated' OR b.overall_status='hold' OR b.overall_status='closure advice' OR b.overall_status='stopcheck' OR b.overall_status='active employment' OR b.overall_status='nil' OR b.overall_status='' OR b.overall_status='not doable' OR b.overall_status='candidate denied' OR (b.overall_status='completed' AND b.report_date LIKE '%-${month}-%') OR (b.overall_status='completed' AND b.report_date NOT LIKE '%-${month}-%'))`,
+        overallCount: `AND (b.overall_status='wip' OR b.overall_status='insuff' OR b.overall_status='initiated' OR b.overall_status='hold' OR b.overall_status='closure advice' OR b.overall_status='stopcheck' OR b.overall_status='active employment' OR b.overall_status='nil' OR b.overall_status='' OR b.overall_status='not doable' OR b.overall_status='candidate denied' OR (b.overall_status='completed' AND (b.report_date LIKE '${yearMonth}-%' OR b.report_date LIKE '%-${monthYear}')) OR (b.overall_status='completed' AND b.report_date NOT LIKE '%-${month}-%'))`,
         wipCount: `AND (b.overall_status = 'wip')`,
         insuffCount: `AND (b.overall_status = 'insuff')`,
-        completedGreenCount: `AND (b.overall_status = 'completed' AND b.report_date LIKE '%-${month}-%') AND b.final_verification_status='GREEN'`,
-        completedRedCount: `AND (b.overall_status = 'completed' AND b.report_date LIKE '%-${month}-%') AND b.final_verification_status='RED'`,
-        completedYellowCount: `AND (b.overall_status = 'completed' AND b.report_date LIKE '%-${month}-%') AND b.final_verification_status='YELLOW'`,
-        completedPinkCount: `AND (b.overall_status = 'completed' AND b.report_date LIKE '%-${month}-%') AND b.final_verification_status='PINK'`,
-        completedOrangeCount: `AND (b.overall_status = 'completed' AND b.report_date LIKE '%-${month}-%') AND b.final_verification_status='ORANGE'`,
+        completedGreenCount: `AND (b.overall_status = 'completed' AND (b.report_date LIKE '${yearMonth}-%' OR b.report_date LIKE '%-${monthYear}')) AND b.final_verification_status='GREEN'`,
+        completedRedCount: `AND (b.overall_status = 'completed' AND (b.report_date LIKE '${yearMonth}-%' OR b.report_date LIKE '%-${monthYear}')) AND b.final_verification_status='RED'`,
+        completedYellowCount: `AND (b.overall_status = 'completed' AND (b.report_date LIKE '${yearMonth}-%' OR b.report_date LIKE '%-${monthYear}')) AND b.final_verification_status='YELLOW'`,
+        completedPinkCount: `AND (b.overall_status = 'completed' AND (b.report_date LIKE '${yearMonth}-%' OR b.report_date LIKE '%-${monthYear}')) AND b.final_verification_status='PINK'`,
+        completedOrangeCount: `AND (b.overall_status = 'completed' AND (b.report_date LIKE '${yearMonth}-%' OR b.report_date LIKE '%-${monthYear}')) AND b.final_verification_status='ORANGE'`,
         previousCompletedCount: `AND (b.overall_status = 'completed' AND b.report_date NOT LIKE '%-${month}-%')`,
         stopcheckCount: `AND (b.overall_status = 'stopcheck')`,
         activeEmploymentCount: `AND (b.overall_status = 'active employment')`,
@@ -1411,14 +1411,14 @@ const Customer = {
       };
 
       let conditions = {
-        overallCount: `AND (b.overall_status='wip' OR b.overall_status='insuff' OR b.overall_status='initiated' OR b.overall_status='hold' OR b.overall_status='closure advice' OR b.overall_status='stopcheck' OR b.overall_status='active employment' OR b.overall_status='nil' OR b.overall_status='' OR b.overall_status='not doable' OR b.overall_status='candidate denied' OR (b.overall_status='completed' AND b.report_date LIKE '%-${month}-%') OR (b.overall_status='completed' AND b.report_date NOT LIKE '%-${month}-%'))`,
+        overallCount: `AND (b.overall_status='wip' OR b.overall_status='insuff' OR b.overall_status='initiated' OR b.overall_status='hold' OR b.overall_status='closure advice' OR b.overall_status='stopcheck' OR b.overall_status='active employment' OR b.overall_status='nil' OR b.overall_status='' OR b.overall_status='not doable' OR b.overall_status='candidate denied' OR (b.overall_status='completed' AND (b.report_date LIKE '${yearMonth}-%' OR b.report_date LIKE '%-${monthYear}')) OR (b.overall_status='completed' AND b.report_date NOT LIKE '%-${month}-%'))`,
         wipCount: `AND (b.overall_status = 'wip')`,
         insuffCount: `AND (b.overall_status = 'insuff')`,
-        completedGreenCount: `AND (b.overall_status = 'completed' AND b.report_date LIKE '%-${month}-%') AND b.final_verification_status='GREEN'`,
-        completedRedCount: `AND (b.overall_status = 'completed' AND b.report_date LIKE '%-${month}-%') AND b.final_verification_status='RED'`,
-        completedYellowCount: `AND (b.overall_status = 'completed' AND b.report_date LIKE '%-${month}-%') AND b.final_verification_status='YELLOW'`,
-        completedPinkCount: `AND (b.overall_status = 'completed' AND b.report_date LIKE '%-${month}-%') AND b.final_verification_status='PINK'`,
-        completedOrangeCount: `AND (b.overall_status = 'completed' AND b.report_date LIKE '%-${month}-%') AND b.final_verification_status='ORANGE'`,
+        completedGreenCount: `AND (b.overall_status = 'completed' AND (b.report_date LIKE '${yearMonth}-%' OR b.report_date LIKE '%-${monthYear}')) AND b.final_verification_status='GREEN'`,
+        completedRedCount: `AND (b.overall_status = 'completed' AND (b.report_date LIKE '${yearMonth}-%' OR b.report_date LIKE '%-${monthYear}')) AND b.final_verification_status='RED'`,
+        completedYellowCount: `AND (b.overall_status = 'completed' AND (b.report_date LIKE '${yearMonth}-%' OR b.report_date LIKE '%-${monthYear}')) AND b.final_verification_status='YELLOW'`,
+        completedPinkCount: `AND (b.overall_status = 'completed' AND (b.report_date LIKE '${yearMonth}-%' OR b.report_date LIKE '%-${monthYear}')) AND b.final_verification_status='PINK'`,
+        completedOrangeCount: `AND (b.overall_status = 'completed' AND (b.report_date LIKE '${yearMonth}-%' OR b.report_date LIKE '%-${monthYear}')) AND b.final_verification_status='ORANGE'`,
         previousCompletedCount: `AND (b.overall_status = 'completed' AND b.report_date NOT LIKE '%-${month}-%')`,
         stopcheckCount: `AND (b.overall_status = 'stopcheck')`,
         activeEmploymentCount: `AND (b.overall_status = 'active employment')`,
