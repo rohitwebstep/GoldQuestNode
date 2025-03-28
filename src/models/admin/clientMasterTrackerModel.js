@@ -328,7 +328,6 @@ const Customer = {
             return callback(err, null);
           }
 
-          console.log(`results - `, results);
           // Loop through results and push customer_id to the array
           results.forEach((row) => {
             client_application_ids.push(row.id);
@@ -1347,7 +1346,6 @@ const Customer = {
                   console.error("Database query error:", err);
                   return reject(err);
                 }
-                console.log(`result - `, result);
                 filterOptions[key] = result[0] ? result[0].count : 0;
                 resolve();
               });
@@ -1359,7 +1357,6 @@ const Customer = {
       // After all queries finish, execute the callback
       Promise.all(sqlQueries)
         .then(() => {
-          console.log(`filterOptions- `, filterOptions);
           const transformedFilterOptions = Object.entries(filterOptions).map(([status, count]) => ({
             status,
             count
