@@ -585,7 +585,7 @@ exports.applicationByID = (req, res) => {
                 });
               }
 
-              Branch.getBranchById(branch_id, (err, currentBranch) => {
+              Branch.getBranchById(application.branch_id, (err, currentBranch) => {
                 if (err) {
                   console.error("Database error during branch retrieval:", err);
                   return res.status(500).json({
