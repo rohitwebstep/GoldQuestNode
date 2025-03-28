@@ -1328,7 +1328,7 @@ const Customer = {
                   console.error("Database query error:", err);
                   return reject(err);
                 }
-                filterOptions.push({ status: key, count: result[0] ? result[0].count : 0 });
+                filterOptions[key] =result[0] ? result[0].count : 0;
                 resolve();
               });
             }));
@@ -1339,7 +1339,12 @@ const Customer = {
       // After all queries finish, execute the callback
       Promise.all(sqlQueries)
         .then(() => {
-          callback(null, filterOptions);
+          const transformedFilterOptions = Object.entries(filterOptions).map(([status, count]) => ({
+            status,
+            count
+          }));
+
+          callback(null, transformedFilterOptions);
           connectionRelease(connection); // Release connection here
         })
         .catch((err) => {
