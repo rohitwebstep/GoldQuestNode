@@ -1368,27 +1368,115 @@ const Customer = {
     });
   },
 
-  filterOptionsForBranch: (branch_id, callback) => {
+  filterOptionsForBranch: (branch_id, branch_id, callback) => {
+
     // Start a connection
     startConnection((err, connection) => {
       if (err) {
         return callback(err, null);
       }
 
-      const sql = `
-        SELECT \`status\`, COUNT(*) AS \`count\` 
-        FROM \`client_applications\` 
-        WHERE \`branch_id\` = ?
-        GROUP BY \`status\`, \`branch_id\`
-      `;
-      connection.query(sql, [branch_id], (err, results) => {
-        connectionRelease(connection); // Release connection
-        if (err) {
-          console.error("Database query error: 22", err);
-          return callback(err, null);
+      // Get the current date
+      const now = new Date();
+      const month = `${String(now.getMonth() + 1).padStart(2, '0')}`;
+      const year = `${now.getFullYear()}`;
+      const yearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      const monthYear = `${String(now.getMonth() + 1).padStart(2, '0')}-${now.getFullYear()}`;
+
+      let filterOptions = {
+        overallCount: 0,
+        wipCount: 0,
+        insuffCount: 0,
+        completedGreenCount: 0,
+        completedRedCount: 0,
+        completedYellowCount: 0,
+        completedPinkCount: 0,
+        completedOrangeCount: 0,
+        previousCompletedCount: 0,
+        stopcheckCount: 0,
+        activeEmploymentCount: 0,
+        nilCount: 0,
+        candidateDeniedCount: 0,
+        notDoableCount: 0,
+        initiatedCount: 0,
+        holdCount: 0,
+        closureAdviceCount: 0,
+        qcStatusPendingCount: 0,
+        notReadyCount: 0,
+        downloadReportCount: 0,
+      };
+
+      let conditions = {
+        overallCount: `AND (b.overall_status='wip' OR b.overall_status='insuff' OR b.overall_status='initiated' OR b.overall_status='hold' OR b.overall_status='closure advice' OR b.overall_status='stopcheck' OR b.overall_status='active employment' OR b.overall_status='nil' OR b.overall_status='' OR b.overall_status='not doable' OR b.overall_status='candidate denied' OR (b.overall_status='completed' AND b.report_date LIKE '%-${month}-%') OR (b.overall_status='completed' AND b.report_date NOT LIKE '%-${month}-%'))`,
+        wipCount: `AND (b.overall_status = 'wip')`,
+        insuffCount: `AND (b.overall_status = 'insuff')`,
+        completedGreenCount: `AND (b.overall_status = 'completed' AND b.report_date LIKE '%-${month}-%') AND b.final_verification_status='GREEN'`,
+        completedRedCount: `AND (b.overall_status = 'completed' AND b.report_date LIKE '%-${month}-%') AND b.final_verification_status='RED'`,
+        completedYellowCount: `AND (b.overall_status = 'completed' AND b.report_date LIKE '%-${month}-%') AND b.final_verification_status='YELLOW'`,
+        completedPinkCount: `AND (b.overall_status = 'completed' AND b.report_date LIKE '%-${month}-%') AND b.final_verification_status='PINK'`,
+        completedOrangeCount: `AND (b.overall_status = 'completed' AND b.report_date LIKE '%-${month}-%') AND b.final_verification_status='ORANGE'`,
+        previousCompletedCount: `AND (b.overall_status = 'completed' AND b.report_date NOT LIKE '%-${month}-%')`,
+        stopcheckCount: `AND (b.overall_status = 'stopcheck')`,
+        activeEmploymentCount: `AND (b.overall_status = 'active employment')`,
+        nilCount: `AND (b.overall_status = 'nil' OR b.overall_status = '')`,
+        candidateDeniedCount: `AND (b.overall_status = 'candidate denied')`,
+        notDoableCount: `AND (b.overall_status = 'not doable')`,
+        initiatedCount: `AND (b.overall_status = 'initiated')`,
+        holdCount: `AND (b.overall_status = 'hold')`,
+        closureAdviceCount: `AND (b.overall_status = 'closure advice')`,
+        qcStatusPendingCount: `AND a.is_report_downloaded='1' AND LOWER(b.is_verify)='no' AND a.status='completed'`,
+        notReadyCount: `AND b.overall_status !='completed'`,
+        downloadReportCount: `AND (b.overall_status = 'completed' AND (a.is_report_downloaded = '1' OR a.is_report_downloaded IS NULL))`
+      };
+
+      let sqlQueries = [];
+
+      // Build SQL queries for each filter option
+      for (let key in filterOptions) {
+        if (filterOptions.hasOwnProperty(key)) {
+          let condition = conditions[key];
+          if (condition) {
+            const SQL = `
+              SELECT count(*) AS ${key}
+              FROM client_applications a
+              JOIN customers c ON a.customer_id = c.id
+              JOIN cmt_applications b ON a.id = b.client_application_id
+              WHERE a.branch_id = ? 
+              AND CAST(a.branch_id AS CHAR) = ? 
+              AND (a.created_at LIKE '${yearMonth}-%' OR a.created_at LIKE '%-${monthYear}') 
+              ${condition}
+              AND c.status = 1
+            `;
+
+            sqlQueries.push(new Promise((resolve, reject) => {
+              connection.query(SQL, [branch_id], (err, result) => {
+                if (err) {
+                  console.error("Database query error:", err);
+                  return reject(err);
+                }
+                filterOptions[key] = result[0] ? result[0].count : 0;
+                resolve();
+              });
+            }));
+          }
         }
-        callback(null, results);
-      });
+      }
+
+      // After all queries finish, execute the callback
+      Promise.all(sqlQueries)
+        .then(() => {
+          const transformedFilterOptions = Object.entries(filterOptions).map(([status, count]) => ({
+            status,
+            count
+          }));
+
+          callback(null, transformedFilterOptions);
+          connectionRelease(connection); // Release connection here
+        })
+        .catch((err) => {
+          callback(err, null);
+          connectionRelease(connection); // Ensure connection is released even on error
+        });
     });
   },
 
