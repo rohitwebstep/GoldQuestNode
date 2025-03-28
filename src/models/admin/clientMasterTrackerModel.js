@@ -146,7 +146,7 @@ const Customer = {
                       JOIN cmt_applications b ON a.id = b.client_application_id 
                     WHERE
                       b.overall_status = 'completed'
-                      AND (b.report_date LIKE CONCAT('${yearMonth}', '%') OR b.report_date LIKE CONCAT('%', '${monthYear}'))
+                      AND (b.report_date LIKE '${yearMonth}-%' OR b.report_date LIKE '%-${monthYear}')
                       AND c.status = 1
               `;
             break;
@@ -161,7 +161,7 @@ const Customer = {
                       JOIN cmt_applications b ON a.id = b.client_application_id 
                     WHERE
                       b.overall_status = 'stopcheck'
-                      AND (b.report_date LIKE CONCAT('${yearMonth}', '%') OR b.report_date LIKE CONCAT('%', '${monthYear}'))
+                      AND (b.report_date LIKE '${yearMonth}-%' OR b.report_date LIKE '%-${monthYear}')
                       AND c.status = 1
               `;
             break;
@@ -176,7 +176,7 @@ const Customer = {
                       JOIN cmt_applications b ON a.id = b.client_application_id 
                     WHERE
                       b.overall_status = 'active employment'
-                      AND (b.report_date LIKE CONCAT('${yearMonth}', '%') OR b.report_date LIKE CONCAT('%', '${monthYear}'))
+                      AND (b.report_date LIKE '${yearMonth}-%' OR b.report_date LIKE '%-${monthYear}')
                       AND c.status = 1
               `;
             break;
@@ -191,7 +191,7 @@ const Customer = {
                       JOIN cmt_applications b ON a.id = b.client_application_id 
                     WHERE
                       b.overall_status = 'nil'
-                      AND (b.report_date LIKE CONCAT('${yearMonth}', '%') OR b.report_date LIKE CONCAT('%', '${monthYear}'))
+                      AND (b.report_date LIKE '${yearMonth}-%' OR b.report_date LIKE '%-${monthYear}')
                       AND c.status = 1
               `;
             break;
@@ -206,7 +206,7 @@ const Customer = {
                       JOIN cmt_applications b ON a.id = b.client_application_id 
                     WHERE
                       b.overall_status = 'not doable'
-                      AND (b.report_date LIKE CONCAT('${yearMonth}', '%') OR b.report_date LIKE CONCAT('%', '${monthYear}'))
+                      AND (b.report_date LIKE '${yearMonth}-%' OR b.report_date LIKE '%-${monthYear}')
                       AND c.status = 1
               `;
             break;
@@ -221,7 +221,7 @@ const Customer = {
                       JOIN cmt_applications b ON a.id = b.client_application_id 
                     WHERE
                       b.overall_status = 'candidate denied'
-                      AND (b.report_date LIKE CONCAT('${yearMonth}', '%') OR b.report_date LIKE CONCAT('%', '${monthYear}'))
+                      AND (b.report_date LIKE '${yearMonth}-%' OR b.report_date LIKE '%-${monthYear}')
                       AND c.status = 1
               `;
             break;
@@ -237,7 +237,7 @@ const Customer = {
                     where
                       b.overall_status ='completed'
                       AND (b.report_date LIKE '${yearMonth}-%' OR b.report_date LIKE '%-${monthYear}')
-                      AND b.final_verification_status = 'GREEN'
+                      AND LOWER(b.final_verification_status) = 'green'
                       AND c.status=1
               `;
             break;
@@ -253,7 +253,7 @@ const Customer = {
                     where
                       b.overall_status ='completed'
                       AND (b.report_date LIKE '${yearMonth}-%' OR b.report_date LIKE '%-${monthYear}')
-                      AND b.final_verification_status = 'RED'
+                      AND LOWER(b.final_verification_status) = 'red'
                       AND c.status=1
               `;
             break;
@@ -269,7 +269,7 @@ const Customer = {
                     where
                       b.overall_status ='completed'
                       AND (b.report_date LIKE '${yearMonth}-%' OR b.report_date LIKE '%-${monthYear}')
-                      AND b.final_verification_status  = 'YELLOW'
+                      AND b.final_verification_status  = 'yellow'
                       AND c.status=1
               `;
             break;
@@ -285,7 +285,7 @@ const Customer = {
                     where
                       b.overall_status ='completed'
                       AND (b.report_date LIKE '${yearMonth}-%' OR b.report_date LIKE '%-${monthYear}')
-                      AND b.final_verification_status = 'PINK'
+                      AND LOWER(b.final_verification_status) = 'pink'
                       AND c.status=1
               `;
             break;
@@ -301,7 +301,7 @@ const Customer = {
                     where
                       b.overall_status ='completed'
                       AND (b.report_date LIKE '${yearMonth}-%' OR b.report_date LIKE '%-${monthYear}')
-                      AND b.final_verification_status = 'ORANGE'
+                      AND LOWER(b.final_verification_status) = 'orange'
                       AND c.status=1
               `;
             break;
