@@ -475,7 +475,6 @@ exports.create = (req, res) => {
     _token,
     customer_id,
     name,
-    spoc,
     nationality
   };
 
@@ -1392,7 +1391,6 @@ exports.update = (req, res) => {
     _token,
     client_application_id,
     name,
-    spoc,
     nationality,
   };
 
