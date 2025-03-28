@@ -103,9 +103,7 @@ const Customer = {
                   WHERE
                     a.is_report_downloaded = '1'
                     AND LOWER(b.is_verify) = 'no'
-                    AND a.status = 'completed'
-                  ORDER BY 
-                    b.id DESC;
+                    AND a.status = 'completed';
               `;
             break;
           case 'wipCount':
