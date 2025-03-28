@@ -432,7 +432,6 @@ const Customer = {
                   );
                 }
               );
-              console.log(`rawResult - `, result);
               result.head_branch_applications_count =
                 headBranchApplicationsCount;
               // if (result.branch_count === 1) {
@@ -469,7 +468,6 @@ const Customer = {
               }
               // }
             }
-            console.log(`results - `, results);
             callback(null, results);
           });
         });
@@ -554,7 +552,6 @@ const Customer = {
                               application_counts.latest_application_date DESC;
                           `;
 
-        console.log(`finalSql - `, finalSql);
         connection.query(finalSql, async (err, results) => {
           connectionRelease(connection); // Always release the connection
           if (err) {
@@ -1231,8 +1228,12 @@ const Customer = {
                     filterOptions.completedOrangeCount = row.overall_count;
                   }
                 });
+                const transformedFilterOptions = Object.entries(filterOptions).map(([status, count]) => ({
+                  status,
+                  count
+                }));
 
-                return callback(null, filterOptions);
+                return callback(null, transformedFilterOptions);
               });
             });
           });
@@ -1327,7 +1328,7 @@ const Customer = {
                   console.error("Database query error:", err);
                   return reject(err);
                 }
-                filterOptions[key] = result[0] ? result[0][key] : 0;
+                filterOptions.push({ status: key, count: result[0] ? result[0].count : 0 });
                 resolve();
               });
             }));
