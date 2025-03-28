@@ -783,6 +783,10 @@ const Customer = {
         ON 
           qc_admin.id = cmt.qc_done_by
         LEFT JOIN 
+          \`customers\` AS c 
+        ON 
+          c.id = ca.customer_id
+        LEFT JOIN 
           \`customer_metas\` AS customer_metas 
         ON 
           customer_metas.customer_id = ca.customer_id
