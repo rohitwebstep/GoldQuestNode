@@ -88,6 +88,7 @@ const Customer = {
                           AND (b.report_date LIKE '${yearMonth}-%' OR b.report_date LIKE '%-${monthYear}')
                         )
                       )
+                      AND (a.created_at LIKE '${yearMonth}-%' OR a.created_at LIKE '%-${monthYear}')
                       AND (c.status = 1)
               `;
             break;
@@ -103,6 +104,7 @@ const Customer = {
                   WHERE
                     a.is_report_downloaded = '1'
                     AND LOWER(b.is_verify) = 'no'
+                    AND (a.created_at LIKE '${yearMonth}-%' OR a.created_at LIKE '%-${monthYear}')
                     AND a.status = 'completed';
               `;
             break;
@@ -117,6 +119,7 @@ const Customer = {
                       JOIN cmt_applications b ON a.id = b.client_application_id 
                     WHERE 
                       c.status = 1
+                      AND (a.created_at LIKE '${yearMonth}-%' OR a.created_at LIKE '%-${monthYear}')
                       AND b.overall_status = 'wip'
               `;
             break;
@@ -131,6 +134,7 @@ const Customer = {
                       JOIN cmt_applications b ON a.id = b.client_application_id 
                     WHERE 
                       c.status = 1
+                      AND (a.created_at LIKE '${yearMonth}-%' OR a.created_at LIKE '%-${monthYear}')
                       AND b.overall_status = 'insuff'
               `;
             break;
@@ -145,6 +149,7 @@ const Customer = {
                       JOIN cmt_applications b ON a.id = b.client_application_id 
                     WHERE
                       b.overall_status = 'completed'
+                      AND (a.created_at LIKE '${yearMonth}-%' OR a.created_at LIKE '%-${monthYear}')
                       AND (b.report_date LIKE '${yearMonth}-%' OR b.report_date LIKE '%-${monthYear}')
                       AND c.status = 1
               `;
@@ -160,6 +165,7 @@ const Customer = {
                       JOIN cmt_applications b ON a.id = b.client_application_id 
                     WHERE
                       b.overall_status = 'stopcheck'
+                      AND (a.created_at LIKE '${yearMonth}-%' OR a.created_at LIKE '%-${monthYear}')
                       AND (b.report_date LIKE '${yearMonth}-%' OR b.report_date LIKE '%-${monthYear}')
                       AND c.status = 1
               `;
@@ -175,6 +181,7 @@ const Customer = {
                       JOIN cmt_applications b ON a.id = b.client_application_id 
                     WHERE
                       b.overall_status = 'active employment'
+                      AND (a.created_at LIKE '${yearMonth}-%' OR a.created_at LIKE '%-${monthYear}')
                       AND (b.report_date LIKE '${yearMonth}-%' OR b.report_date LIKE '%-${monthYear}')
                       AND c.status = 1
               `;
@@ -190,6 +197,7 @@ const Customer = {
                       JOIN cmt_applications b ON a.id = b.client_application_id 
                     WHERE
                       b.overall_status = 'nil'
+                      AND (a.created_at LIKE '${yearMonth}-%' OR a.created_at LIKE '%-${monthYear}')
                       AND (b.report_date LIKE '${yearMonth}-%' OR b.report_date LIKE '%-${monthYear}')
                       AND c.status = 1
               `;
@@ -205,6 +213,7 @@ const Customer = {
                       JOIN cmt_applications b ON a.id = b.client_application_id 
                     WHERE
                       b.overall_status = 'not doable'
+                      AND (a.created_at LIKE '${yearMonth}-%' OR a.created_at LIKE '%-${monthYear}')
                       AND (b.report_date LIKE '${yearMonth}-%' OR b.report_date LIKE '%-${monthYear}')
                       AND c.status = 1
               `;
@@ -220,6 +229,7 @@ const Customer = {
                       JOIN cmt_applications b ON a.id = b.client_application_id 
                     WHERE
                       b.overall_status = 'candidate denied'
+                      AND (a.created_at LIKE '${yearMonth}-%' OR a.created_at LIKE '%-${monthYear}')
                       AND (b.report_date LIKE '${yearMonth}-%' OR b.report_date LIKE '%-${monthYear}')
                       AND c.status = 1
               `;
@@ -235,6 +245,7 @@ const Customer = {
                       JOIN cmt_applications b ON a.id = b.client_application_id 
                     where
                       b.overall_status ='completed'
+                      AND (a.created_at LIKE '${yearMonth}-%' OR a.created_at LIKE '%-${monthYear}')
                       AND (b.report_date LIKE '${yearMonth}-%' OR b.report_date LIKE '%-${monthYear}')
                       AND LOWER(b.final_verification_status) = 'green'
                       AND c.status=1
@@ -251,6 +262,7 @@ const Customer = {
                       JOIN cmt_applications b ON a.id = b.client_application_id 
                     where
                       b.overall_status ='completed'
+                      AND (a.created_at LIKE '${yearMonth}-%' OR a.created_at LIKE '%-${monthYear}')
                       AND (b.report_date LIKE '${yearMonth}-%' OR b.report_date LIKE '%-${monthYear}')
                       AND LOWER(b.final_verification_status) = 'red'
                       AND c.status=1
@@ -267,6 +279,7 @@ const Customer = {
                       JOIN cmt_applications b ON a.id = b.client_application_id 
                     where
                       b.overall_status ='completed'
+                      AND (a.created_at LIKE '${yearMonth}-%' OR a.created_at LIKE '%-${monthYear}')
                       AND (b.report_date LIKE '${yearMonth}-%' OR b.report_date LIKE '%-${monthYear}')
                       AND b.final_verification_status  = 'yellow'
                       AND c.status=1
@@ -283,6 +296,7 @@ const Customer = {
                       JOIN cmt_applications b ON a.id = b.client_application_id 
                     where
                       b.overall_status ='completed'
+                      AND (a.created_at LIKE '${yearMonth}-%' OR a.created_at LIKE '%-${monthYear}')
                       AND (b.report_date LIKE '${yearMonth}-%' OR b.report_date LIKE '%-${monthYear}')
                       AND LOWER(b.final_verification_status) = 'pink'
                       AND c.status=1
@@ -299,6 +313,7 @@ const Customer = {
                       JOIN cmt_applications b ON a.id = b.client_application_id 
                     where
                       b.overall_status ='completed'
+                      AND (a.created_at LIKE '${yearMonth}-%' OR a.created_at LIKE '%-${monthYear}')
                       AND (b.report_date LIKE '${yearMonth}-%' OR b.report_date LIKE '%-${monthYear}')
                       AND LOWER(b.final_verification_status) = 'orange'
                       AND c.status=1
@@ -360,7 +375,8 @@ const Customer = {
                                 INNER JOIN
                                     client_applications ca ON b.branch_id = ca.branch_id
                                 WHERE
-                                    (ca.created_at LIKE '${yearMonth}-%' OR ca.created_at LIKE '%-${monthYear}')
+                                    ca.id IN (${client_application_ids.join(",")}) 
+                                    AND (ca.created_at LIKE '${yearMonth}-%' OR ca.created_at LIKE '%-${monthYear}')
                                 GROUP BY
                                     b.customer_id
                             ) AS application_counts ON customers.id = application_counts.customer_id
@@ -387,8 +403,7 @@ const Customer = {
                                 INNER JOIN
                                     client_applications ca ON b.branch_id = ca.branch_id
                                 WHERE
-                                    ca.id IN (${client_application_ids.join(",")}) 
-                                    AND ca.status <> 'completed'
+                                    ca.status <> 'completed'
                                     AND (ca.created_at LIKE '${yearMonth}-%' OR ca.created_at LIKE '%-${monthYear}')
                                 GROUP BY
                                     b.customer_id
@@ -1069,6 +1084,7 @@ const Customer = {
               AND (b.report_date LIKE '${yearMonth}-%' OR b.report_date LIKE '%-${monthYear}')
             )
           )
+          AND (a.created_at LIKE '${yearMonth}-%' OR a.created_at LIKE '%-${monthYear}')
           AND (c.status = 1)
       `;
 
@@ -1093,6 +1109,7 @@ const Customer = {
             JOIN cmt_applications b ON a.id = b.client_application_id 
           where
             a.is_report_downloaded='1'
+            AND (a.created_at LIKE '${yearMonth}-%' OR a.created_at LIKE '%-${monthYear}')
             AND LOWER(b.is_verify)='no'
             AND a.status='completed'
           order by 
@@ -1122,6 +1139,7 @@ const Customer = {
             JOIN cmt_applications b ON a.id = b.client_application_id 
           WHERE 
             c.status = 1
+            AND (a.created_at LIKE '${yearMonth}-%' OR a.created_at LIKE '%-${monthYear}')
             AND b.overall_status IN ('wip', 'insuff')
           GROUP BY 
             b.overall_status
@@ -1153,6 +1171,7 @@ const Customer = {
               JOIN cmt_applications b ON a.id = b.client_application_id 
             where
               b.overall_status IN ('completed','stopcheck','active employment','nil','not doable','candidate denied')
+              AND (a.created_at LIKE '${yearMonth}-%' OR a.created_at LIKE '%-${monthYear}')
               AND (b.report_date LIKE '${yearMonth}-%' OR b.report_date LIKE '%-${monthYear}')
               AND c.status=1
             GROUP BY
@@ -1193,6 +1212,7 @@ const Customer = {
                 JOIN cmt_applications b ON a.id = b.client_application_id 
               where
                 b.overall_status ='completed'
+                AND (a.created_at LIKE '${yearMonth}-%' OR a.created_at LIKE '%-${monthYear}')
                 AND (b.report_date LIKE '${yearMonth}-%' OR b.report_date LIKE '%-${monthYear}')
                 AND b.final_verification_status IN ('GREEN', 'RED', 'YELLOW', 'PINK', 'ORANGE')
                 AND c.status=1
@@ -1311,6 +1331,7 @@ const Customer = {
               JOIN cmt_applications b ON a.id = b.client_application_id
               WHERE a.customer_id = ? 
               AND CAST(a.branch_id AS CHAR) = ? 
+              AND (a.created_at LIKE '${yearMonth}-%' OR a.created_at LIKE '%-${monthYear}') 
               ${condition}
               AND c.status = 1
             `;
@@ -1321,7 +1342,7 @@ const Customer = {
                   console.error("Database query error:", err);
                   return reject(err);
                 }
-                filterOptions[key] =result[0] ? result[0].count : 0;
+                filterOptions[key] = result[0] ? result[0].count : 0;
                 resolve();
               });
             }));
