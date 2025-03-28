@@ -73,7 +73,7 @@ exports.list = (req, res) => {
           })
         ),
         new Promise((resolve) =>
-          ClientMasterTrackerModel.filterOptions((err, result) => {
+          ClientMasterTrackerModel.filterOptionsForCustomers((err, result) => {
             if (err) return resolve([]);
             resolve(result);
           })
@@ -463,7 +463,8 @@ exports.applicationListByBranch = (req, res) => {
                 )
               ),
               new Promise((resolve) =>
-                ClientMasterTrackerModel.filterOptionsForBranch(
+                ClientMasterTrackerModel.filterOptionsForApplicationListing(
+                  currentBranch.customer_id,
                   branch_id,
                   (err, result) => {
                     if (err) return resolve([]);
@@ -823,7 +824,7 @@ exports.filterOptions = (req, res) => {
 
       const newToken = result.newToken;
 
-      ClientMasterTrackerModel.filterOptions((err, filterOptions) => {
+      ClientMasterTrackerModel.filterOptionsForCustomers((err, filterOptions) => {
         if (err) {
           console.error("Database error:", err);
           return res.status(500).json({
@@ -911,35 +912,74 @@ exports.filterOptionsForBranch = (req, res) => {
 
       const newToken = result.newToken;
 
-      ClientMasterTrackerModel.filterOptionsForBranch(
-        branch_id,
-        (err, filterOptions) => {
-          if (err) {
-            console.error("Database error:", err);
-            return res.status(500).json({
-              status: false,
-              message: "An error occurred while fetching Filter options data.",
-              error: err,
-              token: newToken,
-            });
-          }
-
-          if (!filterOptions) {
-            return res.status(404).json({
-              status: false,
-              message: "Filter options Data not found.",
-              token: newToken,
-            });
-          }
-
-          res.status(200).json({
-            status: true,
-            message: "Filter options fetched successfully.",
-            filterOptions,
+      Branch.getBranchById(branch_id, (err, currentBranch) => {
+        if (err) {
+          console.error("Database error during branch retrieval:", err);
+          return res.status(500).json({
+            status: false,
+            message: "Failed to retrieve Branch. Please try again.",
             token: newToken,
           });
         }
-      );
+
+        if (!currentBranch) {
+          return res.status(404).json({
+            status: false,
+            message: "Branch not found.",
+          });
+        }
+
+        Customer.infoByID(
+          parseInt(currentBranch.customer_id),
+          (err, currentCustomer) => {
+            if (err) {
+              console.error("Database error during customer retrieval:", err);
+              return res.status(500).json({
+                status: false,
+                message: "Failed to retrieve Customer. Please try again.",
+                token: newToken,
+              });
+            }
+
+            if (!currentCustomer) {
+              return res.status(404).json({
+                status: false,
+                message: "Customer not found.",
+                token: newToken,
+              });
+            }
+            ClientMasterTrackerModel.filterOptionsForApplicationListing(
+              currentBranch.customer_id,
+              branch_id,
+              (err, filterOptions) => {
+                if (err) {
+                  console.error("Database error:", err);
+                  return res.status(500).json({
+                    status: false,
+                    message: "An error occurred while fetching Filter options data.",
+                    error: err,
+                    token: newToken,
+                  });
+                }
+
+                if (!filterOptions) {
+                  return res.status(404).json({
+                    status: false,
+                    message: "Filter options Data not found.",
+                    token: newToken,
+                  });
+                }
+
+                res.status(200).json({
+                  status: true,
+                  message: "Filter options fetched successfully.",
+                  filterOptions,
+                  token: newToken,
+                });
+              }
+            );
+          });
+      });
     });
   });
 };

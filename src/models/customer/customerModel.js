@@ -717,23 +717,25 @@ const Customer = {
       const updateServiceTitles = async () => {
         try {
           for (const group of servicesData) {
-            for (const service of group.services) {
-              const serviceSql = `SELECT title FROM services WHERE id = ?`;
-              const [rows] = await new Promise((resolve, reject) => {
-                connection.query(
-                  serviceSql,
-                  [service.serviceId],
-                  (err, results) => {
-                    if (err) return reject(err);
-                    resolve(results);
-                  }
-                );
-              });
+            const serviceSql = `SELECT title FROM services WHERE id = ?`;
+            const [rows] = await new Promise((resolve, reject) => {
+              connection.query(
+                serviceSql,
+                [group.serviceId],
+                (err, results) => {
+                  if (err) return reject(err);
+                  resolve(results);
+                }
+              );
+            });
 
-              if (rows && rows.title) {
-                service.serviceTitle = rows.title;
-              }
+            if (rows && rows.title) {
+              group.serviceTitle = rows.title;
             }
+            /*
+            for (const service of group.services) {
+            }
+            */
           }
         } catch (err) {
           console.error("Error updating service titles:", err);

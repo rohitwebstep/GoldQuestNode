@@ -560,8 +560,8 @@ const Customer = {
         function fetchData() {
           console.log(`Fetching data from table "${db_table}" for client_application_id: ${client_application_id}`);
           const sql = `SELECT * FROM \`${db_table}\` WHERE \`client_application_id\` = ?`;
-          console.log(`sql - `, sql); 
-          
+          console.log(`sql - `, sql);
+
           connection.query(sql, [client_application_id], (err, results) => {
             connectionRelease(connection); // Release connection
             if (err) {
@@ -597,6 +597,322 @@ const Customer = {
         }
         callback(null, results);
       });
+    });
+  },
+
+  filterOptionsForCustomers: (callback) => {
+
+    // Start a connection
+    startConnection((err, connection) => {
+      if (err) {
+        return callback(err, null);
+      }
+
+      // Get the current date
+      const now = new Date();
+      const yearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      const monthYear = `${String(now.getMonth() + 1).padStart(2, '0')}-${now.getFullYear()}`;
+
+      let filterOptions = {
+        overallCount: 0,
+        qcStatusPendingCount: 0,
+        wipCount: 0,
+        insuffCount: 0,
+        previousCompletedCount: 0,
+        stopcheckCount: 0,
+        activeEmploymentCount: 0,
+        nilCount: 0,
+        notDoableCount: 0,
+        candidateDeniedCount: 0,
+        completedGreenCount: 0,
+        completedRedCount: 0,
+        completedYellowCount: 0,
+        completedPinkCount: 0,
+        completedOrangeCount: 0,
+      };
+
+      const overallCountSQL = `
+        SELECT
+          COUNT(*) as overall_count
+        FROM 
+          client_applications a 
+          JOIN customers c ON a.customer_id = c.id
+          JOIN cmt_applications b ON a.id = b.client_application_id 
+        WHERE
+          (
+            b.overall_status = 'wip'
+            OR b.overall_status = 'insuff'
+            OR (b.overall_status = 'completed' 
+              AND b.final_verification_status IN ('GREEN', 'RED', 'YELLOW', 'PINK', 'ORANGE')
+              AND (b.report_date LIKE '${yearMonth}-%' OR b.report_date LIKE '%-${monthYear}')
+            )
+          )
+          AND (c.status = 1)
+      `;
+
+      connection.query(overallCountSQL, (err, overallCountResult) => {
+
+        if (err) {
+          console.error("Database query error:", err);
+          // return callback(err, null);
+          return callback(null, filterOptions);
+        }
+
+        if (overallCountResult.length > 0) {
+          filterOptions.overallCount = overallCountResult[0].overall_count || 0;
+        }
+
+        const qcStatusPendingSQL = `
+          select
+            count(*) as overall_count
+          from 
+            client_applications a 
+            JOIN customers c ON a.customer_id = c.id
+            JOIN cmt_applications b ON a.id = b.client_application_id 
+          where
+            a.is_report_downloaded='1'
+            AND LOWER(b.is_verify)='no'
+            AND a.status='completed'
+          order by 
+            b.id DESC
+        `;
+
+        connection.query(qcStatusPendingSQL, (err, qcStatusPendingResult) => {
+          connectionRelease(connection); // Release connection
+
+          if (err) {
+            console.error("Database query error:", err);
+            // return callback(err, null);
+            return callback(null, filterOptions);
+          }
+
+          if (qcStatusPendingResult.length > 0) {
+            filterOptions.qcStatusPendingCount = qcStatusPendingResult[0].overall_count || 0;
+          }
+
+          const wipInsuffSQL = `
+          SELECT 
+            b.overall_status, 
+            COUNT(*) AS overall_count
+          FROM 
+            client_applications a 
+            JOIN customers c ON a.customer_id = c.id
+            JOIN cmt_applications b ON a.id = b.client_application_id 
+          WHERE 
+            c.status = 1
+            AND b.overall_status IN ('wip', 'insuff')
+          GROUP BY 
+            b.overall_status
+        `;
+
+          connection.query(wipInsuffSQL, (err, wipInsuffResult) => {
+            connectionRelease(connection); // Release connection
+
+            if (err) {
+              console.error("Database query error:", err);
+              return callback(null, filterOptions);
+            }
+
+            wipInsuffResult.forEach(row => {
+              if (row.overall_status === 'wip') {
+                filterOptions.wipCount = row.overall_count;
+              } else if (row.overall_status === 'insuff') {
+                filterOptions.insuffCount = row.overall_count;
+              }
+            });
+
+            const completedStocheckactiveEmployementNilNotDoubleCandidateDeniedSQL = `
+            SELECT
+              COUNT(*) as overall_count,
+              b.overall_status
+            from 
+              client_applications a 
+              JOIN customers c ON a.customer_id = c.id
+              JOIN cmt_applications b ON a.id = b.client_application_id 
+            where
+              b.overall_status IN ('completed','stopcheck','active employment','nil','not doable','candidate denied')
+              AND (b.report_date LIKE '${yearMonth}-%' OR b.report_date LIKE '%-${monthYear}')
+              AND c.status=1
+            GROUP BY
+              b.overall_status
+          `;
+
+            connection.query(completedStocheckactiveEmployementNilNotDoubleCandidateDeniedSQL, (err, completedStocheckactiveEmployementNilNotDoubleCandidateDeniedResult) => {
+              connectionRelease(connection); // Release connection
+
+              if (err) {
+                console.error("Database query error:", err);
+                return callback(null, filterOptions);
+              }
+
+              completedStocheckactiveEmployementNilNotDoubleCandidateDeniedResult.forEach(row => {
+                if (row.overall_status === 'completed') {
+                  filterOptions.previousCompletedCount = row.overall_count;
+                } else if (row.overall_status === 'stopcheck') {
+                  filterOptions.stopcheckCount = row.overall_count;
+                } else if (row.overall_status === 'active employment') {
+                  filterOptions.activeEmploymentCount = row.overall_count;
+                } else if (row.overall_status === 'nil' || row.overall_status === '' || row.overall_status === null) {
+                  filterOptions.nilCount = row.overall_count;
+                } else if (row.overall_status === 'not doable') {
+                  filterOptions.notDoableCount = row.overall_count;
+                } else if (row.overall_status === 'candidate denied') {
+                  filterOptions.candidateDeniedCount = row.overall_count;
+                }
+              });
+
+              const completedGreenRedYellowPinkOrangeSQL = `
+              SELECT
+                COUNT(*) as overall_count,
+                b.final_verification_status
+              from
+                client_applications a 
+                JOIN customers c ON a.customer_id = c.id
+                JOIN cmt_applications b ON a.id = b.client_application_id 
+              where
+                b.overall_status ='completed'
+                AND (b.report_date LIKE '${yearMonth}-%' OR b.report_date LIKE '%-${monthYear}')
+                AND b.final_verification_status IN ('GREEN', 'RED', 'YELLOW', 'PINK', 'ORANGE')
+                AND c.status=1
+              GROUP BY
+                b.final_verification_status
+            `;
+
+              connection.query(completedGreenRedYellowPinkOrangeSQL, (err, completedGreenRedYellowPinkOrangeResult) => {
+                connectionRelease(connection); // Release connection
+
+                if (err) {
+                  console.error("Database query error:", err);
+                  return callback(null, filterOptions);
+                }
+
+                completedGreenRedYellowPinkOrangeResult.forEach(row => {
+                  if (row.final_verification_status === 'GREEN') {
+                    filterOptions.completedGreenCount = row.overall_count;
+                  } else if (row.final_verification_status === 'RED') {
+                    filterOptions.completedRedCount = row.overall_count;
+                  } else if (row.final_verification_status === 'YELLOW') {
+                    filterOptions.completedYellowCount = row.overall_count;
+                  } else if (row.final_verification_status === 'PINK') {
+                    filterOptions.completedPinkCount = row.overall_count;
+                  } else if (row.final_verification_status === 'ORANGE') {
+                    filterOptions.completedOrangeCount = row.overall_count;
+                  }
+                });
+
+                return callback(null, filterOptions);
+              });
+            });
+          });
+
+        });
+      });
+    });
+  },
+
+  filterOptionsForApplicationListing: (customer_id, branch_id, callback) => {
+
+    // Start a connection
+    startConnection((err, connection) => {
+      if (err) {
+        return callback(err, null);
+      }
+
+      // Get the current date
+      const now = new Date();
+      const month = `${String(now.getMonth() + 1).padStart(2, '0')}`;
+      const year = `${now.getFullYear()}`;
+      const yearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      const monthYear = `${String(now.getMonth() + 1).padStart(2, '0')}-${now.getFullYear()}`;
+
+      let filterOptions = {
+        overallCount: 0,
+        wipCount: 0,
+        insuffCount: 0,
+        completedGreenCount: 0,
+        completedRedCount: 0,
+        completedYellowCount: 0,
+        completedPinkCount: 0,
+        completedOrangeCount: 0,
+        previousCompletedCount: 0,
+        stopcheckCount: 0,
+        activeEmploymentCount: 0,
+        nilCount: 0,
+        candidateDeniedCount: 0,
+        notDoableCount: 0,
+        initiatedCount: 0,
+        holdCount: 0,
+        closureAdviceCount: 0,
+        qcStatusPendingCount: 0,
+        notReadyCount: 0,
+        downloadReportCount: 0,
+      };
+
+      let conditions = {
+        overallCount: `AND (b.overall_status='wip' OR b.overall_status='insuff' OR b.overall_status='initiated' OR b.overall_status='hold' OR b.overall_status='closure advice' OR b.overall_status='stopcheck' OR b.overall_status='active employment' OR b.overall_status='nil' OR b.overall_status='' OR b.overall_status='not doable' OR b.overall_status='candidate denied' OR (b.overall_status='completed' AND b.report_date LIKE '%-${month}-%') OR (b.overall_status='completed' AND b.report_date NOT LIKE '%-${month}-%'))`,
+        wipCount: `AND (b.overall_status = 'wip')`,
+        insuffCount: `AND (b.overall_status = 'insuff')`,
+        completedGreenCount: `AND (b.overall_status = 'completed' AND b.report_date LIKE '%-${month}-%') AND b.final_verification_status='GREEN'`,
+        completedRedCount: `AND (b.overall_status = 'completed' AND b.report_date LIKE '%-${month}-%') AND b.final_verification_status='RED'`,
+        completedYellowCount: `AND (b.overall_status = 'completed' AND b.report_date LIKE '%-${month}-%') AND b.final_verification_status='YELLOW'`,
+        completedPinkCount: `AND (b.overall_status = 'completed' AND b.report_date LIKE '%-${month}-%') AND b.final_verification_status='PINK'`,
+        completedOrangeCount: `AND (b.overall_status = 'completed' AND b.report_date LIKE '%-${month}-%') AND b.final_verification_status='ORANGE'`,
+        previousCompletedCount: `AND (b.overall_status = 'completed' AND b.report_date NOT LIKE '%-${month}-%')`,
+        stopcheckCount: `AND (b.overall_status = 'stopcheck')`,
+        activeEmploymentCount: `AND (b.overall_status = 'active employment')`,
+        nilCount: `AND (b.overall_status = 'nil' OR b.overall_status = '')`,
+        candidateDeniedCount: `AND (b.overall_status = 'candidate denied')`,
+        notDoableCount: `AND (b.overall_status = 'not doable')`,
+        initiatedCount: `AND (b.overall_status = 'initiated')`,
+        holdCount: `AND (b.overall_status = 'hold')`,
+        closureAdviceCount: `AND (b.overall_status = 'closure advice')`,
+        qcStatusPendingCount: `AND a.is_report_downloaded='1' AND LOWER(b.is_verify)='no' AND a.status='completed'`,
+        notReadyCount: `AND b.overall_status !='completed'`,
+        downloadReportCount: `AND (b.overall_status = 'completed' AND (a.is_report_downloaded = '1' OR a.is_report_downloaded IS NULL))`
+      };
+
+      let sqlQueries = [];
+
+      // Build SQL queries for each filter option
+      for (let key in filterOptions) {
+        if (filterOptions.hasOwnProperty(key)) {
+          let condition = conditions[key];
+          if (condition) {
+            const SQL = `
+              SELECT count(*) AS ${key}
+              FROM client_applications a
+              JOIN customers c ON a.customer_id = c.id
+              JOIN cmt_applications b ON a.id = b.client_application_id
+              WHERE a.customer_id = ? 
+              AND CAST(a.branch_id AS CHAR) = ? 
+              ${condition}
+              AND c.status = 1
+            `;
+
+            sqlQueries.push(new Promise((resolve, reject) => {
+              connection.query(SQL, [customer_id, branch_id], (err, result) => {
+                if (err) {
+                  console.error("Database query error:", err);
+                  return reject(err);
+                }
+                filterOptions[key] = result[0] ? result[0][key] : 0;
+                resolve();
+              });
+            }));
+          }
+        }
+      }
+
+      // After all queries finish, execute the callback
+      Promise.all(sqlQueries)
+        .then(() => {
+          callback(null, filterOptions);
+          connectionRelease(connection); // Release connection here
+        })
+        .catch((err) => {
+          callback(err, null);
+          connectionRelease(connection); // Ensure connection is released even on error
+        });
     });
   },
 
