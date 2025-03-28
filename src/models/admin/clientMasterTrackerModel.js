@@ -1325,7 +1325,7 @@ const Customer = {
           let condition = conditions[key];
           if (condition) {
             const SQL = `
-              SELECT count(*) AS ${key}
+              SELECT count(*) AS count
               FROM client_applications a
               JOIN customers c ON a.customer_id = c.id
               JOIN cmt_applications b ON a.id = b.client_application_id
@@ -1342,6 +1342,7 @@ const Customer = {
                   console.error("Database query error:", err);
                   return reject(err);
                 }
+                console.log(`result - `, result);
                 filterOptions[key] = result[0] ? result[0].count : 0;
                 resolve();
               });
@@ -1353,6 +1354,7 @@ const Customer = {
       // After all queries finish, execute the callback
       Promise.all(sqlQueries)
         .then(() => {
+          console.log(`filterOptions- `, filterOptions);
           const transformedFilterOptions = Object.entries(filterOptions).map(([status, count]) => ({
             status,
             count
@@ -1437,7 +1439,7 @@ const Customer = {
           let condition = conditions[key];
           if (condition) {
             const SQL = `
-              SELECT count(*) AS ${key}
+              SELECT count(*) AS count
               FROM client_applications a
               JOIN customers c ON a.customer_id = c.id
               JOIN cmt_applications b ON a.id = b.client_application_id
@@ -1465,6 +1467,7 @@ const Customer = {
       // After all queries finish, execute the callback
       Promise.all(sqlQueries)
         .then(() => {
+          console.log(`filterOptions - `, filterOptions);
           const transformedFilterOptions = Object.entries(filterOptions).map(([status, count]) => ({
             status,
             count
