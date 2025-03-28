@@ -501,23 +501,16 @@ exports.applicationListByBranch = (req, res) => {
 };
 
 exports.applicationByID = (req, res) => {
-  const { application_id, branch_id, admin_id, _token } = req.query;
+  const { ref_id, admin_id, _token } = req.query;
 
   let missingFields = [];
   if (
-    !application_id ||
-    application_id === "" ||
-    application_id === undefined ||
-    application_id === "undefined"
+    !ref_id ||
+    ref_id === "" ||
+    ref_id === undefined ||
+    ref_id === "undefined"
   )
-    missingFields.push("Application ID");
-  if (
-    !branch_id ||
-    branch_id === "" ||
-    branch_id === undefined ||
-    branch_id === "undefined"
-  )
-    missingFields.push("Branch ID");
+    missingFields.push("Application Reffrence ID");
   if (
     !admin_id ||
     admin_id === "" ||
@@ -562,9 +555,8 @@ exports.applicationByID = (req, res) => {
 
       const newToken = result.newToken;
 
-      ClientMasterTrackerModel.applicationByID(
-        application_id,
-        branch_id,
+      ClientMasterTrackerModel.applicationByRefID(
+        ref_id,
         (err, application) => {
           if (err) {
             console.error("Database error:", err);
@@ -582,7 +574,7 @@ exports.applicationByID = (req, res) => {
           }
 
           ClientMasterTrackerModel.getCMTApplicationById(
-            application_id,
+            application.id,
             (err, CMTApplicationData) => {
               if (err) {
                 console.error("Database error:", err);

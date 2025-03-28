@@ -1373,6 +1373,29 @@ const Customer = {
     });
   },
 
+  applicationByRefID: (ref_id, callback) => {
+    // Start a connection
+    startConnection((err, connection) => {
+      if (err) {
+        return callback(err, null);
+      }
+
+      // Use a parameterized query to prevent SQL injection
+      const sql =
+        "SELECT CA.*, C.name AS customer_name FROM `client_applications` AS CA INNER JOIN `customers` AS C ON C.id = CA.customer_id WHERE CA.`application_id` = ? ORDER BY `created_at` DESC";
+
+      connection.query(sql, [ref_id], (err, results) => {
+        connectionRelease(connection); // Release the connection
+        if (err) {
+          console.error("Database query error: 19", err);
+          return callback(err, null);
+        }
+        // Assuming `results` is an array, and we want the first result
+        callback(null, results[0] || null); // Return single application or null if not found
+      });
+    });
+  },
+
   getCMTApplicationById: (client_application_id, callback) => {
     // Start a connection
     startConnection((err, connection) => {
