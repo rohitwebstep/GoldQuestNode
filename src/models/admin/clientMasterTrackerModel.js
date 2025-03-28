@@ -321,7 +321,7 @@ const Customer = {
 
           let customersIDConditionString = "";
           if (client_application_ids.length > 0) {
-            customersIDConditionString = ` AND customers.id IN (${customers_id.join(
+            customersIDConditionString = ` AND customers.id IN (${client_application_ids.join(
               ","
             )})`;
           } else {
