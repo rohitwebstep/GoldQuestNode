@@ -1450,7 +1450,6 @@ const Customer = {
               ${condition}
               AND c.status = 1
             `;
-            console.log(`SQL - `, SQL);
             sqlQueries.push(new Promise((resolve, reject) => {
               connection.query(SQL, [branch_id], (err, result) => {
                 if (err) {
@@ -1468,7 +1467,6 @@ const Customer = {
       // After all queries finish, execute the callback
       Promise.all(sqlQueries)
         .then(() => {
-          console.log(`filterOptions - `, filterOptions);
           const transformedFilterOptions = Object.entries(filterOptions).map(([status, count]) => ({
             status,
             count
